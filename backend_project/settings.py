@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'api_v1.apps.ApiV1Config',
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Ustawienie dozwolonych źródeł (origin)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Adres serwera deweloperskiego React
-    "http://127.0.0.1:3000", # Czasami przeglądarka używa tego adresu
+    "http://localhost:5173",  # Adres serwera deweloperskiego Vite
+    "http://127.0.0.1:5173", # Czasami przeglądarka używa tego adresu
 ]

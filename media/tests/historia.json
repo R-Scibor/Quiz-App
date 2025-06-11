@@ -1,0 +1,52 @@
+{
+    "category": "Historia",
+    "scope": "Polska Średniowieczna",
+    "version": "1.0",
+    "questions": [
+        {
+            "id": 101,
+            "questionText": "W którym roku odbyła się koronacja Bolesława Chrobrego na pierwszego króla Polski?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["władcy", "daty", "Polska"],
+            "options": [
+                "966",
+                "1000",
+                "1025",
+                "1138"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Koronacja Bolesława Chrobrego odbyła się w 1025 roku, tuż przed jego śmiercią. Było to zwieńczenie jego wieloletnich starań o koronę królewską."
+        },
+        {
+            "id": 102,
+            "questionText": "Kto był ostatnim władcą z dynastii Piastów na polskim tronie?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["władcy", "Piastowie"],
+            "options": [
+                "Władysław Łokietek",
+                "Kazimierz Wielki",
+                "Bolesław Krzywousty",
+                "Mieszko II"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Kazimierz III Wielki, syn Władysława Łokietka, był ostatnim królem z dynastii Piastów. Zmarł w 1370 roku, nie pozostawiając męskiego potomka."
+        },
+        {
+            "id": 103,
+            "questionText": "Bitwa pod Grunwaldem odbyła się w roku:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["bitwy", "daty", "Krzyżacy"],
+            "options": [
+                "1241",
+                "1331",
+                "1410",
+                "1454"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Jedna z największych bitew w historii średniowiecznej Europy, stoczona 15 lipca 1410 roku między siłami polsko-litewskimi a Zakonem Krzyżackim."
+        }
+    ]
+}

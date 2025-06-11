@@ -41,13 +41,13 @@ db.sqlite3
 *.db
 
 # Pliki multimedialne i statyczne (zbierane przez Django)
-/media/
+#/media/
 /static_root/
 /staticfiles/
 
 # Pliki konfiguracyjne i wrażliwe
-.env
-local_settings.py
+#.env
+#local_settings.py
 
 # Pliki generowane przez biblioteki
 .pytest_cache/

@@ -1,0 +1,80 @@
+# ===================================================================
+# Pliki specyficzne dla systemów operacyjnych
+# ===================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# ===================================================================
+# Pliki specyficzne dla edytorów kodu i IDE
+# ===================================================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+.idea/
+
+# ===================================================================
+# Sekcja Python / Django
+# ===================================================================
+
+# Środowisko wirtualne
+venv/
+env/
+.venv/
+*/venv/
+*/.venv/
+
+# Pliki skompilowane i cache Pythona
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pliki baz danych
+*.sqlite3
+db.sqlite3
+*.db
+
+# Pliki multimedialne i statyczne (zbierane przez Django)
+/media/
+/static_root/
+/staticfiles/
+
+# Pliki konfiguracyjne i wrażliwe
+.env
+local_settings.py
+
+# Pliki generowane przez biblioteki
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===================================================================
+# Sekcja Node.js / React (dla Vite/Create-React-App)
+# ===================================================================
+
+# Zależności
+/node_modules/
+
+# Pliki produkcyjne (build)
+/dist/
+/build/
+
+# Pliki logów
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Lokalne pliki konfiguracyjne środowiska
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Pliki tymczasowe
+.pnp.*

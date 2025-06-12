@@ -1,0 +1,457 @@
+{
+  "category": "Mikrokontrolery",
+  "scope": "Przetwornik Analogowo-Cyfrowy",
+  "version": "1.0",
+  "questions": [
+    {
+      "id": 301,
+      "questionText": "Jaka jest rozdzielczość przetwornika A/D w mikrokontrolerach z serii PIC16F7x?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rozdzielczość", "specyfikacja"],
+      "options": [
+        "10-bitowa",
+        "12-bitowa",
+        "8-bitowa",
+        "16-bitowa"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Przetwornik AD w PIC16F7x dokonuje konwersji sygnału analogowego na postać 8-bitową."
+    },
+    {
+      "id": 302,
+      "questionText": "W którym rejestrze specjalnym zapisywany jest wynik konwersji A/D?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "SFR"],
+      "options": [
+        "ADCON0",
+        "ADCON1",
+        "STATUS",
+        "ADRES"
+      ],
+      "correctAnswers": [3],
+      "explanation": "8-bitowe słowo będące wynikiem konwersji jest zapisywane w rejestrze ADRES."
+    },
+    {
+      "id": 303,
+      "questionText": "Ile wejść analogowych obsługują mikrokontrolery z serii PIC16F74/77?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kanały", "PIC16F74/77"],
+      "options": [
+        "Pięć (AN0-AN4)",
+        "Osiem (AN0-AN7)",
+        "Trzy (AN0-AN2)",
+        "Dziesięć (AN0-AN9)"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Mikrokontrolery z serii PIC16F74/77 umożliwiają obsługę ośmiu wejść analogowych."
+    },
+    {
+      "id": 304,
+      "questionText": "Które bity w rejestrze ADCON0 odpowiadają za wybór kanału analogowego?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON0", "kanały"],
+      "options": [
+        "ADCS1:ADCS0",
+        "GO/DONE",
+        "CHS2:CHS0",
+        "ADON"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Bity CHS2:CHS0 (bity 5-3) w rejestrze ADCON0 odpowiadają za wybór wejścia (kanału) analogowego."
+    },
+    {
+      "id": 305,
+      "questionText": "Co należy zrobić z bitem GO/DONE w rejestrze ADCON0, aby rozpocząć konwersję A/D?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON0", "konwersja"],
+      "options": [
+        "Należy go wyzerować",
+        "Należy go ustawić na '1'",
+        "Jest on tylko do odczytu i nie można go zmieniać",
+        "Automatycznie ustawia się na '1' po włączeniu modułu"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Bit GO/DONE należy ustawić na '1' na początku, aby wystartować proces konwersji."
+    },
+    {
+      "id": 306,
+      "questionText": "Jaka jest rola bitu ADON w rejestrze ADCON0?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON0"],
+      "options": [
+        "Wybór napięcia odniesienia",
+        "Start/stop konwersji",
+        "Wybór kanału",
+        "Załączenie/wyłączenie modułu przetwornika AD"
+      ],
+      "correctAnswers": [3],
+      "explanation": "Bit ADON (bit 0 w ADCON0) służy do załączania (1) i wyłączania (0) modułu przetwornika A/D."
+    },
+    {
+      "id": 307,
+      "questionText": "Ustawienie bitów ADCS1:ADCS0 na '10' w rejestrze ADCON0 powoduje wybór częstotliwości taktowania przetwornika równej:",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON0", "oscylator"],
+      "options": [
+        "Fosc/2",
+        "Fosc/8",
+        "Fosc/32",
+        "Zewnętrzny oscylator RC (FRC)"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Wartość '10' dla bitów ADCS1:ADCS0 wybiera częstotliwość taktowania równą Fosc/32."
+    },
+    {
+      "id": 308,
+      "questionText": "Który rejestr służy do konfiguracji portów jako wejść analogowych/cyfrowych oraz do wyboru napięcia odniesienia?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "konfiguracja"],
+      "options": [
+        "ADRES",
+        "ADCON0",
+        "ADCON1",
+        "TRISA"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Rejestr ADCON1, za pomocą bitów PCFG2:PCFG0, odpowiada za konfigurację portów oraz wybór napięcia odniesienia."
+    },
+    {
+      "id": 309,
+      "questionText": "Aby wybrać kanał 4 (RA5/AN4), jaką wartość binarną należy wpisać na bity CHS2:CHS0?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kanały", "ADCON0"],
+      "options": [
+        "011",
+        "100",
+        "101",
+        "001"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Zgodnie z tabelą, wybór kanału 4 (AN4) wymaga ustawienia bitów CHS2:CHS0 na wartość '100'."
+    },
+    {
+      "id": 310,
+      "questionText": "Co oznacza stan '0' na bicie GO/DONE?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "konwersja", "ADCON0"],
+      "options": [
+        "Przetwornik jest wyłączony",
+        "Konwersja jest w trakcie",
+        "Konwersja została zakończona",
+        "Wystąpił błąd konwersji"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Bit GO/DONE przyjmuje wartość '0' po dokonaniu konwersji."
+    },
+    {
+      "id": 311,
+      "questionText": "Które z podanych źródeł mogą służyć jako napięcie odniesienia (Vref) dla przetwornika A/D?",
+      "image": "",
+      "type": "multiple-choice",
+      "tags": ["przetwornik AD", "Vref", "konfiguracja"],
+      "options": [
+        "Napięcie zasilające mikrokontroler (Vdd)",
+        "Wewnętrzne źródło referencyjne 1.2V",
+        "Napięcie podane na nóżkę RA3/AN3",
+        "Masa (GND)"
+      ],
+      "correctAnswers": [0, 2],
+      "explanation": "Wartość konwersji może być odniesiona zarówno do napięcia zasilającego Vdd, jak i do napięcia referencyjnego podanego na nóżkę RA3."
+    },
+    {
+      "id": 312,
+      "questionText": "Jaką wartość należy wpisać do bitów PCFG2:PCFG0 w rejestrze ADCON1, aby wszystkie porty A i E były wejściami cyfrowymi, a Vref pochodziło z Vdd?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "konfiguracja", "ADCON1", "porty"],
+      "options": [
+        "000",
+        "001",
+        "110 lub 111",
+        "101"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Ustawienie bitów PCFG na '11x' (110 lub 111) konfiguruje wszystkie porty (RAx, REx) jako cyfrowe (D)."
+    },
+    {
+      "id": 313,
+      "questionText": "W przykładowym kodzie, instrukcja `ADCON1bits.PCFG = 0b100;` powoduje, że:",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kod", "ADCON1"],
+      "options": [
+        "Wszystkie kanały są analogowe, a Vref to Vdd",
+        "RA0, RA1 są analogowe, reszta cyfrowa, a Vref to Vdd",
+        "RA0, RA1, RA3 są analogowe, reszta cyfrowa, a Vref to RA3",
+        "Wszystkie kanały są cyfrowe"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Zgodnie z tabelą dla PCFG, wartość '100' ustawia RA0 i RA1 jako wejścia analogowe (A), a resztę jako cyfrowe (D), z Vref równym Vdd."
+    },
+    {
+      "id": 314,
+      "questionText": "Co robi pętla `while(ADCON0bits.GO)` w przykładowym kodzie?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kod", "konwersja"],
+      "options": [
+        "Inicjalizuje konwersję",
+        "Zapisuje wynik do zmiennej",
+        "Czeka na zakończenie konwersji",
+        "Ustawia kanał pomiarowy"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Pętla `while(ADCON0bits.GO)` jest pętlą oczekującą. Wykonuje się tak długo, jak bit GO jest ustawiony na '1' (konwersja w trakcie), i kończy się, gdy bit ten zostanie wyzerowany (konwersja zakończona)."
+    },
+    {
+      "id": 315,
+      "questionText": "Na której nóżce fizycznie znajduje się wejście analogowe kanału 0 (AN0)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kanały", "piny"],
+      "options": [
+        "RA1",
+        "RA0",
+        "RE0",
+        "RC0"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Kanał 0 (AN0) jest przypisany do nóżki RA0."
+    },
+    {
+      "id": 316,
+      "questionText": "Aby użyć nóżki RA3 jako źródła napięcia odniesienia (Vref), jaką wartość muszą przyjąć bity PCFG2:PCFG0?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "Vref", "ADCON1"],
+      "options": [
+        "Dowolną parzystą",
+        "Dowolną nieparzystą",
+        "Tylko 000",
+        "Tylko 111"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Z tabeli konfiguracyjnej PCFG wynika, że aby użyć RA3 jako Vref, wartość bitów PCFG musi być nieparzysta (001, 011, 101)."
+    },
+    {
+      "id": 317,
+      "questionText": "Które wejścia analogowe są dostępne tylko w mikrokontrolerach serii PIC16F74/77?",
+      "image": "",
+      "type": "multiple-choice",
+      "tags": ["przetwornik AD", "kanały", "specyfikacja"],
+      "options": [
+        "AN2 (RA2)",
+        "AN4 (RA5)",
+        "AN5 (RE0)",
+        "AN7 (RE2)"
+      ],
+      "correctAnswers": [2, 3],
+      "explanation": "Kanały od AN5 do AN7 są dostępne tylko w wersjach 8-kanałowych (PIC16F74/77)."
+    },
+    {
+      "id": 318,
+      "questionText": "Co się stanie po wykonaniu instrukcji `wynik = ADRES;` w przykładowym kodzie?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kod", "rejestry"],
+      "options": [
+        "Rozpocznie się nowa konwersja",
+        "Wartość z rejestru ADRES zostanie skopiowana do zmiennej 'wynik'",
+        "Zmienna 'wynik' zostanie wyzerowana",
+        "Adres rejestru ADRES zostanie zapisany do zmiennej 'wynik'"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Ta instrukcja powoduje przypisanie 8-bitowej wartości z rejestru wyniku konwersji (ADRES) do zmiennej o nazwie 'wynik'."
+    },
+    {
+      "id": 319,
+      "questionText": "Wybór częstotliwości taktowania FRC (oscylator RC) dla przetwornika A/D wymaga ustawienia bitów ADCS1:ADCS0 na:",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "oscylator", "ADCON0"],
+      "options": [
+        "00",
+        "01",
+        "10",
+        "11"
+      ],
+      "correctAnswers": [3],
+      "explanation": "Wartość '11' na bitach ADCS1:ADCS0 wybiera zewnętrzny oscylator RC (FRC) jako źródło taktowania przetwornika."
+    },
+    {
+      "id": 320,
+      "questionText": "Jaki jest cel ponownego ustawiania bitu `ADCON0bits.GO=1;` wewnątrz pętli `while(1)` w przykładowym kodzie?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kod", "konwersja"],
+      "options": [
+        "To jest błąd w kodzie, powinno być wykonane tylko raz",
+        "Aby zapewnić ciągłe, cykliczne wykonywanie pomiarów",
+        "Aby zmienić kanał pomiarowy",
+        "Aby zatrzymać pracę przetwornika"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Ustawianie bitu GO na '1' w pętli `while(1)` po każdym odczycie wyniku inicjuje kolejną konwersję, co pozwala na ciągłe monitorowanie wartości analogowej."
+    },
+    {
+      "id": 321,
+      "questionText": "Ile rejestrów specjalnych dedykowanych dla przetwornika A/D jest opisanych w dokumencie?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "SFR"],
+      "options": [
+        "Jeden",
+        "Dwa",
+        "Trzy",
+        "Cztery"
+      ],
+      "correctAnswers": [2],
+      "explanation": "W dokumencie opisane są trzy rejestry specjalne przetwornika A/D: ADRES, ADCON0 oraz ADCON1."
+    },
+    {
+      "id": 322,
+      "questionText": "Chcąc skonfigurować porty tak, aby RA0, RA1, RA2, RA5 i RA3 były wejściami analogowymi, a Vref pochodziło z nóżki RA3, jaką wartość należy wpisać na bity PCFG?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "konfiguracja", "ADCON1"],
+      "options": [
+        "000",
+        "001",
+        "011",
+        "101"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Wartość PCFG równa '001' konfiguruje porty RA0, RA1, RA2, RA5, a także porty RE (jeśli istnieją) jako analogowe, a nóżkę RA3 jako źródło napięcia Vref."
+    },
+    {
+      "id": 323,
+      "questionText": "Które bity w rejestrze ADCON1 są niezaimplementowane i zawsze czytane jako '0'?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON1"],
+      "options": [
+        "Bity 2-0",
+        "Bity 7-3",
+        "Bit 7",
+        "Bit 0"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Bity od 7 do 3 w rejestrze ADCON1 są oznaczone jako U-0, co oznacza, że są niezaimplementowane i odczytywane jako zero."
+    },
+    {
+      "id": 324,
+      "questionText": "Na której nóżce znajduje się wejście analogowe kanału 6 (AN6)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kanały", "piny"],
+      "options": [
+        "RE0",
+        "RE1",
+        "RE2",
+        "RA3"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Kanał 6 (AN6) jest przypisany do nóżki RE1 i jest dostępny tylko w mikrokontrolerach z 8 kanałami A/D."
+    },
+    {
+      "id": 325,
+      "questionText": "Jaką wartość powinien mieć rejestr ADCON0, aby wybrać kanał 2 (AN2), włączyć moduł A/D, ale nie rozpoczynać jeszcze konwersji i używać Fosc/8?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "rejestry", "ADCON0"],
+      "options": [
+        "0b01010001",
+        "0b01010101",
+        "0b01010011",
+        "0b01001001"
+      ],
+      "correctAnswers": [3],
+      "explanation": "ADCS=01 (Fosc/8), CHS=010 (kanał 2), GO=0 (stop), ADON=1 (włączony). To daje 0b01010001. A, chwila, bity są inaczej ułożone. ADCS1:0, CHS2:0, GO/DONE:0, ADON:0. ADCS1:0=01, CHS2:0=010, GO=0, ADON=1. To daje 01010001. A nie, CHS to bity 5,4,3. Więc 01 010 0 0 1. To jest 0b01010001. A nie, Fosc/8 to 01. Więc ADCS1:0=01. Kanał 2 to CHS=010. GO=0, ADON=1. Łącząc: 01010001. Bity 7-6: ADCS1:ADCS0 = 01 (Fosc/8). Bity 5-3: CHS2:CHS0 = 010 (Kanał 2). Bit 2: GO/DONE = 0 (stop). Bit 0: ADON = 1 (włączony). Razem: 01010001 binarnie, co jest równe 0x51."
+    },
+    {
+      "id": 326,
+      "questionText": "Co się stanie jeśli spróbujesz odczytać rejestr ADRES w trakcie trwania konwersji?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "konwersja", "rejestry"],
+      "options": [
+        "Odczytasz wynik z poprzedniej, zakończonej konwersji",
+        "Mikrokontroler zawiesi się do czasu zakończenia konwersji",
+        "Odczytana wartość będzie losowa lub niepoprawna",
+        "Spowoduje to przerwanie konwersji"
+      ],
+      "correctAnswers": [0],
+      "explanation": "Rejestr ADRES przechowuje wynik ostatniej zakończonej konwersji. Nowy wynik jest wpisywany dopiero po tym, jak bit GO/DONE zostanie automatycznie wyzerowany przez sprzęt."
+    },
+    {
+      "id": 327,
+      "questionText": "Konfiguracja PCFG w ADCON1 na '010' oznacza, że:",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "konfiguracja", "ADCON1"],
+      "options": [
+        "Wszystkie kanały są analogowe, a Vref to Vdd",
+        "RA0, RA1, RA2, RA5, RA3 są analogowe, a port E cyfrowy; Vref to Vdd",
+        "RA0 jest analogowy, a reszta cyfrowa",
+        "Wszystkie kanały są cyfrowe"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Zgodnie z tabelą, wartość '010' konfiguruje wejścia na porcie A jako analogowe, a na porcie E (dla wersji 8-kanałowej) jako cyfrowe. Napięciem odniesienia jest Vdd."
+    },
+    {
+      "id": 328,
+      "questionText": "Które z poniższych stwierdzeń dotyczących przetwornika A/D w PIC16F7x jest fałszywe?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "specyfikacja"],
+      "options": [
+        "Posiada dedykowany rejestr wyniku konwersji (ADRES)",
+        "Może korzystać z napięcia zasilania jako referencji",
+        "Wynik konwersji ma zawsze 10 bitów",
+        "Jego pracą sterują rejestry ADCON0 i ADCON1"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Wynik konwersji w opisywanych mikrokontrolerach jest 8-bitowy, a nie 10-bitowy."
+    },
+    {
+      "id": 329,
+      "questionText": "Wybór kanału 7 (RE2/AN7) wymaga ustawienia bitów CHS2:CHS0 na wartość:",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kanały", "ADCON0"],
+      "options": [
+        "111",
+        "110",
+        "101",
+        "100"
+      ],
+      "correctAnswers": [0],
+      "explanation": "Zgodnie z tabelą w dokumencie, wybór kanału 7 wymaga ustawienia bitów CHS2:CHS0 na wartość binarną '111'."
+    },
+    {
+      "id": 330,
+      "questionText": "Jaki jest cel instrukcji `ADCON0 = 0;` na początku funkcji `main` w przykładowym kodzie?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["przetwornik AD", "kod", "inicjalizacja"],
+      "options": [
+        "Rozpoczęcie konwersji na kanale 0",
+        "Wyzerowanie wszystkich bitów w rejestrze ADCON0 w celu bezpiecznej inicjalizacji",
+        "Włączenie przetwornika A/D z domyślnymi ustawieniami",
+        "Ustawienie najszybszego zegara dla przetwornika"
+      ],
+      "correctAnswers": [1],
+      "explanation": "Instrukcja `ADCON0 = 0;` zeruje cały rejestr. Jest to dobra praktyka programistyczna, aby zapewnić znany stan początkowy rejestru (np. wyłączony moduł, wybrany kanał 0, zatrzymana konwersja) przed jego dalszą konfiguracją."
+    }
+  ]
+}

@@ -7,92 +7,95 @@ import { act } from '@testing-library/react';
 import TestScreenPage from './TestScreenPage';
 import useTestStore from '../store/testStore';
 
-// Przykładowe dane pytań do testów
+// Mockujemy przykładowe dane pytań, które będą używane w testach.
+// Dzięki temu mamy pełną kontrolę nad danymi i scenariuszami.
 const mockQuestions = [
-    { id: 1, questionText: 'Pytanie 1 (jednokrotny wybór)', type: 'single-choice', options: ['A', 'B', 'C'], correctAnswers: [1], explanation: 'Wyjaśnienie 1' },
-    { id: 2, questionText: 'Pytanie 2 (wielokrotny wybór)', type: 'multiple-choice', options: ['X', 'Y', 'Z'], correctAnswers: [0, 2], explanation: 'Wyjaśnienie 2' },
+    { id: 'q1', questionText: 'Jakiego koloru jest niebo?', type: 'single-choice', options: ['Zielonego', 'Niebieskiego', 'Czerwonego'], correctAnswers: [1], explanation: 'Niebo w dzień jest zazwyczaj niebieskie z powodu rozpraszania Rayleigha.' },
+    { id: 'q2', questionText: 'Które z poniższych są planetami?', type: 'multiple-choice', options: ['Mars', 'Księżyc', 'Jowisz'], correctAnswers: [0, 2], explanation: 'Księżyc jest naturalnym satelitą Ziemi, a nie planetą.' },
 ];
 
-describe('TestScreenPage - odpowiadanie na pytania', () => {
+describe('TestScreenPage - Scenariusze rozwiązywania testu', () => {
+    const user = userEvent.setup();
 
-    // Przed każdym testem resetujemy stan i ustawiamy go tak, jakby test się właśnie rozpoczął
+    // Przed każdym testem ustawiamy stan tak, jakby test właśnie się rozpoczął.
     beforeEach(() => {
         act(() => {
             useTestStore.getState().resetTest();
-            // Symulujemy stan po rozpoczęciu testu
             useTestStore.setState({ 
                 view: 'test', 
                 currentQuestions: mockQuestions,
                 currentQuestionIndex: 0,
+                userAnswers: {},
+                score: 0,
             });
         });
     });
 
-    test('powinien wyświetlić pierwsze pytanie i opcje odpowiedzi', () => {
-        render(<TestScreenPage />);
-        expect(screen.getByText('Pytanie 1 (jednokrotny wybór)')).toBeInTheDocument();
-        expect(screen.getByLabelText('A')).toBeInTheDocument();
-        expect(screen.getByLabelText('B')).toBeInTheDocument();
-        expect(screen.getByLabelText('C')).toBeInTheDocument();
-    });
-
-    test('powinien pozwolić na zaznaczenie odpowiedzi i jej zatwierdzenie', async () => {
-        const user = userEvent.setup();
+    test('powinien wyświetlić pierwsze pytanie wraz z opcjami odpowiedzi', () => {
         render(<TestScreenPage />);
         
-        const optionB = screen.getByLabelText('B'); // Poprawna odpowiedź
+        // Sprawdzamy, czy tekst pytania jest widoczny.
+        expect(screen.getByText(mockQuestions[0].questionText)).toBeInTheDocument();
+        // Opcje odpowiedzi to divy, więc szukamy ich po tekście, który zawierają.
+        expect(screen.getByText('Zielonego')).toBeInTheDocument();
+        expect(screen.getByText('Niebieskiego')).toBeInTheDocument();
+        expect(screen.getByText('Czerwonego')).toBeInTheDocument();
+    });
+
+    test('powinien pozwolić na zaznaczenie poprawnej odpowiedzi, zatwierdzenie jej i zaliczenie punktu', async () => {
+        render(<TestScreenPage />);
+        
+        const correctAnswerOption = screen.getByText('Niebieskiego');
         const confirmButton = screen.getByRole('button', { name: /zatwierdź/i });
 
-        // Użytkownik wybiera opcję B
-        await user.click(optionB);
-        expect(useTestStore.getState().userAnswers[1]).toEqual([1]);
+        // Użytkownik klika na poprawną odpowiedź.
+        await user.click(correctAnswerOption);
+        
+        // Sprawdzamy, czy odpowiedź została zapisana w stanie (ale jeszcze nie oceniona).
+        expect(useTestStore.getState().userAnswers['q1']).toEqual([1]);
 
-        // Użytkownik klika "Zatwierdź"
+        // Użytkownik klika przycisk "Zatwierdź".
         await user.click(confirmButton);
         
-        // Sprawdzamy, czy wynik się zwiększył
+        // Sprawdzamy, czy punkt został przyznany.
         expect(useTestStore.getState().score).toBe(1);
-        
-        // Sprawdzamy, czy pojawiło się wyjaśnienie
-        expect(screen.getByText('Wyjaśnienie 1')).toBeInTheDocument();
+        // Sprawdzamy, czy na ekranie pojawiło się wyjaśnienie.
+        expect(screen.getByText(mockQuestions[0].explanation)).toBeInTheDocument();
     });
 
-    test('powinien przejść do następnego pytania po kliknięciu "Następne pytanie"', async () => {
-        const user = userEvent.setup();
+    test('powinien przejść do następnego pytania po kliknięciu przycisku "Dalej"', async () => {
         render(<TestScreenPage />);
 
-        // Symulujemy odpowiedź na pierwsze pytanie
-        await user.click(screen.getByLabelText('A')); // Nieważne co, byleby aktywować przycisk
+        // Symulujemy cykl odpowiedzi na pierwsze pytanie.
+        await user.click(screen.getByText('Niebieskiego'));
         await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
 
-        // Pojawia się przycisk "Następne pytanie"
-        const nextButton = screen.getByRole('button', { name: /następne pytanie/i });
+        // Po zatwierdzeniu pojawia się przycisk "Dalej".
+        const nextButton = screen.getByRole('button', { name: /dalej/i });
         await user.click(nextButton);
 
-        // Sprawdzamy, czy stan się zaktualizował
+        // Sprawdzamy, czy indeks pytania w stanie został zaktualizowany.
         expect(useTestStore.getState().currentQuestionIndex).toBe(1);
-
-        // Sprawdzamy, czy na ekranie jest treść drugiego pytania
-        expect(screen.getByText('Pytanie 2 (wielokrotny wybór)')).toBeInTheDocument();
+        // Sprawdzamy, czy na ekranie jest już treść drugiego pytania.
+        expect(screen.getByText(mockQuestions[1].questionText)).toBeInTheDocument();
     });
 
-    test('powinien zakończyć test po ostatnim pytaniu', async () => {
-        const user = userEvent.setup();
-        // Ustawiamy test na ostatnie pytanie
+    test('powinien zakończyć test i pokazać przycisk "Zobacz wyniki" po ostatnim pytaniu', async () => {
+        // Ustawiamy stan tak, aby test był na ostatnim pytaniu.
         act(() => {
             useTestStore.setState({ currentQuestionIndex: 1 });
         });
         render(<TestScreenPage />);
 
-        // Odpowiadamy na ostatnie pytanie
-        await user.click(screen.getByLabelText('X'));
+        // Użytkownik odpowiada na ostatnie pytanie.
+        await user.click(screen.getByText('Mars'));
         await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
-
-        // Klikamy "Następne pytanie"
-        const nextButton = screen.getByRole('button', { name: /następne pytanie/i });
-        await user.click(nextButton);
         
-        // Sprawdzamy, czy widok zmienił się na 'results'
+        // Na ostatnim pytaniu przycisk do nawigacji zmienia tekst.
+        const finishButton = screen.getByRole('button', { name: /zobacz wyniki/i });
+        await user.click(finishButton);
+        
+        // Sprawdzamy, czy widok w stanie zmienił się na 'results', co oznacza koniec testu.
         expect(useTestStore.getState().view).toBe('results');
     });
 });

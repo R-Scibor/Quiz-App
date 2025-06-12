@@ -17,7 +17,8 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        // The container is simplified to just center the content
+        <div className="flex items-center justify-center min-h-screen p-4">
            {renderView()}
         </div>
     );

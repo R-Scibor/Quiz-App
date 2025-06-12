@@ -2,71 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  color: theme('colors.brand-text');
+  background-color: theme('colors.brand-background');
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Cpath d='M0 10 L100 90 M20 0 L100 80 M40 0 L100 60 M70 0 L100 30 M0 30 L70 100 M0 60 L40 100 M0 80 L20 100' stroke='%23901E3E' stroke-width='0.5' stroke-opacity='0.2'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+@layer components {
+  .main-card {
+    @apply bg-card-bg border border-card-border rounded-xl shadow-card;
+    backdrop-filter: blur(12px);
+  }
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-button:hover {
-  border-color: #646cff;
+.fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+.option-btn {
+    @apply bg-option-bg border border-card-border;
+    transition: all 0.2s ease;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.option-btn:not(.disabled):hover {
+    @apply bg-card-border border-brand-primary -translate-y-0.5;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.option-selected {
+    background-color: #901E3E;
+    border-color: #901E3E;   
+}
+
+.option-btn.option-selected:hover {
+    background-color: #901E3E; 
+    border-color: #DC2525;     
+}
+
+/* Style dla stanów odpowiedzi */
+.option-btn.correct {
+    @apply bg-green-300 border-green-400 text-gray-900 font-semibold;
+}
+.option-btn.incorrect {
+    @apply bg-red-800/70 border-red-700 text-gray-200;
+}
+.option-btn.disabled {
+    @apply cursor-not-allowed opacity-70;
+}
+
+/* Animacja dla tekstu pytania */
+@keyframes questionIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.question-animate-in { animation: questionIn 0.4s ease-out forwards; }
+
+.btn-primary {
+    @apply bg-brand-primary text-white font-bold rounded-full transition-all duration-300 shadow-primary;
+    /* Poniższe właściwości naprawiają pozycję ikony i wygląd */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem; /* Odstęp między tekstem a ikoną */
+}
+.btn-primary:hover {
+    @apply bg-brand-primary-hover shadow-primary-hover -translate-y-0.5;
+}
+.btn-primary:disabled {
+    @apply bg-gray-600 shadow-none cursor-not-allowed transform-none;
+}
+
+.progress-ring__circle {
+    transition: stroke-dashoffset 1s ease-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
 }

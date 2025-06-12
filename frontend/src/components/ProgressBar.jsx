@@ -5,14 +5,16 @@ const ProgressBar = () => {
     const { currentQuestionIndex, currentQuestions } = useTestStore();
     const total = currentQuestions.length;
     const current = currentQuestionIndex + 1;
-    const progress = total > 0 ? (current / total) * 100 : 0;
+    const progress = total > 0 ? ((current -1) / total) * 100 : 0;
+    
+    const finalProgress = total > 0 ? (current / total) * 100 : 0;
+
     return (
-        <div className="w-full bg-gray-200 rounded-full h-4 my-4">
-            <div
-                className="bg-blue-600 h-4 rounded-full transition-all"
-                style={{ width: `${progress}%` }}
+        <div className="w-full bg-gray-800 rounded-full h-2.5">
+            <div 
+                className="bg-gradient-to-r from-brand-secondary to-brand-primary h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${finalProgress}%` }}
             ></div>
-            <p className="text-center text-sm font-medium text-gray-700 mt-1">{`Pytanie ${current} z ${total}`}</p>
         </div>
     );
 };

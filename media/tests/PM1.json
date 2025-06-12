@@ -1,127 +1,157 @@
 {
   "category": "Mikrokontrolery",
-  "scope": "Podstawy programowania w C dla mikrokontrolerów",
-  "version": "1.0",
+  "scope": "Typy i rodzaje zmiennych",
+  "version": "1.1",
   "questions": [
     {
       "id": 101,
-      "questionText": "Ile bajtów zajmuje typ zmiennej 'signed short' w kompilatorze MPLAB XC8?",
+      "questionText": "Jaki jest główny cel stosowania typu 'unsigned' w deklaracji zmiennej?",
       "image": "",
       "type": "single-choice",
-      "tags": ["typy zmiennych", "rozmiar", "MPLAB XC8"],
+      "tags": ["typy zmiennych", "kryterium doboru", "unsigned"],
       "options": [
-        "1 bajt",
-        "2 bajty",
-        "4 bajty",
-        "8 bajtów"
+        "Zwiększenie rozmiaru zmiennej w pamięci.",
+        "Umożliwienie przechowywania wartości ujemnych.",
+        "Przeznaczenie całego zakresu zmiennej do przechowywania tylko wartości dodatnich (i zera).",
+        "Zmniejszenie precyzji liczby."
       ],
-      "correctAnswers": [1],
-      "explanation": "Zgodnie z tabelą, typ 'signed short' zajmuje 16 bitów , co jest równe 2 bajtom (ponieważ 1 bajt to 8 bitów )."
+      "correctAnswers": [2],
+      "explanation": "Typ 'unsigned' informuje kompilator, że zmienna będzie przechowywać tylko wartości nieujemne (dodatnie oraz zero), co pozwala na dwukrotne zwiększenie maksymalnej przechowywanej wartości w porównaniu do typu 'signed' o tym samym rozmiarze."
     },
     {
       "id": 102,
-      "questionText": "Jaki jest maksymalny zakres wartości dla typu 'unsigned int'?",
+      "questionText": "Ile bitów w kompilatorze MPLAB XC8 zajmuje standardowy typ 'int'?",
       "image": "",
       "type": "single-choice",
-      "tags": ["typy zmiennych", "zakres", "unsigned"],
+      "tags": ["typy zmiennych", "rozmiar", "int"],
       "options": [
-        "32767",
-        "65535",
-        "2147483647",
-        "4294967295"
+        "8 bitów",
+        "16 bitów",
+        "24 bity",
+        "32 bity"
       ],
       "correctAnswers": [1],
-      "explanation": "Maksymalna wartość dla typu 'unsigned int' jest zdefiniowana przez makro 'UINT_MAX' i wynosi 65535."
+      "explanation": "Zgodnie z tabelą w dokumencie, typy 'signed int' oraz 'unsigned int' zajmują 16 bitów."
     },
     {
       "id": 103,
-      "questionText": "Które z poniższych typów zmiennych są typami 32-bitowymi w kompilatorze MPLAB XC8?",
+      "questionText": "Który typ zmiennej jest najbardziej optymalny pod względem zajętości pamięci do przechowania wyniku z 8-bitowego przetwornika A/D (zakres 0-255)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["kryterium doboru", "pamięć", "optymalizacja"],
+      "options": [
+        "signed char",
+        "unsigned char",
+        "signed short",
+        "bit"
+      ],
+      "correctAnswers": [1],
+      "explanation": "'unsigned char' zajmuje 8 bitów i ma zakres od 0 do 255, co idealnie pasuje do przechowywanej wartości. 'signed char' ma niepotrzebny zakres ujemny, a 'signed short' zajmuje dwa razy więcej pamięci."
+    },
+    {
+      "id": 104,
+      "questionText": "Ile bitów w kompilatorze MPLAB XC8 zajmuje typ 'signed long'?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["typy zmiennych", "rozmiar", "long"],
+      "options": [
+        "8 bitów",
+        "16 bitów",
+        "24 bity",
+        "32 bity"
+      ],
+      "correctAnswers": [3],
+      "explanation": "Zgodnie z tabelą w dokumencie, typ 'signed long' zajmuje 32 bity, co pozwala na przechowywanie bardzo dużych liczb całkowitych ze znakiem."
+    },
+    {
+      "id": 105,
+      "questionText": "Czym różni się typ 'signed char' od 'unsigned char'?",
+      "image": "",
+      "type": "multiple-choice",
+      "tags": ["typy zmiennych", "signed", "unsigned", "char"],
+      "options": [
+        "Zakresem przechowywanych wartości.",
+        "Rozmiarem w pamięci.",
+        "Sposobem interpretacji najbardziej znaczącego bitu (bitu znaku).",
+        "Szybkością operacji arytmetycznych."
+      ],
+      "correctAnswers": [0, 2],
+      "explanation": "Oba typy zajmują 8 bitów. Różnią się zakresem ('signed': -128 do 127, 'unsigned': 0 do 255) oraz interpretacją ósmego bitu, który w typie 'signed' jest bitem znaku."
+    },
+    {
+      "id": 106,
+      "questionText": "W kompilatorze MPLAB XC8 dla mikrokontrolerów PIC16F7x, chcąc przechowywać flagę (np. włączony/wyłączony), jakiego typu zmiennej najlepiej użyć dla maksymalnej oszczędności pamięci?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["kryterium doboru", "pamięć", "flaga"],
+      "options": [
+        "bit",
+        "signed char",
+        "unsigned int",
+        "bool"
+      ],
+      "correctAnswers": [0],
+      "explanation": "Typ 'bit' jest specjalnym typem w kompilatorze XC8, który zajmuje tylko 1 bit pamięci i jest idealny do przechowywania wartości logicznych (0 lub 1)."
+    },
+    {
+      "id": 107,
+      "questionText": "Które z poniższych typów danych są typami 32-bitowymi?",
       "image": "",
       "type": "multiple-choice",
       "tags": ["typy zmiennych", "rozmiar"],
       "options": [
-        "signed int",
+        "unsigned int",
+        "signed long",
         "unsigned long",
-        "signed long long",
-        "signed long"
+        "signed long long"
       ],
       "correctAnswers": [1, 2, 3],
-      "explanation": "Typy 'unsigned long' i 'signed long' zawsze zajmują 32 bity. Typ 'signed long long' może zajmować 32 lub 64 bity. 'signed int' jest 16-bitowy."
-    },
-    {
-      "id": 104,
-      "questionText": "Jaka jest minimalna wartość, jaką może przyjąć zmienna typu 'signed char'?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["typy zmiennych", "zakres", "signed"],
-      "options": [
-        "0",
-        "-127",
-        "-128",
-        "127"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Minimalna wartość dla typu 'signed char' jest zdefiniowana przez makro 'SCHAR_MIN' i wynosi -128."
-    },
-    {
-      "id": 105,
-      "questionText": "Kompilator MPLAB XC8 wspiera zmienne o jakich rozmiarach?",
-      "image": "",
-      "type": "multiple-choice",
-      "tags": ["kompilator", "MPLAB XC8", "rozmiar"],
-      "options": [
-        "1-bajtowe",
-        "2-bajtowe",
-        "4-bajtowe",
-        "8-bajtowe"
-      ],
-      "correctAnswers": [0, 1, 2, 3],
-      "explanation": "Kompilator MPLAB XC8 wspiera zmienne 1, 2, 4 oraz 8-bajtowe, a także zmienne bitowe."
-    },
-    {
-      "id": 106,
-      "questionText": "Do przechowywania wyniku pomiaru z 8-bitowego przetwornika A/C, który przyjmuje tylko wartości dodatnie, najlepiej użyć typu:",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["dobór zmiennej", "kryteria", "unsigned"],
-      "options": [
-        "bit",
-        "signed char",
-        "unsigned char",
-        "signed short"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Typ 'unsigned char' jest 8-bitowy  i przechowuje wartości w zakresie od 0 do 255, co jest idealne dla 8-bitowego wyniku bez znaku."
-    },
-    {
-      "id": 107,
-      "questionText": "Który z poniższych typów danych jest typem 'unsigned integer' (liczbą całkowitą bez znaku)?",
-      "image": "",
-      "type": "multiple-choice",
-      "tags": ["typy zmiennych", "unsigned"],
-      "options": [
-        "bit",
-        "signed char",
-        "uint24",
-        "unsigned long"
-      ],
-      "correctAnswers": [0, 2, 3],
-      "explanation": "Zgodnie z podaną tabelą, 'bit', 'uint24' oraz 'unsigned long' są typami liczb całkowitych bez znaku ('Unsigned integer')."
+      "explanation": "Zgodnie z dokumentacją, 'signed long' i 'unsigned long' są 32-bitowe. Typ 'signed long long' w kompilatorze XC8 również może być 32-bitowy (lub 64-bitowy w zależności od ustawień)."
     },
     {
       "id": 108,
-      "questionText": "Chcąc zliczać zdarzenia do maksymalnej wartości 30 000, jakiego minimalnego typu zmiennej należy użyć, aby zapewnić poprawność działania i oszczędność pamięci?",
+      "questionText": "Jakie jest podstawowe kryterium doboru typu zmiennej, które należy wziąć pod uwagę w pierwszej kolejności?",
       "image": "",
-      "type": "multiple-choice",
-      "tags": ["dobór zmiennej", "kryteria", "zakres"],
+      "type": "single-choice",
+      "tags": ["kryterium doboru"],
       "options": [
-        "unsigned char",
-        "signed int",
-        "unsigned int",
-        "signed long"
+        "Nazwa zmiennej",
+        "Zakres i rodzaj (ze znakiem lub bez) wartości, które zmienna ma przechowywać",
+        "Szybkość kompilacji programu",
+        "Łatwość wpisywania nazwy typu"
       ],
-      "correctAnswers": [2,3],
-      "explanation": "Typ 'unsigned char' ma maksymalny zakres 255. 'signed int' ma maksymalny zakres 32767. 'unsigned int' ma maksymalny zakres 65535. 'unsigned int' jest optymalnym wyborem, ponieważ jego zakres jest wystarczający, a jest mniejszy niż 'signed long'."
+      "correctAnswers": [1],
+      "explanation": "Najważniejsze jest, aby typ zmiennej był w stanie poprawnie przechować wszystkie oczekiwane wartości. Należy przeanalizować, czy potrzebne są wartości ujemne i jaka jest maksymalna spodziewana wartość."
+    },
+    {
+      "id": 109,
+      "questionText": "Co oznacza wartość makra 'SCHAR_MIN'?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["typy zmiennych", "zakres", "makra"],
+      "options": [
+        "Maksymalną wartość dla 'unsigned char'",
+        "Minimalną wartość dla 'signed char'",
+        "Rozmiar w bitach dla typu 'char'",
+        "Początkową wartość dla typu 'char'"
+      ],
+      "correctAnswers": [1],
+      "explanation": "'SCHAR_MIN' definiuje minimalną wartość, jaką może przyjąć zmienna typu 'signed char', która wynosi -128."
+    },
+    {
+      "id": 110,
+      "questionText": "Do przechowywania numeru kanału ADC, który może przyjmować wartości od 0 do 7, który typ zmiennej jest wystarczający i jednocześnie najbardziej oszczędny pamięciowo?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["kryterium doboru", "optymalizacja", "pamięć"],
+      "options": [
+        "unsigned short",
+        "int24",
+        "signed long",
+        "unsigned char"
+      ],
+      "correctAnswers": [3],
+      "explanation": "Wartości od 0 do 7 mieszczą się w zakresie typu 'unsigned char' (0-255), który zajmuje tylko 8 bitów. Wszystkie pozostałe typy zajmują znacznie więcej pamięci, co jest nieefektywne dla tak małego zakresu."
     }
   ]
 }

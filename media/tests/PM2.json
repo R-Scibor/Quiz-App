@@ -1,11 +1,11 @@
 {
   "category": "Mikrokontrolery",
-  "scope": "Organizacja Pamięci",
+  "scope": "Organizacja pamięci",
   "version": "1.0",
   "questions": [
     {
       "id": 201,
-      "questionText": "Jakie dwa podstawowe rodzaje pamięci posiada mikrokontroler z serii PIC16F7X?",
+      "questionText": "Jakie dwa podstawowe, oddzielone od siebie rodzaje pamięci posiadają mikrokontrolery z serii PIC16F7X?",
       "image": "",
       "type": "single-choice",
       "tags": ["pamięć", "architektura"],
@@ -16,115 +16,85 @@
         "Pamięć stosu i sterty"
       ],
       "correctAnswers": [1],
-      "explanation": "Mikrokontroler posiada dwa rodzaje pamięci: pamięć programu oraz pamięć danych, które mają oddzielne magistrale."
+      "explanation": "Mikrokontroler posiada dwa główne rodzaje pamięci: pamięć programu (do przechowywania kodu) oraz pamięć danych (do przechowywania zmiennych i rejestrów)."
     },
     {
       "id": 202,
-      "questionText": "Jaki rozmiar ma licznik programu (PC) w mikrokontrolerach PIC16F7X?",
+      "questionText": "Czy w architekturze mikrokontrolerów PIC16F7X możliwy jest jednoczesny dostęp do pamięci programu i pamięci danych?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć programu", "licznik programu", "PC"],
+      "tags": ["pamięć", "architektura", "magistrale"],
       "options": [
-        "8 bitów",
-        "13 bitów",
-        "14 bitów",
-        "16 bitów"
+        "Nie, mikrokontroler może w danym cyklu odwołać się tylko do jednego rodzaju pamięci.",
+        "Tak, ponieważ obie pamięci posiadają oddzielne magistrale.",
+        "Tylko podczas wykonywania specjalnej instrukcji 'MOVMFP'.",
+        "Tylko w trybie debugowania."
       ],
       "correctAnswers": [1],
-      "explanation": "Mikrokontroler posiada 13-bitowy licznik programu (PC), zdolny do zaadresowania 8 tysięcy 14-bitowych słów."
+      "explanation": "Tak, pamięć programu oraz pamięć danych posiadają oddzielne magistrale, dzięki czemu możliwy jest jednoczesny dostęp do każdej z nich. Jest to cecha architektury harwardzkiej."
     },
     {
       "id": 203,
-      "questionText": "Pod jakim adresem w pamięci programu znajduje się wektor przerwania (Interrupt Vector)?",
+      "questionText": "Czym jest pamięć programu w mikrokontrolerze?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć programu", "przerwania", "adres"],
+      "tags": ["pamięć programu", "definicja"],
       "options": [
-        "0000h",
-        "0004h",
-        "0005h",
-        "0800h"
+        "Miejscem do przechowywania zmiennych tymczasowych.",
+        "Obszarem, w którym znajduje się kod programu (sekwencja instrukcji) do wykonania przez procesor.",
+        "Rejestrem przechowującym aktualny stan procesora.",
+        "Pamięcią, która jest kasowana po każdym wyłączeniu zasilania."
       ],
       "correctAnswers": [1],
-      "explanation": "Wektor przerwania (Interrupt Vector) jest zlokalizowany w przestrzeni programu pod adresem 0004h."
+      "explanation": "Pamięć programu zawiera instrukcje, które mikrokontroler ma wykonać. Licznik programu (PC) wskazuje, która instrukcja z tej pamięci ma być wykonana jako następna."
     },
     {
       "id": 204,
-      "questionText": "Ile poziomów ma stos (Stack) w mikrokontrolerach serii PIC16F7X?",
+      "questionText": "Czym jest pamięć danych w mikrokontrolerach z serii PIC?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć programu", "stos"],
+      "tags": ["pamięć danych", "definicja"],
       "options": [
-        "4 poziomy",
-        "8 poziomów",
-        "16 poziomów",
-        "32 poziomy"
+        "Pamięcią tylko do odczytu, przechowującą stałe programu.",
+        "Obszarem podzielonym na banki, który zawiera rejestry specjalne (SFR) i ogólnego przeznaczenia (GPR).",
+        "Miejscem, gdzie przechowywany jest kod programu.",
+        "8-poziomowym stosem do obsługi wywołań funkcji."
       ],
       "correctAnswers": [1],
-      "explanation": "Mikrokontroler z serii PIC16F7X posiada 8-poziomowy stos."
+      "explanation": "Pamięć danych jest zorganizowana w banki i służy do przechowywania danych operacyjnych programu. Składa się z rejestrów specjalnych, które kontrolują pracę mikrokontrolera, oraz rejestrów ogólnego przeznaczenia, działających jak pamięć RAM."
     },
     {
       "id": 205,
-      "questionText": "Jaki jest zakres wbudowanej pamięci programu dla mikrokontrolerów serii PIC16F73/74?",
+      "questionText": "Które bity w rejestrze 'STATUS' są odpowiedzialne za wybór aktywnego banku pamięci danych?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć programu", "PIC16F73/74", "zakres"],
+      "tags": ["pamięć danych", "banki", "rejestr STATUS"],
       "options": [
-        "0005h - 1FFFh",
-        "0000h - 0FFFh",
-        "0005h - 0FFFh",
-        "0800h - 1FFFh"
+        "Z, DC, C",
+        "TO, PD",
+        "RP1, RP0",
+        "IRP"
       ],
       "correctAnswers": [2],
-      "explanation": "Wbudowana pamięć programu (On-Chip Program Memory) dla mikrokontrolerów serii PIC16F73/74 zlokalizowana jest w zakresie 0005h - 0FFFh."
+      "explanation": "Zgodnie z dokumentacją, bity RP1 i RP0 w rejestrze STATUS służą do wyboru jednego z czterech banków pamięci danych (0, 1, 2 lub 3)."
     },
     {
       "id": 206,
-      "questionText": "Za pomocą których bitów w rejestrze STATUS dokonuje się wyboru banku pamięci danych?",
+      "questionText": "Co głównie zawiera pamięć danych mikrokontrolera?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć danych", "banki", "rejestr STATUS"],
+      "tags": ["pamięć danych", "zawartość"],
       "options": [
-        "IRP i RP0",
-        "RP1 i RP0",
-        "TO i PD",
-        "Z i C"
+        "Tylko stos systemowy.",
+        "Instrukcje programu i stałe.",
+        "Rejestry Ogólnego Przeznaczenia (GPR) i Rejestry Funkcji Specjalnych (SFR).",
+        "Wektory resetu i przerwań."
       ],
-      "correctAnswers": [1],
-      "explanation": "Wybór poszczególnego banku odbywa się poprzez skonfigurowanie bitów RP1:RP0 zlokalizowanych w rejestrze STATUS."
+      "correctAnswers": [2],
+      "explanation": "Pamięć danych jest podzielona na dwie główne kategorie: Rejestry Funkcji Specjalnych (SFR), które kontrolują peryferia, i Rejestry Ogólnego Przeznaczenia (GPR), które działają jak pamięć RAM dla zmiennych."
     },
     {
       "id": 207,
-      "questionText": "Ustawienie bitów RP1:RP0 na '10' w rejestrze STATUS aktywuje który bank pamięci danych?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["pamięć danych", "banki", "rejestr STATUS"],
-      "options": [
-        "Bank 0",
-        "Bank 1",
-        "Bank 2",
-        "Bank 3"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Zgodnie z tabelą, ustawienie bitów RP1:RP0 na '10' wybiera Bank 2."
-    },
-    {
-      "id": 208,
-      "questionText": "Które z podanych rejestrów są rejestrami specjalnymi (SFR)?",
-      "image": "",
-      "type": "multiple-choice",
-      "tags": ["pamięć danych", "SFR", "GPR"],
-      "options": [
-        "Rejestry ogólnego przeznaczenia (GPR)",
-        "Rejestr STATUS",
-        "Rejestr PCL",
-        "Pamięć RAM mikrokontrolera"
-      ],
-      "correctAnswers": [1, 2],
-      "explanation": "Pamięć danych zawiera rejestry ogólnego przeznaczenia (GPR) oraz rejestry specjalne (SFR). STATUS i PCL to przykłady SFR."
-    },
-    {
-      "id": 209,
       "questionText": "Jaki jest rozmiar pojedynczego banku pamięci danych?",
       "image": "",
       "type": "single-choice",
@@ -139,184 +109,109 @@
       "explanation": "Każdy z banków zawiera się w przestrzeni adresowej 7Fh, co odpowiada 128 bajtom."
     },
     {
-      "id": 210,
-      "questionText": "Gdzie w banku pamięci zlokalizowane są rejestry specjalne (SFR)?",
+      "id": 208,
+      "questionText": "Gdzie w strukturze banku pamięci danych zazwyczaj znajdują się Rejestry Funkcji Specjalnych (SFR)?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć danych", "SFR", "adres"],
+      "tags": ["pamięć danych", "SFR", "lokalizacja"],
       "options": [
-        "W górnej części przestrzeni adresowej",
-        "W dolnej części przestrzeni adresowej",
-        "Są rozmieszczone losowo",
-        "Zajmują całą przestrzeń banku"
+        "Na najwyższych adresach każdego banku.",
+        "Są rozmieszczone losowo w całej pamięci danych.",
+        "Na najniższych adresach każdego banku.",
+        "Znajdują się wyłącznie w Banku 0."
+      ],
+      "correctAnswers": [2],
+      "explanation": "Dolne rejestry przestrzeni adresowej zarezerwowane są dla rejestrów specjalnych (skr. SFR)."
+    },
+    {
+      "id": 209,
+      "questionText": "Gdzie w strukturze banku pamięci danych zazwyczaj znajdują się Rejestry Ogólnego Przeznaczenia (GPR)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["pamięć danych", "GPR", "lokalizacja"],
+      "options": [
+        "Na adresach bezpośrednio powyżej Rejestrów Funkcji Specjalnych (SFR).",
+        "Na najniższych adresach każdego banku.",
+        "Są wymieszane z rejestrami SFR.",
+        "Znajdują się wyłącznie w Banku 1 i 2."
+      ],
+      "correctAnswers": [0],
+      "explanation": "Powyżej rejestrów specjalnych zlokalizowane są rejestry ogólnego przeznaczenia (skr. GPR)."
+    },
+    {
+      "id": 210,
+      "questionText": "Czym są i do czego służą Rejestry Ogólnego Przeznaczenia (GPR)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["pamięć danych", "GPR", "definicja"],
+      "options": [
+        "Są to rejestry kontrolujące pracę peryferiów, np. timera czy portów I/O.",
+        "Jest to obszar pamięci (pamięć RAM), w którym programista może przechowywać swoje zmienne.",
+        "Są to stałe, niezmienne wartości zapisane fabrycznie w mikrokontrolerze.",
+        "Są to wskaźniki na adresy w pamięci programu."
       ],
       "correctAnswers": [1],
-      "explanation": "Dolne rejestry przestrzeni adresowej banku są zarezerwowane dla rejestrów specjalnych (SFR)."
+      "explanation": "Rejestry GPR to inaczej pamięć RAM mikrokontrolera, dostępna dla programisty do przechowywania zmiennych i danych tymczasowych w trakcie działania programu."
     },
     {
       "id": 211,
-      "questionText": "Jak nazywana jest przestrzeń w pamięci danych zlokalizowana powyżej rejestrów specjalnych?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["pamięć danych", "GPR", "RAM"],
-      "options": [
-        "Pamięć programu",
-        "Pamięć Flash",
-        "Stos",
-        "Pamięć RAM mikrokontrolera"
-      ],
-      "correctAnswers": [3],
-      "explanation": "Powyżej rejestrów specjalnych zlokalizowane są rejestry ogólnego przeznaczenia (GPR), a przestrzeń ta nazywana jest również pamięcią RAM mikrokontrolera."
-    },
-    {
-      "id": 212,
-      "questionText": "Które z poniższych rejestrów specjalnych są zdublowane (lustrzane) w poszczególnych bankach pamięci?",
-      "image": "",
-      "type": "multiple-choice",
-      "tags": ["pamięć danych", "SFR", "banki"],
-      "options": [
-        "PORTA",
-        "STATUS",
-        "PCL",
-        "PCLATH"
-      ],
-      "correctAnswers": [1, 2, 3],
-      "explanation": "Niektóre rejestry specjalne, takie jak PCL, STATUS i PCLATH, zostały zdublowane w poszczególnych bankach."
-    },
-    {
-      "id": 213,
-      "questionText": "Jaki jest główny cel dublowania (tworzenia lustrzanych odpowiedników) niektórych rejestrów specjalnych?",
+      "questionText": "Jaki jest główny cel dublowania (tworzenia lustrzanych odpowiedników) niektórych rejestrów specjalnych w różnych bankach pamięci?",
       "image": "",
       "type": "single-choice",
       "tags": ["pamięć danych", "SFR", "optymalizacja"],
       "options": [
-        "Zwiększenie pojemności pamięci RAM",
-        "Zapewnienie kopii zapasowej danych",
-        "Redukcja kodu programu i przyspieszenie wykonywania instrukcji",
-        "Ułatwienie debugowania programu"
+        "Zwiększenie pojemności pamięci RAM.",
+        "Zapewnienie kopii zapasowej na wypadek błędu zapisu.",
+        "Umożliwienie dostępu do kluczowych rejestrów bez konieczności zmiany banku, co skraca kod i przyspiesza jego wykonanie.",
+        "Jest to cecha historyczna bez praktycznego zastosowania."
       ],
       "correctAnswers": [2],
-      "explanation": "Lustrzane odpowiedniki rejestrów pozwalają na redukcję kodu programu, a co za tym idzie, szybsze wykonywanie poszczególnych instrukcji."
+      "explanation": "Lustrzane odpowiedniki pozwalają na redukcję kodu programu (nie trzeba wstawiać instrukcji zmiany banku) i przyspieszają wykonywanie instrukcji."
+    },
+    {
+      "id": 212,
+      "questionText": "Który z poniższych rejestrów jest przykładem rejestru zdublowanego w różnych bankach pamięci?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["pamięć danych", "SFR", "banki"],
+      "options": [
+        "TMR0",
+        "PORTA",
+        "STATUS",
+        "ADCON0"
+      ],
+      "correctAnswers": [2],
+      "explanation": "Rejestr STATUS jest jednym z kluczowych rejestrów, które posiadają swoje lustrzane odpowiedniki we wszystkich bankach, aby zawsze był do niego łatwy dostęp."
+    },
+    {
+      "id": 213,
+      "questionText": "Co to jest licznik programu (PC - Program Counter)?",
+      "image": "",
+      "type": "single-choice",
+      "tags": ["pamięć programu", "PC"],
+      "options": [
+        "Zmienna zliczająca liczbę wykonanych pętli w programie.",
+        "Rejestr procesora przechowujący adres instrukcji, która ma być wykonana jako następna.",
+        "Specjalna komórka pamięci danych służąca do liczenia zdarzeń zewnętrznych.",
+        "Rejestr używany do wyboru banku pamięci programu."
+      ],
+      "correctAnswers": [1],
+      "explanation": "Licznik programu (PC), inaczej wskaźnik instrukcji (IP), jest fundamentalnym rejestrem procesora, który śledzi pozycję w kodzie programu."
     },
     {
       "id": 214,
-      "questionText": "Pod jakim adresem w Banku 1 znajduje się rejestr TRISA w mikrokontrolerze PIC16F77/76?",
+      "questionText": "Ustawienie bitów RP1:RP0 na '11' spowoduje aktywację którego banku pamięci danych?",
       "image": "",
       "type": "single-choice",
-      "tags": ["pamięć danych", "adres", "SFR", "PIC16F77/76"],
+      "tags": ["pamięć danych", "banki", "rejestr STATUS"],
       "options": [
-        "05h",
-        "85h",
-        "105h",
-        "185h"
-      ],
-      "correctAnswers": [1],
-      "explanation": "W mikrokontrolerach z serii PIC16F77/76, rejestr TRISA znajduje się pod adresem 85h w Banku 1."
-    },
-    {
-      "id": 215,
-      "questionText": "Jaka jest wartość rejestru STATUS po załączeniu zasilania (POR, BOR)?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["rejestry", "reset", "POR", "BOR"],
-      "options": [
-        "0000 0000",
-        "1111 1111",
-        "0001 1xxx",
-        "xxxx xxxx"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Wartość rejestru STATUS po resecie typu POR (Power-on Reset) lub BOR (Brown-out Reset) wynosi '0001 1xxx'."
-    },
-    {
-      "id": 216,
-      "questionText": "Co oznacza wartość 'xxxx xxxx' w kolumnie 'Value on: POR, BOR' dla rejestru TMRO?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["rejestry", "reset", "POR", "BOR"],
-      "options": [
-        "Rejestr jest zawsze zerowany",
-        "Rejestr jest zawsze ustawiany na jedynki",
-        "Wartość w rejestrze jest nieznana (losowa)",
-        "Rejestr nie jest fizycznie zaimplementowany"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Zapis 'xxxx xxxx' oznacza, że wartość danego rejestru (np. TMRO) po resecie jest nieokreślona lub nieznana."
-    },
-    {
-      "id": 217,
-      "questionText": "W którym banku (lub bankach) znajduje się rejestr OPTION_REG?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["pamięć danych", "SFR", "adres"],
-      "options": [
-        "Tylko w Banku 0",
-        "W Banku 0 i 2",
-        "Tylko w Banku 1",
-        "W Banku 1 i 3"
+        "Bank 0",
+        "Bank 1",
+        "Bank 2",
+        "Bank 3"
       ],
       "correctAnswers": [3],
-      "explanation": "Rejestr OPTION_REG znajduje się pod adresem 81h w Banku 1 oraz pod adresem 181h w Banku 3."
-    },
-    {
-      "id": 218,
-      "questionText": "Które z podanych rejestrów NIE są implementowane na urządzeniach 28-pinowych (np. PIC16F73)?",
-      "image": "",
-      "type": "multiple-choice",
-      "tags": ["pamięć danych", "PIC16F73", "hardware"],
-      "options": [
-        "PORTC",
-        "PORTD",
-        "PORTE",
-        "TRISB"
-      ],
-      "correctAnswers": [1, 2],
-      "explanation": "Zgodnie z uwagą 'Note 1', rejestry takie jak PORTD i PORTE (oraz odpowiadające im TRISD i TRISE) nie są implementowane na urządzeniach 28-pinowych."
-    },
-    {
-      "id": 219,
-      "questionText": "Co to jest rejestr FSR?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["pamięć danych", "SFR", "adresowanie"],
-      "options": [
-        "Rejestr flag statusu",
-        "Licznik programu",
-        "Wskaźnik stosu",
-        "Wskaźnik do pośredniego adresowania pamięci danych"
-      ],
-      "correctAnswers": [3],
-      "explanation": "FSR (File Select Register) to wskaźnik adresu pamięci danych używany do adresowania pośredniego (Indirect Data Memory Address Pointer)."
-    },
-    {
-      "id": 220,
-      "questionText": "Jaka jest wartość rejestru TRISB po resecie POR/BOR?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["rejestry", "reset", "POR", "BOR"],
-      "options": [
-        "0000 0000",
-        "1111 1111",
-        "xxxx xxxx",
-        "0001 1000"
-      ],
-      "correctAnswers": [1],
-      "explanation": "Wartość rejestru kierunku danych dla portu B, TRISB, po resecie wynosi 1111 1111, co konfiguruje wszystkie piny portu B jako wejścia."
-    },
-    {
-      "id": 221,
-      "questionText": "Czym skutkuje odczyt niezimplementowanej lokacji w pamięci programu?",
-      "image": "",
-      "type": "single-choice",
-      "tags": ["pamięć programu", "architektura"],
-      "options": [
-        "Następuje reset mikrokontrolera",
-        "Odczytywana jest wartość '1'",
-        "Odczytywana jest wartość '0'",
-        "Generowane jest przerwanie"
-      ],
-      "correctAnswers": [2],
-      "explanation": "Niezimplementowane lokacje w pamięci programu (Unimplemented Read as '0') są odczytywane jako '0'."
+      "explanation": "Wartość binarna '11' dla bitów RP1:RP0 wybiera Bank 3."
     }
   ]
 }

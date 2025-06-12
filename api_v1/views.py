@@ -37,20 +37,25 @@ class TestListView(APIView):
             # Iteruj po plikach w katalogu z testami
             for test_file in tests_dir.glob('*.json'):
                 with open(test_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    # Zakładamy, że metadane są na najwyższym poziomie w pliku JSON
-                    metadata = {
-                        'category': data.get('category'),
-                        'scope': data.get('scope'),
-                        'version': data.get('version'),
-                        'test_id': test_file.stem  # Nazwa pliku bez rozszerzenia jako ID
-                    }
-                    serializer = TestMetadataSerializer(data=metadata)
-                    if serializer.is_valid():
-                        available_tests.append(serializer.data)
-                    else:
-                        # Można zalogować błąd walidacji dla konkretnego pliku
-                        print(f"Błąd walidacji metadanych w pliku {test_file.name}: {serializer.errors}")
+                    try:
+                        data = json.load(f)
+                        # Sprawdzamy, czy plik zawiera listę 'questions' i czy nie jest ona pusta.
+                        if 'questions' in data and isinstance(data['questions'], list) and len(data['questions']) > 0:
+                            metadata = {
+                                'category': data.get('category'),
+                                'scope': data.get('scope'),
+                                'version': data.get('version'),
+                                'test_id': test_file.stem
+                            }
+                            serializer = TestMetadataSerializer(data=metadata)
+                            if serializer.is_valid():
+                                available_tests.append(serializer.data)
+                            else:
+                                print(f"Błąd walidacji metadanych w pliku {test_file.name}: {serializer.errors}")
+                    except json.JSONDecodeError:
+                        # Obsługa przypadku, gdy plik JSON jest uszkodzony
+                        print(f"Błąd odczytu pliku JSON: {test_file.name}")
+                        continue # Przejdź do następnego pliku
 
             return Response(available_tests, status=status.HTTP_200_OK)
 

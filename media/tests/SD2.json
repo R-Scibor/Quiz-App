@@ -1,0 +1,157 @@
+{
+    "category": "Systemy Dynamiczne",
+    "scope": "Zapis Transmitacji",
+    "version": "1.1",
+    "questions": [
+        {
+            "id": 301,
+            "questionText": "Układ liniowy jest stabilny asymptotycznie wtedy i tylko wtedy, gdy wszystkie bieguny jego transmitancji (lub wartości własne macierzy stanu A):",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["stabilność", "bieguny", "wartości własne", "teoria"],
+            "options": [
+                "Mają części rzeczywiste równe zero.",
+                "Mają części rzeczywiste dodatnie.",
+                "Mają części rzeczywiste ujemne.",
+                "Są liczbami czysto rzeczywistymi."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Stabilność asymptotyczna układu liniowego jest jednoznacznie powiązana z położeniem jego biegunów w lewej półpłaszczyźnie zespolonej, co oznacza, że ich części rzeczywiste muszą być ściśle ujemne."
+        },
+        {
+            "id": 302,
+            "questionText": "Dany jest wielomian charakterystyczny układu: s³ + 2s² - 5s + 10 = 0. Które z poniższych stwierdzeń jest prawdziwe bez wykonywania dalszych obliczeń?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["stabilność", "kryterium Hurwitza", "współczynniki"],
+            "options": [
+                "Układ jest stabilny asymptotycznie.",
+                "Układ jest na granicy stabilności.",
+                "Układ jest niestabilny.",
+                "Nie można określić stabilności na podstawie samych współczynników."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Koniecznym (ale niewystarczającym) warunkiem stabilności asymptotycznej jest to, aby wszystkie współczynniki wielomianu były dodatnie. Obecność współczynnika '-5' natychmiastowo dowodzi, że układ jest niestabilny."
+        },
+        {
+            "id": 303,
+            "questionText": "W którym z poniższych przypadków na pewno będziemy mieli do czynienia z niezerową macierzą (lub skalarem) D w reprezentacji w przestrzeni stanów?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["przestrzeń stanów", "macierz D", "transmitancja"],
+            "options": [
+                "G(s) = (s+1) / (s³+2s+1)",
+                "G(s) = (2s²+1) / (s²+3s+5)",
+                "G(s) = 5 / (s+5)",
+                "G(s) = (s²+1) / (s³+s²+s+1)"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Niezerowa macierz D pojawia się, gdy rząd licznika jest równy rzędowi mianownika (układ właściwy). W pozostałych przypadkach transmitancja jest ściśle właściwa, co oznacza, że D=0."
+        },
+        {
+            "id": 304,
+            "questionText": "Które z poniższych stwierdzeń dotyczących reprezentacji w przestrzeni stanów jest prawdziwe?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["przestrzeń stanów", "teoria", "macierz A"],
+            "options": [
+                "Dla danej transmitancji istnieje tylko jedna, unikalna reprezentacja w przestrzeni stanów.",
+                "Macierz stanu A jednoznacznie określa stabilność układu.",
+                "Wymiar macierzy stanu A zależy od rzędu licznika transmitancji.",
+                "Istnieje nieskończenie wiele równoważnych reprezentacji w przestrzeni stanów dla tej samej transmitancji."
+            ],
+            "correctAnswers": [1, 3],
+            "explanation": "Stabilność układu zależy od wartości własnych macierzy A. Ponadto, ten sam układ można opisać za pomocą nieskończenie wielu różnych zestawów macierzy stanu (poprzez transformacje podobieństwa), więc reprezentacja nie jest unikalna."
+        },
+		{
+            "id": 305,
+            "questionText": "Jeżeli wszystkie bieguny układu leżą na osi urojonej płaszczyzny zespolonej i są to bieguny pojedyncze, to układ jest:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["stabilność", "bieguny", "oś urojona"],
+            "options": [
+                "Stabilny asymptotycznie",
+                "Niestabilny",
+                "Na granicy stabilności (stabilny w sensie Lapunowa)",
+                "Nieliniowy"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Jest to definicja stanu granicznej stabilności. Układ po wychyleniu nie wraca do równowagi, ale jego odpowiedź nie narasta do nieskończoności, lecz np. oscyluje."
+        },
+        {
+            "id": 306,
+            "questionText": "W przypadku zapisu transmitancji w postaci kanonicznej sterowalnej, która część transmitancji decyduje o zawartości macierzy stanu A?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["przestrzeń stanów", "postać kanoniczna", "macierz A"],
+            "options": [
+                "Tylko licznik transmitancji",
+                "Tylko mianownik transmitancji",
+                "Zarówno licznik, jak i mianownik",
+                "Stała wzmocnienia (K)"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Macierz stanu A w postaci kanonicznej sterowalnej jest konstruowana wyłącznie na podstawie współczynników mianownika transmitancji. Licznik wpływa na macierz wyjścia C."
+        },
+		{
+            "id": 307,
+            "questionText": "Co można powiedzieć o układzie, którego transmitancja ma wyższy rząd licznika niż mianownika (np. G(s) = s³ / (s+1))?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["transmitancja", "układ niewłaściwy", "realizowalność"],
+            "options": [
+                "Jest zawsze stabilny.",
+                "Nie jest fizycznie realizowalny.",
+                "Ma zawsze zerową macierz D.",
+                "Jest to typowy układ w automatyce."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Takie układy, nazywane niewłaściwymi (improper), nie są fizycznie realizowalne, ponieważ wymagałyby idealnego różniczkowania i 'znajomości przyszłości' sygnału wejściowego."
+        },
+        {
+            "id": 308,
+            "questionText": "W jaki sposób zera transmitancji (pierwiastki licznika) wpływają na reprezentację w przestrzeni stanów w postaci kanonicznej sterowalnej?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["przestrzeń stanów", "postać kanoniczna", "zera", "macierz C"],
+            "options": [
+                "Wpływają na macierz stanu A.",
+                "Wpływają na macierz wejścia B.",
+                "Wpływają na macierz wyjścia C.",
+                "Nie mają żadnego wpływu na macierze."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Współczynniki wielomianu licznika (związanego z zerami transmitancji) bezpośrednio tworzą macierz wyjścia C w postaci kanonicznej sterowalnej."
+        },
+		{
+            "id": 309,
+            "questionText": "Które z poniższych warunków muszą być spełnione, aby w ogóle przystąpić do sprawdzania wyznaczników w kryterium Hurwitza?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["kryterium Hurwitza", "stabilność", "warunek konieczny"],
+            "options": [
+                "Wszystkie współczynniki wielomianu charakterystycznego muszą być dodatnie.",
+                "Wszystkie współczynniki muszą być większe od 1.",
+                "Rząd układu musi być parzysty.",
+                "Układ nie może mieć zer."
+            ],
+            "correctAnswers": [0],
+            "explanation": "Dodatniość wszystkich współczynników wielomianu jest warunkiem koniecznym stabilności asymptotycznej. Jeśli nie jest on spełniony, układ jest na pewno niestabilny i dalsza analiza jest zbędna."
+        },
+        {
+            "id": 310,
+            "questionText": "Dla transmitancji G(s) = (s+2)/(s²+3s+2) wyznaczono dwie różne reprezentacje w przestrzeni stanów. Które z poniższych stwierdzeń są prawdziwe?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["przestrzeń stanów", "reprezentacja", "niejednoznaczność", "teoria"],
+            "options": [
+                "Jedna z tych reprezentacji musi być błędna.",
+                "Macierze A w obu reprezentacjach będą miały te same wartości własne.",
+                "Jest to niemożliwe; reprezentacja stanu jest unikalna.",
+                "Obie reprezentacje mogą być poprawne."
+            ],
+            "correctAnswers": [1, 3],
+            "explanation": "Reprezentacja w przestrzeni stanów nie jest unikalna; istnieje nieskończenie wiele poprawnych reprezentacji. Jednak wszystkie poprawne reprezentacje tego samego układu muszą mieć macierze A o tych samych wartościach własnych, ponieważ to one definiują dynamikę i stabilność systemu."
+        }
+    ]
+}

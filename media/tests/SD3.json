@@ -1,0 +1,367 @@
+{
+    "category": "Systemy Dynamiczne",
+    "scope": "Programowanie Dynamiczne",
+    "version": "1.2",
+    "questions": [
+        {
+            "id": 201,
+            "questionText": "Czym jest proces identyfikacji obiektu sterowania?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["identyfikacja", "modelowanie", "podstawy"],
+            "options": [
+                "Procesem budowania adekwatnego modelu matematycznego obiektu.",
+                "Procesem wyznaczania ekstremum globalnego funkcji.",
+                "Wyłącznie weryfikacją charakterystyki czasowej obiektu.",
+                "Procesem stosowania operatorów genetycznych."
+            ],
+            "correctAnswers": [0],
+            "explanation": "Zgodnie z definicją, identyfikacja to proces budowania adekwatnego modelu matematycznego na podstawie obserwacji zachowania rzeczywistego obiektu lub procesu."
+        },
+        {
+            "id": 202,
+            "questionText": "Jaki jest główny cel optymalizacji statycznej?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "wskaźnik jakości"],
+            "options": [
+                "Znalezienie dowolnego rozwiązania, które spełnia ograniczenia.",
+                "Znalezienie ekstremum (minimum lub maksimum) wskaźnika jakości J.",
+                "Obliczenie rzędu i rozpiętości schematu.",
+                "Wyłącznie minimalizacja błędu średniokwadratowego."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Celem optymalizacji statycznej jest znalezienie takich wartości zmiennych decyzyjnych, które zlokalizują ekstremum (minimum lub maksimum) wskaźnika jakości J, przy zadanych ograniczeniach."
+        },
+        {
+            "id": 203,
+            "questionText": "Czym charakteryzują się gradientowe metody optymalizacji?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "metody numeryczne", "gradient"],
+            "options": [
+                "Nie wymagają znajomości postaci analitycznej funkcji celu.",
+                "Są stosowane tylko w programowaniu liniowym.",
+                "Wykorzystują pochodną (gradient) funkcji celu do wyznaczenia kierunku poszukiwań.",
+                "Ich przykładem jest metoda Neldera-Meada."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Metody gradientowe, w przeciwieństwie do bezgradientowych, opierają swoje działanie na informacji o gradiencie funkcji celu w celu efektywnego poszukiwania ekstremum."
+        },
+        {
+            "id": 204,
+            "questionText": "Co głosi twierdzenie o schematach (zasada 'cegiełek') w algorytmach genetycznych?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "teoria"],
+            "options": [
+                "Wszystkie schematy mają równe szanse na przetrwanie.",
+                "Schematy o dużej rozpiętości i wysokim rzędzie rozprzestrzeniają się najszybciej.",
+                "Wąskie, niskiego rzędu i dobrze przystosowane schematy rozprzestrzeniają się w kolejnych pokoleniach.",
+                "Schematy są niszczone głównie przez operatora selekcji."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Twierdzenie o schematach jest fundamentem teorii AG i mówi, że krótkie, dobrze dopasowane 'cegiełki' (schematy) są budulcem dla coraz lepszych rozwiązań w kolejnych generacjach."
+        },
+        {
+            "id": 205,
+            "questionText": "Jakie są dwa podstawowe operatory genetyczne tworzące nowe pokolenia w AG?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "operatory"],
+            "options": [
+                "Selekcja i Inicjalizacja",
+                "Ocena i Weryfikacja",
+                "Krzyżowanie i Mutacja",
+                "Gradient i Ekstremum"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Po etapie selekcji, to właśnie operatory krzyżowania (rekombinacji cech rodziców) i mutacji (wprowadzania losowych zmian) są odpowiedzialne za generowanie potomstwa."
+        },
+        {
+            "id": 206,
+            "questionText": "W jakim celu w numerycznych metodach optymalizacji powtarza się procedurę poszukiwania z różnymi punktami startowymi?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "ekstremum globalne", "metody numeryczne"],
+            "options": [
+                "Aby przyspieszyć obliczenia.",
+                "Aby zwiększyć szansę na znalezienie ekstremum globalnego zamiast lokalnego.",
+                "Jest to wymóg formalny metody Simpleks.",
+                "Aby zweryfikować poprawność struktury modelu."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Wiele algorytmów optymalizacyjnych może utknąć w ekstremum lokalnym. Uruchamianie ich z różnych punktów startowych zwiększa prawdopodobieństwo odnalezienia właściwego ekstremum globalnego."
+        },
+        {
+            "id": 207,
+            "questionText": "Jaka jest kluczowa różnica między programowaniem liniowym (PL) a nieliniowym?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "programowanie liniowe", "programowanie nieliniowe"],
+            "options": [
+                "Liczba zmiennych decyzyjnych.",
+                "Rodzaj ograniczeń (równościowe lub nierównościowe).",
+                "Liniowość funkcji celu i funkcji ograniczeń.",
+                "Stosowanie metod analitycznych lub numerycznych."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Problem klasyfikujemy jako programowanie liniowe, jeśli zarówno wskaźnik jakości J, jak i wszystkie funkcje ograniczeń są funkcjami liniowymi. W przeciwnym razie jest to programowanie nieliniowe."
+        },
+        {
+            "id": 208,
+            "questionText": "W teorii algorytmów genetycznych, czym jest 'schemat' (H)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "definicje"],
+            "options": [
+                "Pojedynczym, kompletnym rozwiązaniem problemu.",
+                "Całą populacją w danym pokoleniu.",
+                "Wzorcem opisującym podzbiór podobnych do siebie chromosomów.",
+                "Operatorem odpowiedzialnym za losowe zmiany w genie."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Schemat to wzorzec podobieństwa, np. 1**0*, który reprezentuje zbiór wszystkich chromosomów pasujących do tego wzorca (mających '1' na pierwszej i '0' na czwartej pozycji)."
+        },
+        {
+            "id": 209,
+            "questionText": "Programowanie kwadratowe, gdzie wskaźnik jakości J jest funkcją kwadratową, jest szczególnym przypadkiem:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "programowanie nieliniowe", "definicje"],
+            "options": [
+                "Programowania liniowego",
+                "Programowania nieliniowego",
+                "Programowania całkowitoliczbowego",
+                "Programowania zero-jedynkowego"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Ponieważ funkcja kwadratowa jest funkcją nieliniową, programowanie kwadratowe jest podkategorią programowania nieliniowego."
+        },
+        {
+            "id": 210,
+            "questionText": "Które z poniższych pojęć są bezpośrednio związane z 'Teorią Schematów' Hollanda?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "teoria"],
+            "options": [
+                "Rząd schematu o(H)",
+                "Rozpiętość schematu δ(H)",
+                "Gradient funkcji",
+                "Metoda Simpleks"
+            ],
+            "correctAnswers": [0, 1],
+            "explanation": "Rząd i rozpiętość to dwie fundamentalne metryki opisujące schemat, które determinują jego szanse na przetrwanie podczas operacji genetycznych. Pozostałe pojęcia dotyczą klasycznych metod optymalizacji."
+        },
+        {
+            "id": 211,
+            "questionText": "Dla schematu H = `*11*0*` w chromosomie o długości 6 bitów, jaka jest jego rozpiętość δ(H)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "obliczenia"],
+            "options": ["2", "3", "4", "5"],
+            "correctAnswers": [1],
+            "explanation": "Rozpiętość to odległość między skrajnymi ustalonymi pozycjami. Ustalone pozycje znajdują się na indeksach 1 i 4 (licząc od 0). Rozpiętość wynosi 4 - 1 = 3."
+        },
+        {
+            "id": 212,
+            "questionText": "Która z wymienionych metod optymalizacji jest metodą BEZGRADIENTOWĄ?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "metody numeryczne"],
+            "options": [
+                "Metoda największego spadku",
+                "Metoda Neldera-Meada",
+                "Metoda gradientów sprzężonych",
+                "Metoda Fletchera-Reevesa"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Metoda Neldera-Meada (znana też jako metoda simplex) nie wykorzystuje pochodnych funkcji celu, w przeciwieństwie do pozostałych, które są metodami gradientowymi."
+        },
+        {
+            "id": 213,
+            "questionText": "Ostatnim, kluczowym etapem procesu identyfikacji, wykonywanym przed praktycznym zastosowaniem modelu, jest:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["identyfikacja", "modelowanie", "proces"],
+            "options": [
+                "Wybór struktury modelu",
+                "Weryfikacja modelu",
+                "Wyznaczenie parametrów",
+                "Utworzenie populacji początkowej"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Po wyznaczeniu parametrów model musi zostać zweryfikowany, aby upewnić się, że adekwatnie opisuje rzeczywisty obiekt, np. przez porównanie charakterystyk czasowych."
+        },
+        {
+            "id": 214,
+            "questionText": "W terminologii algorytmów genetycznych, 'allel' to:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "definicje"],
+            "options": [
+                "Pozycja genu w chromosomie",
+                "Konkretna wartość, jaką może przyjąć gen",
+                "Cały zbiór parametrów zadania (fenotyp)",
+                "Pojedynczy ciąg kodowy (chromosom)"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Locus to pozycja, a allel to wartość na tej pozycji (np. dla genu koloru oczu, allelami mogą być 'niebieski', 'zielony', 'brązowy')."
+        },
+        {
+            "id": 215,
+            "questionText": "Które z poniższych stwierdzeń dotyczących algorytmów genetycznych są prawdziwe?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["algorytmy genetyczne", "właściwości"],
+            "options": [
+                "Stosują deterministyczne reguły wyboru.",
+                "Przetwarzają całą populację rozwiązań jednocześnie.",
+                "Zawsze gwarantują znalezienie optymalnego rozwiązania globalnego.",
+                "Do działania wymagają jedynie funkcji celu (przystosowania)."
+            ],
+            "correctAnswers": [1, 3],
+            "explanation": "AG działają na populacji, a nie na pojedynczym punkcie, ich reguły są probabilistyczne, a do oceny rozwiązań wystarcza im funkcja celu. Nie ma jednak gwarancji znalezienia optimum globalnego."
+        },
+        {
+            "id": 216,
+            "questionText": "Prawdopodobieństwo, że schemat H przetrwa operację mutacji, jest tym WIĘKSZE, im:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "teoria"],
+            "options": [
+                "większy jest jego rząd o(H).",
+                "większa jest jego rozpiętość δ(H).",
+                "mniejszy jest jego rząd o(H).",
+                "większe jest prawdopodobieństwo krzyżowania pk."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Wzór na przetrwanie mutacji to ps = (1 - pm)^o(H). Im mniejszy jest wykładnik o(H) (rząd), tym wynik potęgowania jest bliższy 1, czyli prawdopodobieństwo przetrwania jest większe."
+        },
+        {
+            "id": 217,
+            "questionText": "Twórcą teorii algorytmów genetycznych, w tym teorii schematów, jest:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "historia"],
+            "options": [
+                "Alan Turing",
+                "John von Neumann",
+                "John Holland",
+                "David Goldberg"
+            ],
+            "correctAnswers": [2],
+            "explanation": "John Holland jest powszechnie uznawany za ojca algorytmów genetycznych i twórcę ich matematycznych podstaw w latach 60. i 70. XX wieku."
+        },
+        {
+            "id": 218,
+            "questionText": "Jaki problem może być rozwiązany metodą graficzną w programowaniu liniowym?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "programowanie liniowe", "metody"],
+            "options": [
+                "Dowolny problem z wieloma zmiennymi.",
+                "Problem z co najwyżej dwiema zmiennymi decyzyjnymi.",
+                "Tylko problemy z ograniczeniami równościowymi.",
+                "Dowolny problem programowania nieliniowego."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Metoda graficzna polega na rysowaniu obszaru rozwiązań dopuszczalnych w układzie współrzędnych, co jest praktycznie możliwe tylko dla dwóch zmiennych (x1, x2)."
+        },
+        {
+            "id": 219,
+            "questionText": "Wybierz wszystkie stwierdzenia, które poprawnie opisują połączenie problemu identyfikacji z optymalizacją.",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["identyfikacja", "optymalizacja", "podstawy"],
+            "options": [
+                "Parametry modelu (np. K, T) stają się zmiennymi decyzyjnymi w zadaniu optymalizacji.",
+                "Celem optymalizacji jest maksymalizacja rzędu modelu.",
+                "Wskaźnikiem jakości (funkcją celu) jest miara błędu między obiektem a modelem.",
+                "Algorytmy genetyczne nie mogą być użyte do identyfikacji."
+            ],
+            "correctAnswers": [0, 2],
+            "explanation": "Problem znalezienia najlepszych parametrów modelu (identyfikacja) jest przekształcany w zadanie minimalizacji błędu (optymalizacja), gdzie szukanymi zmiennymi są właśnie te parametry. AG są jedną z metod, które można do tego wykorzystać."
+        },
+        {
+            "id": 220,
+            "questionText": "Wskaźnik jakości w postaci sumy kwadratów błędów $J=\\frac{1}{N}\\sum_{i=1}^{N}(y(i)-\\hat{y}(i))^{2}$ jest minimalizowany w etapie:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["identyfikacja", "wskaźnik jakości", "proces"],
+            "options": [
+                "Wyboru struktury modelu",
+                "Weryfikacji modelu",
+                "Wyznaczania parametrów modelu",
+                "Selekcji w algorytmie genetycznym"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Taki wskaźnik jakości jest funkcją celu w zadaniu optymalizacji, które rozwiązuje się w celu wyznaczenia nieznanych parametrów modelu (identyfikacji parametrycznej)."
+        },
+        {
+            "id": 221,
+            "questionText": "Dla schematu H = `1*0*1*` w chromosomie o długości 6 bitów, jaki jest jego rząd o(H)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "obliczenia"],
+            "options": [ "2", "3", "4", "5" ],
+            "correctAnswers": [1],
+            "explanation": "Rząd schematu to liczba ustalonych pozycji (nie-gwiazdek). W schemacie `1*0*1*` ustalone są trzy pozycje, więc jego rząd wynosi 3."
+        },
+        {
+            "id": 222,
+            "questionText": "W AG, zbiór wszystkich parametrów zadania (np. konkretne wartości K i T w zadaniu identyfikacji) to:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "definicje"],
+            "options": [ "Genotyp", "Fenotyp", "Locus", "Chromosom diploidalny" ],
+            "correctAnswers": [1],
+            "explanation": "Genotyp to zakodowana struktura (chromosom), natomiast fenotyp to zbiór zdekodowanych parametrów zadania, które ta struktura reprezentuje. To fenotyp podlega ocenie."
+        },
+        {
+            "id": 223,
+            "questionText": "Porównanie charakterystyki skokowej h(t) lub impulsowej g(t) modelu i obiektu rzeczywistego to element etapu:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["identyfikacja", "weryfikacja", "charakterystyki"],
+            "options": [
+                "Wyboru struktury",
+                "Wyznaczania parametrów",
+                "Selekcji osobników",
+                "Weryfikacji modelu"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Porównywanie charakterystyk czasowych jest kluczowym elementem weryfikacji, pozwalającym ocenić, czy stworzony model matematyczny dobrze oddaje dynamikę rzeczywistego obiektu."
+        },
+        {
+            "id": 224,
+            "questionText": "Który z poniższych czynników najbardziej zwiększa szansę schematu na przetrwanie operacji krzyżowania?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["algorytmy genetyczne", "schematy", "teoria"],
+            "options": [
+                "Wysoki rząd schematu o(H)",
+                "Duża rozpiętość schematu δ(H)",
+                "Niska (mała) rozpiętość schematu δ(H)",
+                "Wysokie prawdopodobieństwo mutacji pm"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Zgodnie ze wzorem, im mniejsza jest rozpiętość δ(H), tym mniejsze jest prawdopodobieństwo, że punkt krzyżowania 'przetnie' schemat. Schematy zwarte (o małej rozpiętości) są bardziej odporne."
+        },
+        {
+            "id": 225,
+            "questionText": "Analityczna metoda Simpleks jest przeznaczona do rozwiązywania problemów:",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["optymalizacja", "metody", "programowanie liniowe"],
+            "options": [
+                "Programowania nieliniowego",
+                "Programowania kwadratowego",
+                "Programowania liniowego",
+                "Dowolnych zadań optymalizacji"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Metoda Simpleks to klasyczny, iteracyjny algorytm służący do znajdowania optymalnych rozwiązań w zadaniach programowania liniowego. Należy jej nie mylić z numeryczną metodą Neldera-Meada (też nazywaną simplex)."
+        }
+    ]
+}

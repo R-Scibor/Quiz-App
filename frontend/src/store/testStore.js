@@ -4,7 +4,8 @@ import { getAvailableTests, getQuestions } from '../services/api';
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
 const useTestStore = create((set, get) => ({
-    view: 'setup',
+    // ZMIANA: 'home' jest teraz domyślnym widokiem
+    view: 'home',
     availableTests: [],
     selectedCategories: [],
     numQuestionsConfig: 10,
@@ -19,6 +20,9 @@ const useTestStore = create((set, get) => ({
     error: null,
     theme: initialTheme,
     
+    // ZMIANA: Nowa akcja do nawigacji na stronę konfiguracji
+    goToSetup: () => set({ view: 'setup' }),
+
     fetchAvailableTests: async () => {
         set({ isLoading: true, error: null });
         try {
@@ -73,18 +77,23 @@ const useTestStore = create((set, get) => ({
         return { view: 'results', testEndTime: new Date() };
     }),
     resetTest: () => set({
-        view: 'setup', selectedCategories: [], currentQuestions: [],
-        currentQuestionIndex: 0, userAnswers: {}, score: 0,
-        testStartTime: null, testEndTime: null, error: null,
+        // ZMIANA: Resetowanie przenosi teraz na stronę główną
+        view: 'home', 
+        selectedCategories: [], 
+        currentQuestions: [],
+        currentQuestionIndex: 0, 
+        userAnswers: {}, 
+        score: 0,
+        testStartTime: null, 
+        testEndTime: null, 
+        error: null,
     }),
     toggleTheme: () => set((state) => {
         const newTheme = state.theme === 'light' ? 'dark' : 'light';
         localStorage.setItem('theme', newTheme);
         return { theme: newTheme };
     }),
-    // ZMIANA: Nowa akcja do przełączania na widok przeglądu
     reviewAnswers: () => set({ view: 'review' }),
-    // ZMIANA: Nowa akcja do powrotu do wyników
     backToResults: () => set({ view: 'results' }),
 }));
 export default useTestStore;

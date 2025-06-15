@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useTestStore from '../store/testStore';
-// ZMIANA: Importujemy motion
 import { motion } from 'framer-motion';
 
 const ChevronIcon = ({ expanded }) => (
@@ -9,26 +8,14 @@ const ChevronIcon = ({ expanded }) => (
     </svg>
 );
 
-// ZMIANA: Definiujemy warianty animacji dla listy
-const listVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-};
-  
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-};
+// ZMIANA: Usunięto warianty animacji, które powodowały mignięcie
+// const listVariants = { ... };
+// const itemVariants = { ... };
 
 const TestSetupPage = () => {
     const { 
-        availableTests, 
         fetchAvailableTests, 
+        availableTests,
         isLoading, 
         error, 
         selectedCategories, 
@@ -36,7 +23,8 @@ const TestSetupPage = () => {
         numQuestionsConfig, 
         timerEnabled, 
         setConfig, 
-        startTest 
+        startTest,
+        resetTest
     } = useTestStore();
 
     const [expandedCategory, setExpandedCategory] = useState(null);
@@ -76,6 +64,18 @@ const TestSetupPage = () => {
         <motion.div 
             className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center"
         >
+            <div className="w-full flex justify-start mb-6">
+                <motion.button 
+                    onClick={resetTest}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Wróć do strony głównej
+                </motion.button>
+            </div>
+            
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Wybierz Kategorię</h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Sprawdź swoją wiedzę w różnych dziedzinach.</p>
             
@@ -84,19 +84,16 @@ const TestSetupPage = () => {
             <div className="mb-8 text-left">
                 {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Ładowanie listy testów...</p>}
                 
-                <motion.div 
-                    className="space-y-4"
-                    variants={listVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
+                {/* ZMIANA: Usunięto opakowanie 'motion.div' z wariantami animacji */}
+                <div className="space-y-4">
                     {Object.entries(testsByCategory).map(([category, tests]) => {
                         const allTestIds = tests.map(t => t.test_id);
                         const selectedCount = allTestIds.filter(id => selectedCategories.includes(id)).length;
                         const areAllSelected = selectedCount === allTestIds.length;
 
                         return (
-                            <motion.div key={category} variants={itemVariants} className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg transition-all duration-300 hover:border-brand-primary">
+                            // ZMIANA: Usunięto 'motion.div' i warianty z tego elementu
+                            <div key={category} className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg transition-all duration-300 hover:border-brand-primary">
                                 <button 
                                     onClick={() => handleCategoryClick(category)} 
                                     className="w-full flex justify-between items-center p-5 font-bold text-xl text-gray-800 dark:text-white rounded-t-lg"
@@ -134,10 +131,10 @@ const TestSetupPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         );
                     })}
-                </motion.div>
+                </div>
             </div>
 
             <div className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700">

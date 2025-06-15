@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import useTestStore from './store/testStore';
+import HomePage from './pages/HomePage'; // ZMIANA: Importujemy HomePage
 import TestSetupPage from './pages/TestSetupPage';
 import TestScreenPage from './pages/TestScreenPage';
 import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
-// ZMIANA: Importujemy komponenty z framer-motion
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -20,11 +20,12 @@ function App() {
     
     const renderView = () => {
         switch (view) {
+            case 'setup': return <TestSetupPage />;
             case 'test': return <TestScreenPage />;
             case 'results': return <ResultsPage />;
             case 'review': return <ReviewPage />;
-            case 'setup':
-            default: return <TestSetupPage />;
+            case 'home':
+            default: return <HomePage />;
         }
     };
 
@@ -32,10 +33,9 @@ function App() {
         <div className="relative flex items-center justify-center min-h-screen p-4 bg-gray-100 dark:bg-brand-background transition-colors duration-300 overflow-hidden">
            <ThemeSwitcher />
            
-           {/*Dodajemy AnimatePresence do obsługi animacji wejścia i wyjścia */}
            <AnimatePresence mode="wait">
                 <motion.div
-                    key={view} // Klucz jest niezbędny, aby AnimatePresence wiedziało, że komponent się zmienił
+                    key={view}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -30 }}

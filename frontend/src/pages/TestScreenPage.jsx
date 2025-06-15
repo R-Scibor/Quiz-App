@@ -19,14 +19,12 @@ const TestScreenPage = () => {
     const questionTextRef = useRef(null);
     const question = currentQuestions[currentQuestionIndex];
 
-    // Resetuje stan po zmianie pytania
     useEffect(() => {
         if (question) {
             setSelection(userAnswers[question.id] || []);
             setShowFeedback(false);
             const element = questionTextRef.current;
             if (element) {
-                // Prosta animacja dla tekstu pytania
                 element.classList.remove('question-animate-in');
                 void element.offsetWidth; 
                 element.classList.add('question-animate-in');
@@ -36,13 +34,12 @@ const TestScreenPage = () => {
 
     if (!question) {
         return (
-            <div className="main-card w-full max-w-2xl mx-auto p-8 md:p-12 text-center text-white fade-in">
+            <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center text-gray-800 dark:text-white fade-in">
                 Ładowanie pytania...
             </div>
         );
     }
 
-    // Obsługa wyboru odpowiedzi
     const handleOptionChange = (optionIndex) => {
         if (showFeedback) return;
         let newSelection;
@@ -61,18 +58,15 @@ const TestScreenPage = () => {
         submitAnswer(question.id, newSelection);
     };
     
-    // Obsługa zatwierdzenia odpowiedzi
     const handleConfirm = () => {
         setShowFeedback(true);
         confirmAnswer();
     };
 
-    // Obsługa przejścia do następnego pytania
     const handleNext = () => {
         nextQuestion();
     };
 
-    // Zwraca klasy CSS dla opcji odpowiedzi w zależności od stanu
     const getOptionClass = (optionIndex) => {
         const baseClasses = 'option-btn w-full text-left p-4 rounded-lg font-medium cursor-pointer transition-colors duration-200';
         const isSelected = selection.includes(optionIndex);
@@ -91,9 +85,9 @@ const TestScreenPage = () => {
 
     return (
         <div className="relative w-full max-w-2xl mx-auto px-4">
-            <div className="main-card w-full p-8 md:p-12 fade-in">
+            <div className="main-card bg-white dark:bg-card-bg w-full p-8 md:p-12 fade-in">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-white">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                         Pytanie {currentQuestionIndex + 1}/{currentQuestions.length}
                     </h2>
                     {timerEnabled && <Timer />}
@@ -102,12 +96,11 @@ const TestScreenPage = () => {
                 <ProgressBar />
 
                 <div className="my-8 min-h-[96px] flex items-center">
-                    <p ref={questionTextRef} className="text-2xl md:text-3xl font-medium text-white leading-snug">
+                    <p ref={questionTextRef} className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug">
                         {question.questionText}
                     </p>
                 </div>
                 
-                {/* ZMIANA: Obrazek opakowany w kontener flexbox do wyśrodkowania */}
                 {question.image && (
                     <div className="my-4 flex justify-center">
                         <img src={question.image} alt="Ilustracja do pytania" className="rounded-lg max-w-full h-auto" />
@@ -146,17 +139,17 @@ const TestScreenPage = () => {
 
             <div className="md:hidden">
                  {showFeedback && (
-                    <div className="mt-6 p-6 bg-black/20 border border-card-border rounded-lg fade-in w-full">
-                        <h4 className="font-bold text-gray-200 text-xl">Wyjaśnienie:</h4>
-                        <p className="text-gray-300 mt-2">{question.explanation}</p>
+                    <div className="mt-6 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg fade-in w-full">
+                        <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
+                        <p className="text-gray-600 dark:text-gray-300 mt-2">{question.explanation}</p>
                     </div>
                 )}
             </div>
             
             {showFeedback && (
-                <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-8 w-80 p-6 bg-black/20 border border-card-border rounded-lg fade-in">
-                    <h4 className="font-bold text-gray-200 text-xl">Wyjaśnienie:</h4>
-                    <p className="text-gray-300 mt-2">{question.explanation}</p>
+                <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-8 w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg fade-in">
+                    <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">{question.explanation}</p>
                 </div>
             )}
         </div>

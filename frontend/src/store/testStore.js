@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { getAvailableTests, getQuestions } from '../services/api';
 
+// Sprawdzamy, czy w localStorage jest zapisany motyw, jeśli nie - domyślnie 'dark'
+const initialTheme = localStorage.getItem('theme') || 'dark';
+
 const useTestStore = create((set, get) => ({
     view: 'setup',
     availableTests: [],
@@ -15,6 +18,8 @@ const useTestStore = create((set, get) => ({
     testEndTime: null,
     isLoading: false,
     error: null,
+    // ZMIANA: Dodajemy stan dla motywu
+    theme: initialTheme,
     
     fetchAvailableTests: async () => {
         set({ isLoading: true, error: null });
@@ -73,6 +78,12 @@ const useTestStore = create((set, get) => ({
         view: 'setup', selectedCategories: [], currentQuestions: [],
         currentQuestionIndex: 0, userAnswers: {}, score: 0,
         testStartTime: null, testEndTime: null, error: null,
+    }),
+    // ZMIANA: Dodajemy akcję do przełączania motywu
+    toggleTheme: () => set((state) => {
+        const newTheme = state.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', newTheme);
+        return { theme: newTheme };
     }),
 }));
 export default useTestStore;

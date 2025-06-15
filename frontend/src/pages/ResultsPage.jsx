@@ -2,25 +2,21 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
-    // ZMIANA: Pobieramy stany potrzebne do obliczenia czasu
     const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime } = useTestStore();
     
     const totalQuestions = currentQuestions.length;
     const incorrectAnswers = totalQuestions - score;
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
-    // ZMIANA: Obliczamy czas trwania testu
     const timeTaken = useMemo(() => {
         if (!timerEnabled || !testStartTime || !testEndTime) {
             return null;
         }
         const start = new Date(testStartTime);
         const end = new Date(testEndTime);
-        // Różnica w sekundach
         return Math.round((end - start) / 1000);
     }, [timerEnabled, testStartTime, testEndTime]);
 
-    // Funkcja do formatowania sekund na MM:SS
     const formatTime = (totalSeconds) => {
         if (typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {
             return '00:00';
@@ -43,14 +39,14 @@ const ResultsPage = () => {
 
 
     return (
-        <div className="main-card w-full max-w-2xl mx-auto rounded-xl p-8 md:p-12 text-center fade-in">
-            <h1 className="text-4xl font-bold text-white mb-4">Quiz ukończony!</h1>
-            <p className="text-lg text-gray-300 mb-6">Oto Twoje wyniki.</p>
+        <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto rounded-xl p-8 md:p-12 text-center fade-in">
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">Quiz ukończony!</h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">Oto Twoje wyniki.</p>
             
             <div className="relative flex items-center justify-center my-8">
                 <svg className="progress-ring w-48 h-48">
                     <circle 
-                        className="text-gray-700" 
+                        className="text-gray-200 dark:text-gray-700" 
                         strokeWidth="12" 
                         stroke="currentColor" 
                         fill="transparent" 
@@ -73,30 +69,29 @@ const ResultsPage = () => {
                     />
                 </svg>
                 <div className="absolute flex flex-col">
-                     <p className="text-5xl font-bold text-white">{percentage}%</p>
+                     <p className="text-5xl font-bold text-gray-800 dark:text-white">{percentage}%</p>
                 </div>
             </div>
-
-            {/* ZMIANA: Warunkowe wyświetlanie czasu na podstawie obliczonej wartości */}
+            
             {timeTaken !== null && (
                 <div className="mb-8">
-                    <p className="text-lg text-gray-400">Czas ukończenia</p>
-                    <p className="text-3xl font-bold text-white">{formatTime(timeTaken)}</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Czas ukończenia</p>
+                    <p className="text-3xl font-bold text-gray-800 dark:text-white">{formatTime(timeTaken)}</p>
                 </div>
             )}
 
             <div className="flex justify-around mb-10">
                 <div>
-                    <p className="text-lg text-gray-400">Wynik</p>
-                    <p className="text-2xl font-bold text-white">{score} / {totalQuestions}</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Wynik</p>
+                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{score} / {totalQuestions}</p>
                 </div>
                 <div>
-                    <p className="text-lg text-gray-400">Poprawne</p>
-                    <p className="text-2xl font-bold text-green-400">{score}</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Poprawne</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{score}</p>
                 </div>
                 <div>
-                    <p className="text-lg text-gray-400">Błędne</p>
-                    <p className="text-2xl font-bold text-brand-primary">{incorrectAnswers}</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Błędne</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-brand-primary">{incorrectAnswers}</p>
                 </div>
             </div>
 

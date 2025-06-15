@@ -15,3 +15,4 @@ class TestMetadataSerializer(serializers.Serializer):
     scope = serializers.CharField()
     version = serializers.CharField()
     test_id = serializers.CharField() # Np. nazwa pliku JSON bez rozszerzenia
+    question_count = serializers.IntegerField()

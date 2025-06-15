@@ -58,7 +58,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'backend_project.urls'
----
 # Zaktualizowano, aby Django mogło znaleźć plik index.html z katalogu 'dist'
 TEMPLATES = [
     {

@@ -46,9 +46,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware'
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -129,7 +130,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# --- POPRAWIONA SEKCJA DLA VITE ---
 # Wskazanie na katalog z plikami statycznymi (CSS, JS) z katalogu 'dist/assets'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend/dist'),
@@ -137,7 +137,8 @@ STATICFILES_DIRS = [
 
 # Katalog, do którego Django zbierze wszystkie pliki statyczne dla środowiska produkcyjnego
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_collected')
-# --- KONIEC POPRAWIONEJ SEKCJI ---
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default primary key field type

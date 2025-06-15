@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import useTestStore from '../store/testStore';
 import ProgressBar from '../components/ProgressBar';
 import Timer from '../components/Timer';
+// ZMIANA: Importujemy motion
+import { motion } from 'framer-motion';
 
 const TestScreenPage = () => {
     const { 
@@ -23,18 +25,12 @@ const TestScreenPage = () => {
         if (question) {
             setSelection(userAnswers[question.id] || []);
             setShowFeedback(false);
-            const element = questionTextRef.current;
-            if (element) {
-                element.classList.remove('question-animate-in');
-                void element.offsetWidth; 
-                element.classList.add('question-animate-in');
-            }
         }
     }, [question]);
 
     if (!question) {
         return (
-            <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center text-gray-800 dark:text-white fade-in">
+            <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center text-gray-800 dark:text-white">
                 Ładowanie pytania...
             </div>
         );
@@ -68,7 +64,7 @@ const TestScreenPage = () => {
     };
 
     const getOptionClass = (optionIndex) => {
-        const baseClasses = 'option-btn w-full text-left p-4 rounded-lg font-medium cursor-pointer transition-colors duration-200';
+        const baseClasses = 'option-btn w-full text-left p-4 rounded-lg font-medium cursor-pointer';
         const isSelected = selection.includes(optionIndex);
 
         if (showFeedback) {
@@ -84,8 +80,8 @@ const TestScreenPage = () => {
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto px-4">
-            <div className="main-card bg-white dark:bg-card-bg w-full p-8 md:p-12 fade-in">
+        <motion.div className="relative w-full max-w-2xl mx-auto px-4">
+            <div className="main-card bg-white dark:bg-card-bg w-full p-8 md:p-12">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                         Pytanie {currentQuestionIndex + 1}/{currentQuestions.length}
@@ -109,50 +105,54 @@ const TestScreenPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {question.options.map((option, index) => (
-                        <div
+                        <motion.div
                             key={index}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.98 }}
                             className={getOptionClass(index)}
                             onClick={() => handleOptionChange(index)}
                         >
                             {option}
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
 
                 <div className="mt-8 text-center min-h-[52px]">
                     {!showFeedback ? (
-                        <button 
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={handleConfirm} 
                             disabled={selection.length === 0} 
                             className="btn-primary py-2 px-8"
                         >
                             Zatwierdź
-                        </button>
+                        </motion.button>
                     ) : (
-                        <button onClick={handleNext} className="btn-primary py-2 px-8">
+                        <motion.button 
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleNext} 
+                            className="btn-primary py-2 px-8"
+                        >
                             <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                        </button>
+                        </motion.button>
                     )}
                 </div>
             </div>
 
-            <div className="md:hidden">
-                 {showFeedback && (
-                    <div className="mt-6 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg fade-in w-full">
-                        <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
-                        <p className="text-gray-600 dark:text-gray-300 mt-2">{question.explanation}</p>
-                    </div>
-                )}
-            </div>
-            
             {showFeedback && (
-                <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-8 w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg fade-in">
+                <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="mt-6 md:mt-0 md:absolute md:top-1/2 md:left-full md:-translate-y-1/2 md:ml-8 md:w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg"
+                >
                     <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
                     <p className="text-gray-600 dark:text-gray-300 mt-2">{question.explanation}</p>
-                </div>
+                </motion.div>
             )}
-        </div>
+        </motion.div>
     );
 };
 

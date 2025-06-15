@@ -1,11 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useTestStore from '../store/testStore';
+// ZMIANA: Importujemy motion
+import { motion } from 'framer-motion';
 
 const ChevronIcon = ({ expanded }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}>
         <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
 );
+
+// ZMIANA: Definiujemy warianty animacji dla listy
+const listVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+};
+  
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+};
 
 const TestSetupPage = () => {
     const { 
@@ -55,7 +73,9 @@ const TestSetupPage = () => {
     const isStartButtonDisabled = isLoading || selectedCategories.length === 0;
 
     return (
-        <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center fade-in">
+        <motion.div 
+            className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center"
+        >
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Wybierz Kategorię</h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Sprawdź swoją wiedzę w różnych dziedzinach.</p>
             
@@ -64,14 +84,19 @@ const TestSetupPage = () => {
             <div className="mb-8 text-left">
                 {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Ładowanie listy testów...</p>}
                 
-                <div className="space-y-4">
+                <motion.div 
+                    className="space-y-4"
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     {Object.entries(testsByCategory).map(([category, tests]) => {
                         const allTestIds = tests.map(t => t.test_id);
                         const selectedCount = allTestIds.filter(id => selectedCategories.includes(id)).length;
                         const areAllSelected = selectedCount === allTestIds.length;
 
                         return (
-                            <div key={category} className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg transition-all duration-300 hover:border-brand-primary">
+                            <motion.div key={category} variants={itemVariants} className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg transition-all duration-300 hover:border-brand-primary">
                                 <button 
                                     onClick={() => handleCategoryClick(category)} 
                                     className="w-full flex justify-between items-center p-5 font-bold text-xl text-gray-800 dark:text-white rounded-t-lg"
@@ -109,10 +134,10 @@ const TestSetupPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         );
                     })}
-                </div>
+                </motion.div>
             </div>
 
             <div className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700">
@@ -141,10 +166,16 @@ const TestSetupPage = () => {
                 </div>
             </div>
 
-            <button onClick={startTest} disabled={isStartButtonDisabled} className="bg-brand-primary text-white font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:bg-brand-primary-hover hover:shadow-primary-hover disabled:bg-gray-500 dark:disabled:bg-gray-700 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 ease-in-out hover:-translate-y-0.5 disabled:transform-none">
+            <motion.button 
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startTest} 
+                disabled={isStartButtonDisabled} 
+                className="bg-brand-primary text-white font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:bg-brand-primary-hover hover:shadow-primary-hover disabled:bg-gray-500 dark:disabled:bg-gray-700 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 ease-in-out disabled:transform-none"
+            >
                 {isLoading ? "Ładowanie..." : "Rozpocznij Test"}
-            </button>
-        </div>
+            </motion.button>
+        </motion.div>
     );
 };
 export default TestSetupPage;

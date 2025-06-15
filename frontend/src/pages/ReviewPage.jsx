@@ -1,5 +1,23 @@
 import React from 'react';
 import useTestStore from '../store/testStore';
+// ZMIANA: Importujemy motion
+import { motion } from 'framer-motion';
+
+// ZMIANA: Definiujemy warianty animacji dla listy
+const listVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+};
+  
+const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 }
+};
 
 const ReviewPage = () => {
     const { currentQuestions, userAnswers, backToResults } = useTestStore();
@@ -23,18 +41,27 @@ const ReviewPage = () => {
     };
 
     return (
-        <div className="main-card bg-white dark:bg-card-bg w-full max-w-4xl mx-auto p-8 md:p-12 fade-in">
+        <motion.div className="main-card bg-white dark:bg-card-bg w-full max-w-4xl mx-auto p-8 md:p-12">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Przegląd odpowiedzi</h1>
-                {/* ZMIANA: Zmieniono 'btn-secondary' na 'btn-primary' dla spójności */}
-                <button onClick={backToResults} className="btn-primary py-2 px-6 rounded-lg">
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={backToResults} 
+                    className="btn-primary py-2 px-6 rounded-lg"
+                >
                     Wróć do wyników
-                </button>
+                </motion.button>
             </div>
 
-            <div className="space-y-10">
+            <motion.div 
+                className="space-y-10"
+                variants={listVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {currentQuestions.map((question, index) => (
-                    <div key={question.id} className="border-t border-gray-300 dark:border-card-border pt-6">
+                    <motion.div variants={itemVariants} key={question.id} className="border-t border-gray-300 dark:border-card-border pt-6">
                         <p className="text-lg font-semibold text-gray-800 dark:text-white">
                             Pytanie {index + 1}: <span className="font-normal">{question.questionText}</span>
                         </p>
@@ -57,10 +84,10 @@ const ReviewPage = () => {
                             <h4 className="font-bold text-gray-700 dark:text-gray-200">Wyjaśnienie:</h4>
                             <p className="text-gray-600 dark:text-gray-300 mt-1">{question.explanation}</p>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
 

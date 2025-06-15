@@ -44,9 +44,10 @@ db.sqlite3
 #/media/
 /static_root/
 /staticfiles/
+/staticfiles_collected/
 
 # Pliki konfiguracyjne i wrażliwe
-#.env
+.env
 #local_settings.py
 
 # Pliki generowane przez biblioteki

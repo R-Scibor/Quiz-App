@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 
 from django.conf import settings
+from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -137,3 +138,7 @@ class QuestionListView(APIView):
         else:
             print(f"Błąd serializacji pytań: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReactAppView(TemplateView):
+    template_name = 'index.html'

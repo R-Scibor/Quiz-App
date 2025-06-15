@@ -2,25 +2,43 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
-    const { score, currentQuestions, resetTest } = useTestStore();
+    // ZMIANA: Pobieramy stany potrzebne do obliczenia czasu
+    const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime } = useTestStore();
     
     const totalQuestions = currentQuestions.length;
     const incorrectAnswers = totalQuestions - score;
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
-    // --- Logika dla animowanego pierścienia postępu ---
+    // ZMIANA: Obliczamy czas trwania testu
+    const timeTaken = useMemo(() => {
+        if (!timerEnabled || !testStartTime || !testEndTime) {
+            return null;
+        }
+        const start = new Date(testStartTime);
+        const end = new Date(testEndTime);
+        // Różnica w sekundach
+        return Math.round((end - start) / 1000);
+    }, [timerEnabled, testStartTime, testEndTime]);
+
+    // Funkcja do formatowania sekund na MM:SS
+    const formatTime = (totalSeconds) => {
+        if (typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {
+            return '00:00';
+        }
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
     const radius = 84;
     const circumference = 2 * Math.PI * radius;
     
-    // Ustawiamy początkowy stan "pusty", aby animacja miała od czego startować
     const [progressOffset, setProgressOffset] = useState(circumference);
 
-    // Uruchamiamy animację, gdy komponent się załaduje
     useEffect(() => {
         const offset = circumference - (percentage / 100) * circumference;
-        // Małe opóźnienie, aby animacja była widoczna po załadowaniu strony
         const timer = setTimeout(() => setProgressOffset(offset), 100);
-        return () => clearTimeout(timer); // Czyszczenie timera
+        return () => clearTimeout(timer);
     }, [percentage, circumference]);
 
 
@@ -29,10 +47,8 @@ const ResultsPage = () => {
             <h1 className="text-4xl font-bold text-white mb-4">Quiz ukończony!</h1>
             <p className="text-lg text-gray-300 mb-6">Oto Twoje wyniki.</p>
             
-            {/* Pierścień z procentowym wynikiem */}
             <div className="relative flex items-center justify-center my-8">
                 <svg className="progress-ring w-48 h-48">
-                    {/* Tło pierścienia */}
                     <circle 
                         className="text-gray-700" 
                         strokeWidth="12" 
@@ -42,7 +58,6 @@ const ResultsPage = () => {
                         cx="96" 
                         cy="96"
                     />
-                    {/* Wypełnienie pierścienia, które będzie animowane */}
                     <circle 
                         className="progress-ring__circle text-brand-primary" 
                         strokeWidth="12" 
@@ -57,13 +72,19 @@ const ResultsPage = () => {
                         }}
                     />
                 </svg>
-                {/* Procentowy wynik w środku */}
                 <div className="absolute flex flex-col">
                      <p className="text-5xl font-bold text-white">{percentage}%</p>
                 </div>
             </div>
 
-            {/* Szczegółowe statystyki */}
+            {/* ZMIANA: Warunkowe wyświetlanie czasu na podstawie obliczonej wartości */}
+            {timeTaken !== null && (
+                <div className="mb-8">
+                    <p className="text-lg text-gray-400">Czas ukończenia</p>
+                    <p className="text-3xl font-bold text-white">{formatTime(timeTaken)}</p>
+                </div>
+            )}
+
             <div className="flex justify-around mb-10">
                 <div>
                     <p className="text-lg text-gray-400">Wynik</p>
@@ -79,10 +100,9 @@ const ResultsPage = () => {
                 </div>
             </div>
 
-            {/* Przycisk resetu */}
             <button onClick={resetTest} className="btn-primary font-bold py-3 px-10 rounded-full text-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                <span>Wybierz inną kategorię</span>
+                <span>Spróbuj Ponownie</span>
             </button>
         </div>
     );

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
-    const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime } = useTestStore();
+    const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime, reviewAnswers } = useTestStore();
     
     const totalQuestions = currentQuestions.length;
     const incorrectAnswers = totalQuestions - score;
@@ -94,11 +94,17 @@ const ResultsPage = () => {
                     <p className="text-2xl font-bold text-red-600 dark:text-brand-primary">{incorrectAnswers}</p>
                 </div>
             </div>
-
-            <button onClick={resetTest} className="btn-primary font-bold py-3 px-10 rounded-full text-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                <span>Spróbuj Ponownie</span>
-            </button>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                {/* ZMIANA: Zmieniono 'btn-secondary' na 'btn-primary', aby przywrócić poprawny wygląd */}
+                <button onClick={resetTest} className="btn-primary font-bold py-3 px-10 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    <span>Spróbuj Ponownie</span>
+                </button>
+                <button onClick={reviewAnswers} className="btn-primary font-bold py-3 px-10 rounded-full text-lg w-full sm:w-auto">
+                    <span>Przeglądaj odpowiedzi</span>
+                </button>
+            </div>
         </div>
     );
 };

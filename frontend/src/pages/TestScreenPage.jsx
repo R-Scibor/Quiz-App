@@ -90,11 +90,7 @@ const TestScreenPage = () => {
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
 
     return (
-        // ZMIANA: Główny kontener jest teraz zawsze wyśrodkowany za pomocą `mx-auto`
-        // i jest 'relative', aby panel boczny mógł być pozycjonowany względem niego.
         <div className="relative w-full max-w-2xl mx-auto px-4">
-
-            {/* --- Główna karta testu, zawsze na środku --- */}
             <div className="main-card w-full p-8 md:p-12 fade-in">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-white">
@@ -110,7 +106,13 @@ const TestScreenPage = () => {
                         {question.questionText}
                     </p>
                 </div>
-                {question.image && <img src={question.image} alt="Ilustracja do pytania" className="my-4 rounded-lg max-w-full h-auto" />}
+                
+                {/* ZMIANA: Obrazek opakowany w kontener flexbox do wyśrodkowania */}
+                {question.image && (
+                    <div className="my-4 flex justify-center">
+                        <img src={question.image} alt="Ilustracja do pytania" className="rounded-lg max-w-full h-auto" />
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {question.options.map((option, index) => (
@@ -142,7 +144,6 @@ const TestScreenPage = () => {
                 </div>
             </div>
 
-            {/* ZMIANA: Wyjaśnienie dla urządzeń mobilnych - renderowane na dole w normalnym przepływie */}
             <div className="md:hidden">
                  {showFeedback && (
                     <div className="mt-6 p-6 bg-black/20 border border-card-border rounded-lg fade-in w-full">
@@ -151,8 +152,7 @@ const TestScreenPage = () => {
                     </div>
                 )}
             </div>
-
-            {/* --- Wyjaśnienie dla komputerów (pozycjonowane absolutnie) --- */}
+            
             {showFeedback && (
                 <div className="hidden md:block absolute top-1/2 left-full -translate-y-1/2 ml-8 w-80 p-6 bg-black/20 border border-card-border rounded-lg fade-in">
                     <h4 className="font-bold text-gray-200 text-xl">Wyjaśnienie:</h4>

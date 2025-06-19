@@ -47,6 +47,24 @@
             ],
             "correctAnswers": [2],
             "explanation": "Jedna z największych bitew w historii średniowiecznej Europy, stoczona 15 lipca 1410 roku między siłami polsko-litewskimi a Zakonem Krzyżackim."
-        }
+        },
+		{
+			"id": 104,
+			"questionText": "Wymień i krótko opisz co najmniej trzy najważniejsze, długofalowe skutki Zjazdu Gnieźnieńskiego z 1000 roku dla państwa polskiego.",
+			"image": "",
+			"type": "open-ended",
+			"tags": ["zjazd gnieźnieński", "Bolesław Chrobry", "dyplomacja", "kościół"],
+			"gradingCriteria": "Odpowiedź musi zawierać co najmniej trzy z następujących skutków, z krótkim wyjaśnieniem: 1. Utworzenie niezależnej polskiej metropolii kościelnej w Gnieźnie (kluczowe dla suwerenności). 2. Umocnienie pozycji międzynarodowej Polski i samego Bolesława Chrobrego (uznanie go za równego innym władcom). 3. Symboliczne uznanie suwerenności państwa przez Cesarstwo (gest koronacji Ottona III). 4. Zacieśnienie sojuszu polsko-niemieckiego. Przyznaj punkty za poprawne zidentyfikowanie i opisanie każdego skutku, maksymalnie 2 punkty za każdy poprawnie opisany skutek.",
+			"maxPoints": 6
+		},
+		{
+			"id": 105,
+			"questionText": "Scharakteryzuj politykę wewnętrzną Kazimierza Wielkiego, podając dwa przykłady jego reform i wyjaśnij, w jaki sposób przyczyniły się one do wzmocnienia i zjednoczenia Królestwa Polskiego.",
+			"image": "",
+			"type": "open-ended",
+			"tags": ["Kazimierz Wielki", "reformy", "prawo", "gospodarka", "monarchia"],
+			"gradingCriteria": "Odpowiedź musi opisywać dwie z kluczowych reform i ich znaczenie. Przykłady reform: 1. Kodyfikacja prawa (statuty wiślicko-piotrkowskie) -> unifikacja prawna kraju. 2. Reforma monetarna (wprowadzenie grosza krakowskiego) -> stabilizacja gospodarki. 3. Reforma administracji i sądownictwa (urzędy starostów) -> wzmocnienie władzy centralnej. 4. Polityka budowy zamków i fortyfikacji -> wzmocnienie obronności. 5. Założenie Akademii Krakowskiej -> rozwój nauki i elit. Ocena powinna uwzględniać zarówno poprawność merytoryczną opisu reformy, jak i trafność wyjaśnienia jej skutków dla państwa. Maksymalnie 3 punkty za każdą kompletną reformę z wyjaśnieniem.",
+			"maxPoints": 6
+		}
     ]
 }

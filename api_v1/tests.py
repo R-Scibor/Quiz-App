@@ -47,12 +47,13 @@ class ApiViewsTestCase(APITestCase):
         """
         self.tests_dir = TEST_MEDIA_DIR / 'tests'
         
-        # Dane dla testu 1 (historia)
+        # Dane dla testu 1 (historia) - teraz z pytaniem open-ended
         self.historia_data = {
             "category": "Historia", "scope": "Polska", "version": "1.0",
             "questions": [
                 {"id": 1, "questionText": "Kto był pierwszym królem Polski?", "type": "single-choice", "tags": ["władcy", "Polska"], "options": ["Mieszko I", "Bolesław Chrobry", "Kazimierz Wielki"], "correctAnswers": [1], "explanation": "Wyjaśnienie do pytania 1."},
-                {"id": 2, "questionText": "W którym roku odbył się chrzest Polski?", "type": "single-choice", "tags": ["daty", "Polska"], "options": ["966", "1025", "1410"], "correctAnswers": [0], "explanation": "Wyjaśnienie do pytania 2."}
+                {"id": 2, "questionText": "W którym roku odbył się chrzest Polski?", "type": "single-choice", "tags": ["daty", "Polska"], "options": ["966", "1025", "1410"], "correctAnswers": [0], "explanation": "Wyjaśnienie do pytania 2."},
+                {"id": 3, "questionText": "Opisz przyczyny Unii Lubelskiej.", "type": "open-ended", "tags": ["unia", "polityka"], "gradingCriteria": "Musi wspomnieć o zagrożeniu moskiewskim i bezpotomnej śmierci Zygmunta Augusta.", "maxPoints": 5, "explanation": "Kluczowe były zagrożenie ze strony Moskwy oraz dążenie do zapewnienia trwałości związku Polski i Litwy."}
             ]
         }
         with open(self.tests_dir / 'historia.json', 'w', encoding='utf-8') as f:
@@ -81,15 +82,28 @@ class ApiViewsTestCase(APITestCase):
 
     def test_list_available_tests_success(self):
         """
-        Sprawdza, czy endpoint /tests/ poprawnie zwraca listę metadanych testów.
+        Sprawdza, czy endpoint /tests/ poprawnie zwraca listę metadanych testów
+        wraz ze szczegółowym licznikiem pytań.
         """
         response = self.client.get('/api/v1/tests/')
         self.assertEqual(response.status_code, 200)
         response_data = response.json()
         self.assertEqual(len(response_data), 2)
-        # Sprawdzamy czy zwrócone dane zawierają oczekiwane test_id
-        test_ids = {item['test_id'] for item in response_data}
-        self.assertEqual(test_ids, {'historia', 'biologia'})
+        
+        # Sortujemy listę, żeby mieć pewność co do kolejności
+        response_data.sort(key=lambda x: x['test_id'])
+
+        # Sprawdzamy dane dla biologii
+        self.assertEqual(response_data[0]['test_id'], 'biologia')
+        self.assertEqual(response_data[0]['question_counts']['total'], 2)
+        self.assertEqual(response_data[0]['question_counts']['closed'], 2)
+        self.assertEqual(response_data[0]['question_counts']['open'], 0)
+
+        # Sprawdzamy dane dla historii
+        self.assertEqual(response_data[1]['test_id'], 'historia')
+        self.assertEqual(response_data[1]['question_counts']['total'], 3)
+        self.assertEqual(response_data[1]['question_counts']['closed'], 2)
+        self.assertEqual(response_data[1]['question_counts']['open'], 1)
     
     def test_list_available_tests_empty(self):
         """
@@ -106,17 +120,17 @@ class ApiViewsTestCase(APITestCase):
         """
         Sprawdza poprawne pobranie określonej liczby pytań z jednej kategorii.
         """
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 2})
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 3})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(len(response.json()), 3)
 
     def test_get_questions_from_multiple_categories(self):
         """
         Sprawdza pobranie pytań z wielu kategorii.
         """
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia,biologia', 'num_questions': 3})
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia,biologia', 'num_questions': 4})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()), 4)
 
     def test_get_questions_missing_params(self):
         """
@@ -129,9 +143,9 @@ class ApiViewsTestCase(APITestCase):
         """
         Sprawdza, czy żądanie większej liczby pytań niż dostępna zwraca wszystkie dostępne.
         """
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 10})
+        response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 10})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 2) # W 'historia.json' są tylko 2 pytania
+        self.assertEqual(len(response.json()), 2) # W 'biologia.json' są tylko 2 pytania
         
     def test_question_shuffling_logic(self):
         """
@@ -162,3 +176,42 @@ class ApiViewsTestCase(APITestCase):
             
             # Zbiory tekstów poprawnych odpowiedzi (oryginalny i po losowaniu) muszą być identyczne
             self.assertEqual(original_correct_answers_text, shuffled_correct_answers_text)
+    
+    def test_get_questions_mode_closed_only(self):
+        """
+        Sprawdza, czy parametr mode='closed' poprawnie filtruje tylko pytania zamknięte.
+        """
+        # W 'historia.json' mamy 2 pytania zamknięte i 1 otwarte
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 5, 'mode': 'closed'})
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 2)
+        # Upewniamy się, że żadne z pytań nie jest typu 'open-ended'
+        self.assertTrue(all(q['type'] != 'open-ended' for q in response_data))
+
+    def test_get_questions_mode_open_only(self):
+        """
+        Sprawdza, czy parametr mode='open' poprawnie filtruje tylko pytania otwarte.
+        """
+        # W 'historia.json' mamy 1 pytanie otwarte
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 5, 'mode': 'open'})
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 1)
+        self.assertEqual(response_data[0]['type'], 'open-ended')
+    
+    def test_get_questions_mode_mixed(self):
+        """
+        Sprawdza, czy domyślny tryb 'mixed' zwraca wszystkie typy pytań.
+        """
+        # W 'historia.json' są 3 pytania
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 5, 'mode': 'mixed'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 3)
+
+    def test_get_questions_invalid_mode(self):
+        """
+        Sprawdza, czy błędna wartość parametru 'mode' zwraca błąd 400.
+        """
+        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'invalid_mode'})
+        self.assertEqual(response.status_code, 400)

@@ -6,15 +6,22 @@ class QuestionSerializer(serializers.Serializer):
     image = serializers.CharField(allow_blank=True, required=False) # Ścieżka do obrazka
     type = serializers.ChoiceField(choices=['single-choice', 'multiple-choice', 'open-ended'])
     tags = serializers.ListField(child=serializers.CharField())
-    options = serializers.ListField(child=serializers.CharField(), allow_blank=True, required=False))
-    correctAnswers = serializers.ListField(child=serializers.IntegerField(), allow_blank=True, required=False)) # Indeksy poprawnych opcji
+    options = serializers.ListField(child=serializers.CharField(), required=False)
+    correctAnswers = serializers.ListField(child=serializers.IntegerField(), required=False) # Indeksy poprawnych opcji
     explanation = serializers.CharField()
-    gradingCriteria = serializers.CharField(allow_blank=True, required=False) # Kryteria oceniania
-    maxPoints = serializers.IntegerField(default=1, required=False) # Maksymalna liczba punktów za pytanie
+    gradingCriteria = serializers.CharField(required=False)
+    maxPoints = serializers.IntegerField(required=False)
+
+
+class QuestionCountSerializer(serializers.Serializer):
+    """Wewnętrzny serializator dla zagnieżdżonych liczników pytań."""
+    closed = serializers.IntegerField()
+    open = serializers.IntegerField()
+    total = serializers.IntegerField()
 
 class TestMetadataSerializer(serializers.Serializer):
     category = serializers.CharField()
     scope = serializers.CharField()
     version = serializers.CharField()
     test_id = serializers.CharField() # Np. nazwa pliku JSON bez rozszerzenia
-    question_count = serializers.IntegerField()
+    question_counts = QuestionCountSerializer()

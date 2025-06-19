@@ -8,7 +8,7 @@ class QuestionSerializer(serializers.Serializer):
     tags = serializers.ListField(child=serializers.CharField())
     options = serializers.ListField(child=serializers.CharField(), required=False)
     correctAnswers = serializers.ListField(child=serializers.IntegerField(), required=False) # Indeksy poprawnych opcji
-    explanation = serializers.CharField()
+    explanation = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     gradingCriteria = serializers.CharField(required=False)
     maxPoints = serializers.IntegerField(required=False)
 

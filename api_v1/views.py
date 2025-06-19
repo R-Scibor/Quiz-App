@@ -10,7 +10,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+# Import the Google AI library
+import google.generativeai as genai
+
 from .serializers import TestMetadataSerializer, QuestionSerializer
+
 
 class ReactAppView(View):
     """
@@ -192,22 +196,13 @@ class CheckOpenAnswerView(APIView):
         """
         Obsługuje żądania POST z odpowiedzią użytkownika do oceny.
         """
-        # Pobranie klucza API ze zmiennych środowiskowych
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
+        GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+        if not GEMINI_API_KEY:
             return Response(
-                {"error": "Klucz API Gemini nie jest skonfigurowany na serwerze."},
+                {"error": "Klucz API Gemini nie jest skonfigurowany na serwerze."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-        try:
-            genai.configure(api_key=api_key)
-        except Exception as e:
-             return Response(
-                {"error": f"Błąd konfiguracji Gemini: {e}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+            
         # Odbiór danych z frontendu
         user_answer = request.data.get('userAnswer')
         grading_criteria = request.data.get('gradingCriteria')
@@ -247,15 +242,13 @@ class CheckOpenAnswerView(APIView):
         """
 
         try:
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel('gemini-2.5-flash') # Updated model name
             ai_response = model.generate_content(prompt)
 
-            # Czyszczenie odpowiedzi i próba parsowania JSON
             cleaned_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-            
             response_json = json.loads(cleaned_text)
 
-            # Walidacja, czy odpowiedź zawiera wymagane klucze
             if 'score' not in response_json or 'feedback' not in response_json:
                  raise ValueError("Odpowiedź AI nie zawiera wymaganych kluczy 'score' i 'feedback'.")
 

@@ -5,12 +5,20 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/static/',
   plugins: [react()],
+  // ----- TUTAJ ZACZYNA SIĘ MAGIA, KTÓREJ ZAPRAGNĄŁEŚ -----
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
+  // ---------------------------------------------------------
   test: {
-    // Umożliwia używanie globalnych funkcji Vitest (describe, test, expect) bez importowania ich w każdym pliku
     globals: true,
-    // Ustawia środowisko testowe na 'jsdom' (symuluje przeglądarkę)
     environment: 'jsdom',
-    // Wskazuje plik, który ma być uruchomiony przed testami (do konfiguracji)
     setupFiles: './src/setupTests.js',
   },
 })

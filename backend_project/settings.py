@@ -11,23 +11,26 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_ROOT = BASE_DIR / 'media'
 
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+)b*mgwxd7rl&4oy2c-bddp(3!s%mg8e**3=9_2a3n&@@#p!gm'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['10.10.0.165', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
@@ -45,9 +48,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -56,11 +60,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'backend_project.urls'
-
+# Zaktualizowano, aby Django mogło znaleźć plik index.html z katalogu 'dist'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'frontend/dist')], # Zmieniono 'build' na 'dist'
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,18 +76,23 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'backend_project.wsgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if 'DATABASE_URL' in os.environ:
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -122,15 +131,29 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Wskazanie na katalog z plikami statycznymi (CSS, JS) z katalogu 'dist/assets'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'frontend/dist'),
+]
+
+# Katalog, do którego Django zbierze wszystkie pliki statyczne dla środowiska produkcyjnego
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_collected')
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Ustawienie dozwolonych źródeł (origin)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Adres serwera deweloperskiego Vite
-    "http://127.0.0.1:5173", # Czasami przeglądarka używa tego adresu
-    "http://10.10.0.165:5173",
-]
+# Logika dla CORS w zależności od środowiska
+if DEBUG:
+    # Ustawienia potrzebne tylko w trybie deweloperskim, gdy mamy dwa osobne serwery
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = []

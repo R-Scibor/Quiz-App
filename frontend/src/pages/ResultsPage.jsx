@@ -4,9 +4,15 @@ import useTestStore from '../store/testStore';
 const ResultsPage = () => {
     const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime, reviewAnswers } = useTestStore();
     
-    const totalQuestions = currentQuestions.length;
-    const incorrectAnswers = totalQuestions - score;
-    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+    const totalMaxPoints = useMemo(() => {
+        return currentQuestions.reduce((total, question) => {
+            // Dla pytań zamkniętych przyjmujemy 1 pkt, dla otwartych bierzemy maxPoints
+            return total + (question.maxPoints || 1);
+        }, 0);
+    }, [currentQuestions]);
+
+    const incorrectAnswers = totalMaxPoints - score;
+    const percentage = totalMaxPoints > 0 ? Math.round((score / totalMaxPoints) * 100) : 0;
 
     const timeTaken = useMemo(() => {
         if (!timerEnabled || !testStartTime || !testEndTime) {
@@ -83,7 +89,7 @@ const ResultsPage = () => {
             <div className="flex justify-around mb-10">
                 <div>
                     <p className="text-lg text-gray-500 dark:text-gray-400">Wynik</p>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{score} / {totalQuestions}</p>
+                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{score} / {totalMaxPoints}</p>
                 </div>
                 <div>
                     <p className="text-lg text-gray-500 dark:text-gray-400">Poprawne</p>

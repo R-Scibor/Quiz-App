@@ -36,7 +36,7 @@ const HomePage = () => {
                 {/* === Lewa kolumna - Branding === */}
                 <div className="md:w-5/12 p-8 md:p-12 bg-gray-50 dark:bg-black/20 flex flex-col justify-center items-center text-center">
                     <motion.img 
-                        src="/icon.png" 
+                        src="icon.png" 
                         alt="Quiz App Icon" 
                         className="w-32 h-32"
                         initial={{ rotate: -180, scale: 0 }}

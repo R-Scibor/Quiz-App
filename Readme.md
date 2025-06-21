@@ -40,6 +40,7 @@ Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. U�
 - **Zustand:** Proste i wydajne zarządzanie stanem aplikacji.
 - **Tailwind CSS:** Framework CSS do szybkiego stylowania.
 - **Axios:** Klient HTTP do komunikacji z API.
+- **Framer Motion:** Biblioteka do zaawansowanych animacji.
 - **React Router:** Do obsługi routingu po stronie klienta.
 
 ### Backend

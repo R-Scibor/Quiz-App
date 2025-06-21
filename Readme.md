@@ -1,6 +1,6 @@
 # Quiz App
 
-![Podgląd aplikacji Quiz App](https://placehold.co/800x450/1e293b/ffffff?text=Podgląd+Aplikacji)
+![Podgląd aplikacji](./.github/assets/preview.png)
 
 Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. Użytkownicy mogą wybrać test z dostępnej listy, rozwiązać go w określonym czasie, a po zakończeniu zobaczyć swoje wyniki i przejrzeć odpowiedzi.
 

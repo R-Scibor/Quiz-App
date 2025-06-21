@@ -24,6 +24,7 @@ const useTestStore = create((set, get) => ({
 
     isCheckingAnswer: false,
     lastAnswerFeedback: null,
+    openQuestionResults: {},
 
     // Actions
     goToSetup: () => set({ view: 'setup' }),
@@ -107,6 +108,15 @@ const useTestStore = create((set, get) => ({
             set(state => ({
                 // Aktualizujemy ogólny wynik testu
                 score: state.score + score,
+                openQuestionResults: {
+                    ...state.openQuestionResults,
+                    [question.id]: {
+                        userAnswer: userAnswer,
+                        points_awarded: score,
+                        feedback: feedback,
+                        maxPoints: question.maxPoints
+                    }
+                },
                 // Zapisujemy feedback do wyświetlenia na ekranie
                 lastAnswerFeedback: { 
                     points_awarded: score, // Zapisujemy pod kluczem, którego oczekuje komponent
@@ -145,6 +155,7 @@ const useTestStore = create((set, get) => ({
         testEndTime: null, 
         error: null,
         lastAnswerFeedback: null,
+        openQuestionResults: {},
     }),
 
     toggleTheme: () => set((state) => {

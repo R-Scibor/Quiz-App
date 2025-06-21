@@ -148,7 +148,6 @@ class QuestionListView(APIView):
             else:
                 print(f"Ostrzeżenie: Plik testu dla kategorii '{category_id}' nie został znaleziony.")
         
-        # --- NOWA LOGIKA FILTROWANIA ---
         filtered_questions = []
         if mode == 'mixed':
             filtered_questions = all_questions
@@ -156,7 +155,6 @@ class QuestionListView(APIView):
             filtered_questions = [q for q in all_questions if q.get('type') == 'open-ended']
         elif mode == 'closed':
             filtered_questions = [q for q in all_questions if q.get('type') in ['single-choice', 'multiple-choice']]
-        # --- KONIEC NOWEJ LOGIKI ---
 
         if not filtered_questions:
             return Response({"error": f"Nie znaleziono pytań dla wybranych kategorii w trybie '{mode}'."}, status=status.HTTP_404_NOT_FOUND)

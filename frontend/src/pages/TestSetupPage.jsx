@@ -242,7 +242,7 @@ const TestSetupPage = () => {
         setIsModalOpen(false);
     };
 
-    const isStartButtonDisabled = isLoading || selectedCategories.length === 0 || !!inputError || totalAvailableQuestions === 0;
+    const isStartButtonDisabled = isLoading || selectedCategories.length === 0 || !!inputError || totalAvailableQuestions === 0 || numQuestionsInput <= 0;
 
     return (
         <>

@@ -57,7 +57,7 @@ const LlmWarningModal = ({ isOpen, onConfirm, onCancel }) => {
                     <h2 className="text-2xl font-bold text-brand-primary">Uwaga</h2>
                     <div className="text-gray-600 dark:text-gray-300 my-4 space-y-3">
                         <p>
-                            Pytania otwarte są oceniane przez LLM (Duży Model Językowy), przez co w niektórych przypadkach mogą być niesłusznie ocenione.
+                            Pytania otwarte są oceniane przez LLM, przez co w niektórych przypadkach mogą być niesłusznie ocenione.
                         </p>
                         <p className="font-semibold">
                             Bajabongo Entertainment nie ma wpływu na odpowiedzi LLM.

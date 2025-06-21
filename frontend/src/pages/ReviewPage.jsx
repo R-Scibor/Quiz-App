@@ -78,7 +78,7 @@ const OpenQuestionReview = ({ question, result }) => {
                 <p className="p-4 bg-gray-100 dark:bg-option-bg rounded-lg mt-2 text-gray-800 dark:text-gray-300">{userAnswer || "Brak odpowiedzi"}</p>
             </div>
             <div>
-                <h4 className="font-bold text-gray-700 dark:text-gray-200">Ocena AI ({points_awarded} / {question.maxPoints} pkt):</h4>
+                <h4 className="font-bold text-gray-700 dark:text-gray-200">Ocena ({points_awarded} / {question.maxPoints} pkt):</h4>
                 {/* Używamy operatora trójargumentowego do dynamicznego przypisania klas */}
                 <p className={isScoreHigh ? successClasses : warningClasses}>
                     {feedback}

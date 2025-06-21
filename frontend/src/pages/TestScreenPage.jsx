@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useTestStore from '../store/testStore';
 import ProgressBar from '../components/ProgressBar';
 import Timer from '../components/Timer';
+import LoadingSpinner from '../components/LoadingSpinner'; // POPRAWKA: Import nowego komponentu
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Komponent dla pytań otwartych ---
@@ -13,12 +14,11 @@ const OpenEndedQuestionUI = () => {
         isCheckingAnswer,
         lastAnswerFeedback,
         nextQuestion,
-        error: apiError // zmiana nazwy, aby uniknąć konfliktu
+        error: apiError
     } = useTestStore();
     const [userAnswer, setUserAnswer] = useState('');
     const question = currentQuestions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
-
 
     const handleSubmit = () => {
         if (userAnswer.trim()) {
@@ -31,7 +31,6 @@ const OpenEndedQuestionUI = () => {
         return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Wynik oceny</h3>
-                {/* POPRAWKA: Naprawiono literówkę z 'lastAnswerfeedback' na 'lastAnswerFeedback' */}
                 <p className="text-3xl font-bold text-brand-primary mb-4">
                     {lastAnswerFeedback.points_awarded} / {lastAnswerFeedback.maxPoints} pkt
                 </p>
@@ -56,12 +55,8 @@ const OpenEndedQuestionUI = () => {
     if (isCheckingAnswer) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-16 h-16 border-4 border-t-brand-primary border-gray-200 dark:border-gray-600 rounded-full mb-4"
-                />
-                <p className="text-lg text-gray-600 dark:text-gray-300">Ocenianie odpowiedzi przez AI...</p>
+                <LoadingSpinner />
+                <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
             </div>
         );
     }
@@ -110,7 +105,6 @@ const TestScreenPage = () => {
 
     useEffect(() => {
         if (question) {
-            // Dla pytań zamkniętych, ustawiamy selection z userAnswers
             if (question.type === 'single-choice' || question.type === 'multiple-choice') {
                  setSelection(userAnswers[question.id] || []);
             }
@@ -192,7 +186,6 @@ const TestScreenPage = () => {
                 <ProgressBar />
 
                 <div className="my-8 min-h-[96px] flex items-center">
-                    {/* POPRAWKA: Przywrócono 'question.questionText' z oryginalnego pliku */}
                     <p className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug">
                          {question.questionText}
                     </p>
@@ -204,10 +197,8 @@ const TestScreenPage = () => {
                     </div>
                 )}
                 
-                {/* RENDEROWANIE WARUNKOWE */}
                 {isClosedQuestion ? (
                     <>
-                        {/* UI dla pytań zamkniętych (bez zmian) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {question.options.map((option, index) => (
                                 <motion.div
@@ -247,13 +238,11 @@ const TestScreenPage = () => {
                         </div>
                     </>
                 ) : (
-                    // Nowe UI dla pytań otwartych
                     <OpenEndedQuestionUI />
                 )}
 
             </div>
 
-            {/* Panel z wyjaśnieniem (tylko dla pytań zamkniętych po odpowiedzi) */}
             {isClosedQuestion && showFeedback && (
                 <motion.div 
                     initial={{ opacity: 0, x: 20 }}

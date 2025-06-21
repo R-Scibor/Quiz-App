@@ -63,14 +63,13 @@ const OpenQuestionReview = ({ question, result }) => {
 
     const { userAnswer, points_awarded, feedback } = result;
 
-    // --- NOWA LOGIKA ---
     // Sprawdzamy, czy wynik jest wyższy niż połowa maksymalnej liczby punktów
     const isScoreHigh = points_awarded >= question.maxPoints / 2;
 
     // Definiujemy klasy CSS dla obu wariantów
     const successClasses = 'p-4 bg-green-100 dark:bg-green-900/50 rounded-lg mt-2 text-green-800 dark:text-green-200';
     const warningClasses = 'p-4 bg-red-100 dark:bg-red-900/50 rounded-lg mt-2 text-red-800 dark:text-red-200';
-    // --- KONIEC NOWEJ LOGIKI ---
+
 
     return (
         <div className="space-y-4 mt-4">

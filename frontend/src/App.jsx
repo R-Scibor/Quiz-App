@@ -1,12 +1,16 @@
 import React, { useEffect } from 'react';
 import useTestStore from './store/testStore';
-import HomePage from './pages/HomePage'; // ZMIANA: Importujemy HomePage
+import HomePage from './pages/HomePage';
 import TestSetupPage from './pages/TestSetupPage';
 import TestScreenPage from './pages/TestScreenPage';
 import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Krok 1: Importujemy nowe komponenty tła
+import DarkModeBackground from './components/DarkModeBackground';
+import LightModeBackground from './components/LightModeBackground';
 
 function App() {
     const view = useTestStore((state) => state.view);
@@ -30,7 +34,11 @@ function App() {
     };
 
     return (
-        <div className="relative flex items-center justify-center min-h-screen p-4 bg-gray-100 dark:bg-brand-background transition-colors duration-300 overflow-hidden">
+        <div className="relative flex items-center justify-center min-h-screen p-4 transition-colors duration-300 overflow-hidden">
+           <AnimatePresence>
+             {theme === 'dark' ? <DarkModeBackground /> : <LightModeBackground />}
+           </AnimatePresence>
+           
            <ThemeSwitcher />
            
            <AnimatePresence mode="wait">
@@ -40,6 +48,7 @@ function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -30 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="z-10" // Dodajemy z-index, aby karty były nad tłem
                 >
                    {renderView()}
                 </motion.div>

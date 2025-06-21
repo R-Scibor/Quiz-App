@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import useTestStore from '../store/testStore';
+import useTestStore from '/src/store/testStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Komponent Modala Potwierdzenia ---
+// --- Komponenty Modalne (bez zmian) ---
 const ConfirmationModal = ({ isOpen, availableCount, requestedCount, onConfirm, onCancel }) => {
     if (!isOpen) return null;
-
     return (
         <AnimatePresence>
             <motion.div
@@ -38,10 +37,8 @@ const ConfirmationModal = ({ isOpen, availableCount, requestedCount, onConfirm, 
     );
 };
 
-// --- Komponent Modala z Ostrzeżeniem o AI ---
 const LlmWarningModal = ({ isOpen, onConfirm, onCancel }) => {
     if (!isOpen) return null;
-
     return (
         <AnimatePresence>
             <motion.div
@@ -79,12 +76,25 @@ const LlmWarningModal = ({ isOpen, onConfirm, onCancel }) => {
     );
 };
 
+
+// --- Definicje animacji ---
+const hoverEffect = {
+    scale: 1.02,
+    boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.12)",
+    borderColor: "rgba(220, 37, 37, 0.7)"
+};
+
+const tapEffect = {
+    scale: 0.98
+};
+
 const ChevronIcon = ({ expanded }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}>
         <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
 );
 
+// --- Główny komponent ---
 const TestSetupPage = () => {
     const { 
         fetchAvailableTests, 
@@ -106,12 +116,10 @@ const TestSetupPage = () => {
     const [inputError, setInputError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [expandedCategory, setExpandedCategory] = useState(null);
-
-    // Stany do obsługi modala z ostrzeżeniem
     const [isLlmWarningModalOpen, setIsLlmWarningModalOpen] = useState(false);
     const [pendingQuestionMode, setPendingQuestionMode] = useState(null);
 
-
+    // Cała logika pozostaje bez zmian
     useEffect(() => { 
         fetchAvailableTests(); 
     }, [fetchAvailableTests]);
@@ -132,16 +140,12 @@ const TestSetupPage = () => {
 
     const totalAvailableQuestions = useMemo(() => {
         if (selectedCategories.length === 0) return 0;
-        
         return availableTests
             .filter(test => selectedCategories.includes(test.test_id))
             .reduce((sum, test) => {
                 const counts = test.question_counts;
-                if (questionMode === 'closed') {
-                    return sum + counts.closed;
-                } else if (questionMode === 'open') {
-                    return sum + counts.open;
-                }
+                if (questionMode === 'closed') return sum + counts.closed;
+                if (questionMode === 'open') return sum + counts.open;
                 return sum + counts.total;
             }, 0);
     }, [selectedCategories, availableTests, questionMode]);
@@ -169,23 +173,18 @@ const TestSetupPage = () => {
     const handleSelectAll = (tests, areAllSelected) => {
         tests.forEach(test => {
             const isCurrentlySelected = selectedCategories.includes(test.test_id);
-            if (areAllSelected && isCurrentlySelected) {
-                toggleCategory(test.test_id);
-            } else if (!areAllSelected && !isCurrentlySelected) {
-                toggleCategory(test.test_id);
-            }
+            if (areAllSelected && isCurrentlySelected) toggleCategory(test.test_id);
+            else if (!areAllSelected && !isCurrentlySelected) toggleCategory(test.test_id);
         });
     };
 
     const handleNumQuestionsChange = (e) => {
         const value = e.target.value;
         setNumQuestionsInput(value); 
-
         if (value === '') {
             setInputError('Pole nie może być puste.');
             return;
         }
-        
         const num = parseInt(value, 10);
         if (isNaN(num) || num <= 0) {
             setInputError('Wprowadź liczbę większą od zera.');
@@ -197,7 +196,6 @@ const TestSetupPage = () => {
         }
     };
     
-    // Obsługa zmiany trybu pytań z modalem
     const handleModeChange = (e) => {
         const newMode = e.target.value;
         if (newMode === 'open' || newMode === 'mixed') {
@@ -209,9 +207,7 @@ const TestSetupPage = () => {
     };
 
     const handleConfirmLlmWarning = () => {
-        if (pendingQuestionMode) {
-            setQuestionMode(pendingQuestionMode);
-        }
+        if (pendingQuestionMode) setQuestionMode(pendingQuestionMode);
         setIsLlmWarningModalOpen(false);
         setPendingQuestionMode(null);
     };
@@ -221,19 +217,11 @@ const TestSetupPage = () => {
         setPendingQuestionMode(null);
     };
 
-
     const handleStartClick = () => {
-        if (inputError || numQuestionsInput === '' || totalAvailableQuestions === 0) {
-            return;
-        }
-
+        if (inputError || numQuestionsInput === '' || totalAvailableQuestions === 0) return;
         const requestedCount = parseInt(numQuestionsInput, 10);
-        
-        if (requestedCount > totalAvailableQuestions) {
-            setIsModalOpen(true);
-        } else {
-            startTest();
-        }
+        if (requestedCount > totalAvailableQuestions) setIsModalOpen(true);
+        else startTest();
     };
     
     const handleConfirmStart = () => {
@@ -281,18 +269,30 @@ const TestSetupPage = () => {
                 
                 {error && <p className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-md mb-6">{error}</p>}
                 
+                {/* --- ZMIANA: Lista kategorii z animacjami --- */}
                 <div className="mb-8 text-left">
                     {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Ładowanie listy testów...</p>}
-                    
-                    <div className="space-y-4">
+                    <motion.div 
+                        className="space-y-4"
+                        variants={{
+                            visible: { transition: { staggerChildren: 0.1 } }
+                        }}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         {Object.entries(testsByCategory).map(([category, { tests, question_counts }]) => {
                             const allTestIds = tests.map(t => t.test_id);
                             const areAllSelected = allTestIds.every(id => selectedCategories.includes(id));
-
                             return (
-                                <div key={category} className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg transition-all duration-300 hover:border-brand-primary">
-                                    <button 
+                                <motion.div 
+                                    key={category}
+                                    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                                    whileHover={hoverEffect}
+                                    className="bg-gray-100 dark:bg-option-bg border border-gray-300 dark:border-card-border rounded-lg"
+                                >
+                                    <motion.button 
                                         onClick={() => handleCategoryClick(category)} 
+                                        whileTap={tapEffect}
                                         className="w-full flex justify-between items-center p-5 font-bold text-xl text-gray-800 dark:text-white rounded-t-lg"
                                     >
                                         <div className='flex flex-col items-start'>
@@ -302,99 +302,65 @@ const TestSetupPage = () => {
                                           </span>
                                         </div>
                                         <ChevronIcon expanded={expandedCategory === category} />
-                                    </button>
-                                    
+                                    </motion.button>
                                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${expandedCategory === category ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                         <div className="overflow-hidden">
                                             <div className="p-5 border-t border-gray-300 dark:border-card-border space-y-4">
+                                                {/* Tutaj też można dodać animacje dla poszczególnych checkboxów */}
                                                 <label className="flex items-center w-full cursor-pointer p-3 rounded-md bg-gray-200 dark:bg-black/20 hover:bg-gray-300 dark:hover:bg-black/40 transition-colors">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={areAllSelected}
-                                                        onChange={() => handleSelectAll(tests, areAllSelected)}
-                                                        className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary"
-                                                    />
+                                                    <input type="checkbox" checked={areAllSelected} onChange={() => handleSelectAll(tests, areAllSelected)} className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" />
                                                     <span className="ml-3 font-semibold text-gray-700 dark:text-gray-200">Zaznacz całą kategorię</span>
                                                 </label>
-
                                                 <div className="space-y-3 pl-3 border-l-2 border-gray-300 dark:border-gray-700/50">
                                                     {tests.map(test => (
                                                         <label key={test.test_id} className="flex items-center cursor-pointer p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/5 transition-colors">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedCategories.includes(test.test_id)}
-                                                                onChange={() => toggleCategory(test.test_id)}
-                                                                className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary"
-                                                            />
-                                                            <span className="ml-3 text-gray-700 dark:text-gray-200">
-                                                                {test.scope} ({test.version})
-                                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                                                    [Z: {test.question_counts.closed}, O: {test.question_counts.open}]
-                                                                </span>
-                                                            </span>
+                                                            <input type="checkbox" checked={selectedCategories.includes(test.test_id)} onChange={() => toggleCategory(test.test_id)} className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" />
+                                                            <span className="ml-3 text-gray-700 dark:text-gray-200">{test.scope} ({test.version})<span className="text-xs text-gray-500 dark:text-gray-400 ml-2">[Z: {test.question_counts.closed}, O: {test.question_counts.open}]</span></span>
                                                         </label>
                                                     ))}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
                 </div>
 
-                <div className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700">
+                {/* --- ZMIANA: Sekcje ustawień z animacjami --- */}
+                <motion.div
+                    whileHover={hoverEffect}
+                    className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700"
+                >
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Tryb Pytań</h2>
                     <div className="flex flex-col sm:flex-row justify-around gap-4">
                         {['closed', 'open', 'mixed'].map((mode) => (
-                            <label key={mode} className="flex items-center cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="questionMode"
-                                    value={mode}
-                                    checked={questionMode === mode}
-                                    onChange={handleModeChange}
-                                    className="h-5 w-5 text-brand-primary focus:ring-brand-primary"
-                                />
-                                <span className="ml-3 text-gray-700 dark:text-gray-200 capitalize">
-                                    {mode === 'mixed' ? 'Mieszane' : mode === 'closed' ? 'Zamknięte' : 'Otwarte'}
-                                </span>
+                            <label key={mode} className="flex items-center cursor-pointer p-2 rounded-md hover:bg-gray-300 dark:hover:bg-white/10">
+                                <input type="radio" name="questionMode" value={mode} checked={questionMode === mode} onChange={handleModeChange} className="h-5 w-5 text-brand-primary focus:ring-brand-primary" />
+                                <span className="ml-3 text-gray-700 dark:text-gray-200 capitalize">{mode === 'mixed' ? 'Mieszane' : mode === 'closed' ? 'Zamknięte' : 'Otwarte'}</span>
                             </label>
                         ))}
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700">
+                <motion.div
+                    whileHover={hoverEffect}
+                    className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700"
+                >
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Ustawienia</h2>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-4 sm:space-y-0">
                         <div className="flex-1">
-                            <label htmlFor="num-questions" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Liczba pytań (dostępnych: {totalAvailableQuestions})
-                            </label>
-                            <input 
-                                type="number" 
-                                id="num-questions" 
-                                className={`w-full p-2 bg-gray-50 dark:bg-gray-900 border rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary ${inputError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-                                value={numQuestionsInput} 
-                                onChange={handleNumQuestionsChange}
-                                max={totalAvailableQuestions}
-                                min="1"
-                            />
+                            <label htmlFor="num-questions" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Liczba pytań (dostępnych: {totalAvailableQuestions})</label>
+                            <input type="number" id="num-questions" className={`w-full p-2 bg-gray-50 dark:bg-gray-900 border rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary ${inputError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} value={numQuestionsInput} onChange={handleNumQuestionsChange} max={totalAvailableQuestions} min="1" />
                             {inputError && <p className="text-red-500 text-xs mt-1">{inputError}</p>}
                         </div>
                         <div className="flex items-center pt-6">
-                            <input 
-                                id="timer-enabled" 
-                                type="checkbox" 
-                                className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary"
-                                checked={timerEnabled} 
-                                onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)} 
-                            />
+                            <input id="timer-enabled" type="checkbox" className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" checked={timerEnabled} onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)} />
                             <label htmlFor="timer-enabled" className="ml-3 block font-medium text-gray-700 dark:text-gray-300">Włącz licznik</label>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 <motion.button 
                     whileHover={{ scale: 1.05, y: -2 }}

@@ -68,7 +68,7 @@ const OpenEndedQuestionUI = () => {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 placeholder="Wpisz swoją odpowiedź tutaj..."
-                className="w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors"
+                className="w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white"
                 aria-label="Pole odpowiedzi"
             />
             {apiError && <p className="text-red-500 text-sm mt-2 text-center">{apiError}</p>}

@@ -29,8 +29,8 @@
         },
         {
             "id": 303,
-            "questionText": "Patrząc na schemat systemu plików ext2, który element znajduje się na samym początku partycji, przed pierwszą grupą bloków?",
-            "image": "/static/ext2.png",
+            "questionText": "W systemie plików ext2, który element znajduje się na samym początku partycji, przed pierwszą grupą bloków?",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -45,7 +45,7 @@
         {
             "id": 304,
             "questionText": "Główna część systemu plików ext2, znajdująca się za blokiem startowym, jest podzielona na powtarzające się struktury. Jak nazywają się te struktury?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -60,7 +60,7 @@
         {
             "id": 305,
             "questionText": "Który element w grupie bloków zawiera kluczowe metadane o *całym* systemie plików i jest powielany w wielu grupach dla bezpieczeństwa?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -75,7 +75,7 @@
         {
             "id": 306,
             "questionText": "Gdzie w systemie plików ext2 przechowywana jest właściwa zawartość plików (dane)?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -88,24 +88,9 @@
             "explanation": "Tablica bloków danych zawiera bloki, w których przechowywana jest rzeczywista treść plików. "
         },
         {
-            "id": 307,
-            "questionText": "Metadane każdego pliku (uprawnienia, właściciel, wskaźniki do bloków danych) są przechowywane w strukturze zwanej i-węzłem. Gdzie w ramach grupy bloków znajdują się te i-węzły?",
-            "image": "/static/ext2.png",
-            "type": "single-choice",
-            "tags": ["linux", "system plików", "ext2", "egzamin", "i-węzeł"],
-            "options": [
-                "W tablicy i-węzłów",
-                "W bloku startowym",
-                "W mapach bitowych",
-                "W deskryptorze grupy"
-            ],
-            "correctAnswers": [0],
-            "explanation": "Każda grupa bloków posiada własną Tablicę i-węzłów (Inode Table), w której przechowywane są struktury i-węzłów. "
-        },
-        {
             "id": 308,
             "questionText": "Jak system plików ext2 śledzi, które bloki danych i i-węzły są wolne, a które zajęte?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -120,7 +105,7 @@
         {
             "id": 309,
             "questionText": "Który element zawiera informacje specyficzne dla *swojej własnej* grupy bloków, np. lokalizację mapy bitowej i tablicy i-węzłów w tej grupie?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -135,7 +120,7 @@
         {
             "id": 310,
             "questionText": "W typowej grupie bloków w systemie ext2, co następuje bezpośrednio po Super bloku?",
-            "image": "/static/ext2.png",
+            "image": "",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -266,6 +251,62 @@
 	        ],
 	        "correctAnswers": [1],
 	        "explanation": "Zgodnie z materiałami, `set_task_state()` jest jedną z dwóch wymienionych funkcji służących bezpośrednio do zmiany stanu procesu."
-	    }
+	    },
+		{
+			"id": 320,
+			"questionText": "Na diagramie przedstawiono klasyczną strukturę systemu plików Unix System V składającą się z 5 pól. Twoim zadaniem jest przyporządkowanie poniższych nazw elementów do odpowiednich numerów pól (od 1 do 5) na diagramie. Nazwy podano w losowej kolejności:\n\n- Super blok (Superblock)\n- Tablica bloków danych (Data Blocks)\n- Blok startowy (Boot Block)\n- Tablica i-węzłów (Inode Table)\n- Mapy bitowe (Bitmaps)",
+			"image": "/static/unixfile.png",
+			"type": "open-ended",
+			"tags": ["unix", "system plików", "systemv", "egzamin", "diagram", "otwarte"],
+			"gradingCriteria": "Odpowiedź musi być w formacie 'Pole X: Nazwa Elementu'. Przyznaj 1 punkt za każde poprawne przyporządkowanie. Maksymalna liczba punktów to 5. \n\nPrawidłowa odpowiedź:\nPole 1: Blok startowy\nPole 2: Super blok\nPole 3: Mapy bitowe\nPole 4: Tablica i-węzłów\nPole 5: Tablica bloków danych.\n\nAkceptuj również angielskie nazwy (Boot Block, Superblock, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za literówki.",
+			"maxPoints": 5
+		},
+		{
+			"id": 321,
+			"questionText": "Diagram w materiale źródłowym (obraz.png) przedstawia strukturę 'Grupy bloków' w systemie plików ext2. Składa się ona z 5 głównych elementów. Twoim zadaniem jest podanie prawidłowej kolejności tych elementów w grupie bloków, numerując je od 1 do 5. Elementy do uporządkowania (w losowej kolejności) to:\n\n- Tablica i-węzłów\n- Mapy bitowe\n- Deskryptor grupy\n- Super blok\n- Tablica bloków danych",
+			"image": "obraz.png",
+			"type": "open-ended",
+			"tags": [
+				"linux",
+				"system plików",
+				"ext2",
+				"egzamin",
+				"kolejność",
+				"otwarte"
+			],
+			"gradingCriteria": "Odpowiedź musi być w formacie '1: Nazwa Elementu, 2: Nazwa Elementu...'. Przyznaj 1 punkt za każdą poprawną pozycję. Maksymalna liczba punktów to 5.\n\nPrawidłowa odpowiedź:\n1: Super blok\n2: Deskryptor grupy\n3: Mapy bitowe\n4: Tablica i-węzłów\n5: Tablica bloków danych\n\nPodczas oceniania akceptuj również angielskie nazwy (Superblock, Group Descriptor, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za ewentualne literówki.",
+			"maxPoints": 5
+		},
+		{
+			"id": 322,
+			"questionText": "Jaką rolę w systemie plików ext2 pełni 'Blok startowy', który znajduje się na samym początku woluminu, przed pierwszą grupą bloków?",
+			"image": "",
+			"type": "multiple-choice",
+			"options": [
+				"Zawiera program rozruchowy (bootstrap) niezbędny do uruchomienia systemu operacyjnego.",
+				"Przechowuje główny i jedyny deskryptor grup dla całego systemu plików.",
+				"Służy do oznaczania uszkodzonych klastrów na partycji.",
+				"Zawiera informacje o katalogu głównym (root) systemu plików."
+			],
+			"correctAnswer": "Zawiera program rozruchowy (bootstrap) niezbędny do uruchomienia systemu operacyjnego.",
+			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "blok startowy"],
+			"maxPoints": 1
+		},
+		{
+			"id": 323,
+			"questionText": "Jak nazywa się podstawowa jednostka organizacyjna w systemie plików ext2, która jest wielokrotnie powtarzana na partycji i zawiera m.in. własną kopię superbloku oraz tablicę i-węzłów?",
+			"image": "",
+			"type": "multiple-choice",
+			"options": [
+				"Grupa bloków",
+				"Sektor",
+				"Klaster",
+				"Partycja rozszerzona"
+			],
+			"correctAnswer": "Grupa bloków",
+			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "grupa bloków"],
+			"maxPoints": 1
+		}
+	]
 	]
 }

@@ -30,7 +30,7 @@
         {
             "id": 303,
             "questionText": "Patrząc na schemat systemu plików ext2, który element znajduje się na samym początku partycji, przed pierwszą grupą bloków?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -45,7 +45,7 @@
         {
             "id": 304,
             "questionText": "Główna część systemu plików ext2, znajdująca się za blokiem startowym, jest podzielona na powtarzające się struktury. Jak nazywają się te struktury?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -60,7 +60,7 @@
         {
             "id": 305,
             "questionText": "Który element w grupie bloków zawiera kluczowe metadane o *całym* systemie plików i jest powielany w wielu grupach dla bezpieczeństwa?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -75,7 +75,7 @@
         {
             "id": 306,
             "questionText": "Gdzie w systemie plików ext2 przechowywana jest właściwa zawartość plików (dane)?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -90,7 +90,7 @@
         {
             "id": 307,
             "questionText": "Metadane każdego pliku (uprawnienia, właściciel, wskaźniki do bloków danych) są przechowywane w strukturze zwanej i-węzłem. Gdzie w ramach grupy bloków znajdują się te i-węzły?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin", "i-węzeł"],
             "options": [
@@ -105,7 +105,7 @@
         {
             "id": 308,
             "questionText": "Jak system plików ext2 śledzi, które bloki danych i i-węzły są wolne, a które zajęte?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -120,7 +120,7 @@
         {
             "id": 309,
             "questionText": "Który element zawiera informacje specyficzne dla *swojej własnej* grupy bloków, np. lokalizację mapy bitowej i tablicy i-węzłów w tej grupie?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [
@@ -135,7 +135,7 @@
         {
             "id": 310,
             "questionText": "W typowej grupie bloków w systemie ext2, co następuje bezpośrednio po Super bloku?",
-            "image": "/ext2.png",
+            "image": "/static/ext2.png",
             "type": "single-choice",
             "tags": ["linux", "system plików", "ext2", "egzamin"],
             "options": [

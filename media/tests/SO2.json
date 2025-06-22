@@ -252,142 +252,61 @@
 	        "correctAnswers": [1],
 	        "explanation": "Zgodnie z materiałami, `set_task_state()` jest jedną z dwóch wymienionych funkcji służących bezpośrednio do zmiany stanu procesu."
 	    },
-	    {
-	        "id": 319,
-	        "questionText": "Element zawierający kod potrzebny do uruchomienia systemu, nazywany 'Blokiem startowym', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [0],
-	        "explanation": "Blok startowy (Boot Block) jest pierwszym, osobnym elementem na partycji, umieszczonym w Polu 1, przed grupami bloków."
-	    },
-	    {
-	        "id": 320,
-	        "questionText": "Element przechowujący kluczowe metadane o całym systemie plików (np. całkowita liczba bloków i i-węzłów), nazywany 'Super blokiem', znajduje się w którym polu grupy bloków?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [1],
-	        "explanation": "Super blok jest pierwszym elementem wewnątrz grupy bloków, znajduje się w Polu 2."
-	    },
-	    {
-	        "id": 321,
-	        "questionText": "Element opisujący metadane *jednej, konkretnej* grupy bloków (np. adresy map bitowych), nazywany 'Deskryptorem grupy', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [2],
-	        "explanation": "Deskryptor grupy znajduje się w Polu 3, zaraz po Super bloku."
-	    },
-	    {
-	        "id": 322,
-	        "questionText": "Elementy używane do śledzenia wolnych i zajętych bloków oraz i-węzłów, nazywane 'Mapami bitowymi', znajdują się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [4],
-	        "explanation": "Zgodnie z poprawnym schematem, Mapy bitowe dla bloków i i-węzłów znajdują się w Polu 5."
-	    },
-	    {
-	        "id": 323,
-	        "questionText": "Element przechowujący metadane dla poszczególnych plików i katalogów (np. uprawnienia, właściciel), nazywany 'Tablicą i-węzłów', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [3],
-	        "explanation": "Zgodnie z poprawnym schematem, Tablica i-węzłów, zawierająca struktury i-node, znajduje się w Polu 4."
-	    },
-	    {
-	        "id": 324,
-	        "questionText": "Element, w którym przechowywana jest faktyczna, właściwa zawartość plików (dane), nazywany 'Tablicą bloków danych', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [5],
-	        "explanation": "Bloki z danymi plików znajdują się na samym końcu grupy bloków, w Polu 6."
-	    },
-	    {
-	        "id": 325,
-	        "questionText": "Element, który zawiera wskaźniki do fizycznych bloków danych przechowujących treść pliku, czyli 'Tablica i-węzłów', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [3],
-	        "explanation": "Struktury i-węzłów, które zawierają m.in. wskaźniki do bloków danych, są umieszczone w 'Tablicy i-węzłów' w Polu 4."
-	    },
-	    {
-	        "id": 326,
-	        "questionText": "Element, który zawiera globalne informacje o systemie plików, takie jak 'magiczna liczba' identyfikująca typ systemu, nazywany 'Super blokiem', znajduje się w którym polu?",
-	        "image": "/static/ext2.png",
-	        "type": "single-choice",
-	        "tags": ["linux", "system plików", "ext2", "egzamin", "diagram"],
-	        "options": [
-	            "Pole 1",
-	            "Pole 2",
-	            "Pole 3",
-	            "Pole 4",
-	            "Pole 5",
-	            "Pole 6"
-	        ],
-	        "correctAnswers": [1],
-	        "explanation": "Super blok, zawierający kluczowe dane identyfikacyjne i konfiguracyjne systemu plików, jest pierwszym elementem grupy bloków w Polu 2."
-	    }
+		{
+			"id": 320,
+			"questionText": "Na diagramie przedstawiono klasyczną strukturę systemu plików Unix System V składającą się z 5 pól. Twoim zadaniem jest przyporządkowanie poniższych nazw elementów do odpowiednich numerów pól (od 1 do 5) na diagramie. Nazwy podano w losowej kolejności:\n\n- Super blok (Superblock)\n- Tablica bloków danych (Data Blocks)\n- Blok startowy (Boot Block)\n- Tablica i-węzłów (Inode Table)\n- Mapy bitowe (Bitmaps)",
+			"image": "/static/unixfile.png",
+			"type": "open-ended",
+			"tags": ["unix", "system plików", "systemv", "egzamin", "diagram", "otwarte"],
+			"gradingCriteria": "Odpowiedź musi być w formacie 'Pole X: Nazwa Elementu'. Przyznaj 1 punkt za każde poprawne przyporządkowanie. Maksymalna liczba punktów to 5. \n\nPrawidłowa odpowiedź:\nPole 1: Blok startowy\nPole 2: Super blok\nPole 3: Mapy bitowe\nPole 4: Tablica i-węzłów\nPole 5: Tablica bloków danych.\n\nAkceptuj również angielskie nazwy (Boot Block, Superblock, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za literówki.",
+			"maxPoints": 5
+		},
+		{
+			"id": 321,
+			"questionText": "Diagram w materiale źródłowym (obraz.png) przedstawia strukturę 'Grupy bloków' w systemie plików ext2. Składa się ona z 5 głównych elementów. Twoim zadaniem jest podanie prawidłowej kolejności tych elementów w grupie bloków, numerując je od 1 do 5. Elementy do uporządkowania (w losowej kolejności) to:\n\n- Tablica i-węzłów\n- Mapy bitowe\n- Deskryptor grupy\n- Super blok\n- Tablica bloków danych",
+			"image": "obraz.png",
+			"type": "open-ended",
+			"tags": [
+				"linux",
+				"system plików",
+				"ext2",
+				"egzamin",
+				"kolejność",
+				"otwarte"
+			],
+			"gradingCriteria": "Odpowiedź musi być w formacie '1: Nazwa Elementu, 2: Nazwa Elementu...'. Przyznaj 1 punkt za każdą poprawną pozycję. Maksymalna liczba punktów to 5.\n\nPrawidłowa odpowiedź:\n1: Super blok\n2: Deskryptor grupy\n3: Mapy bitowe\n4: Tablica i-węzłów\n5: Tablica bloków danych\n\nPodczas oceniania akceptuj również angielskie nazwy (Superblock, Group Descriptor, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za ewentualne literówki.",
+			"maxPoints": 5
+		},
+		{
+			"id": 322,
+			"questionText": "Jaką rolę w systemie plików ext2 pełni 'Blok startowy', który znajduje się na samym początku woluminu, przed pierwszą grupą bloków?",
+			"image": "",
+			"type": "multiple-choice",
+			"options": [
+				"Zawiera program rozruchowy (bootstrap) niezbędny do uruchomienia systemu operacyjnego.",
+				"Przechowuje główny i jedyny deskryptor grup dla całego systemu plików.",
+				"Służy do oznaczania uszkodzonych klastrów na partycji.",
+				"Zawiera informacje o katalogu głównym (root) systemu plików."
+			],
+			"correctAnswer": "Zawiera program rozruchowy (bootstrap) niezbędny do uruchomienia systemu operacyjnego.",
+			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "blok startowy"],
+			"maxPoints": 1
+		},
+		{
+			"id": 323,
+			"questionText": "Jak nazywa się podstawowa jednostka organizacyjna w systemie plików ext2, która jest wielokrotnie powtarzana na partycji i zawiera m.in. własną kopię superbloku oraz tablicę i-węzłów?",
+			"image": "",
+			"type": "multiple-choice",
+			"options": [
+				"Grupa bloków",
+				"Sektor",
+				"Klaster",
+				"Partycja rozszerzona"
+			],
+			"correctAnswer": "Grupa bloków",
+			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "grupa bloków"],
+			"maxPoints": 1
+		}
 	]
 	]
 }

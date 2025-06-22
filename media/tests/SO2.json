@@ -288,7 +288,7 @@
 				"Służy do oznaczania uszkodzonych klastrów na partycji.",
 				"Zawiera informacje o katalogu głównym (root) systemu plików."
 			],
-			"correctAnswer": "Zawiera program rozruchowy (bootstrap) niezbędny do uruchomienia systemu operacyjnego.",
+			"correctAnswer": [0],
 			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "blok startowy"],
 			"maxPoints": 1
 		},
@@ -303,7 +303,7 @@
 				"Klaster",
 				"Partycja rozszerzona"
 			],
-			"correctAnswer": "Grupa bloków",
+			"correctAnswer": [0],
 			"tags": [ "linux", "system plików", "ext2", "egzamin", "zamknięte", "grupa bloków"],
 			"maxPoints": 1
 		}

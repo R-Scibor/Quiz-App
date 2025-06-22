@@ -1,0 +1,271 @@
+{
+    "category": "Systemy Operacyjne 2",
+    "scope": "Pytania z Egzaminu 0",
+    "version": "1.1",
+    "questions": [
+        {
+            "id": 301,
+            "questionText": "Czym jest PROCFS oraz SYSFS w systemie Linux? Opisz ich podstawowe role i różnice.",
+            "image": "",
+            "type": "open-ended",
+            "tags": ["linux", "system plików", "procfs", "sysfs", "jądro"],
+            "gradingCriteria": "Odpowiedź musi zawierać definicję obu systemów plików jako wirtualnych/pseudo-systemów plików. Kluczowe punkty: 1. PROCFS: dostarcza informacji o procesach i stanie jądra w czasie rzeczywistym (np. /proc/cpuinfo, /proc/meminfo, katalogi z PID-ami procesów). 2. SYSFS: dostarcza informacji o urządzeniach, sterownikach i magistralach, odzwierciedlając strukturę obiektów jądra (model urządzeń). 3. Różnica: PROCFS jest starszy i mniej ustrukturyzowany, zawiera dane o procesach i systemie. SYSFS jest nowszy, bardziej zorganizowany (zasada 'jeden plik - jedna wartość') i skupia się na modelu urządzeń kernela. Przyznaj do 4 punktów za poprawny opis PROCFS, do 4 punktów za poprawny opis SYSFS i 2 punkty za wskazanie kluczowych różnic.",
+            "maxPoints": 10
+        },
+        {
+            "id": 302,
+            "questionText": "Które polecenie w systemie Linux jest podstawowym narzędziem do zmiany nazwy pliku?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["linux", "pliki", "polecenia", "terminal"],
+            "options": [
+                "mv",
+                "cp",
+                "rm",
+                "rename"
+            ],
+            "correctAnswers": [0],
+            "explanation": "Polecenie 'mv' (od 'move') służy zarówno do przenoszenia plików i katalogów, jak i do zmiany ich nazw. Zmiana nazwy jest traktowana jako przeniesienie pliku do nowej nazwy w tym samym miejscu."
+        },
+        {
+            "id": 303,
+            "questionText": "Patrząc na schemat systemu plików ext2, który element znajduje się na samym początku partycji, przed pierwszą grupą bloków?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Super blok",
+                "Blok startowy",
+                "Tablica i-węzłów",
+                "Deskryptor grupy"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Blok startowy (Boot Block) jest pierwszym blokiem i może zawierać kod potrzebny do uruchomienia systemu. "
+        },
+        {
+            "id": 304,
+            "questionText": "Główna część systemu plików ext2, znajdująca się za blokiem startowym, jest podzielona na powtarzające się struktury. Jak nazywają się te struktury?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Sektory",
+                "Partycje",
+                "Grupy bloków",
+                "I-węzły"
+            ],
+            "correctAnswers": [2],
+            "explanation": "System plików ext2 jest zorganizowany w serie Grup bloków (Block Groups). "
+        },
+        {
+            "id": 305,
+            "questionText": "Który element w grupie bloków zawiera kluczowe metadane o *całym* systemie plików i jest powielany w wielu grupach dla bezpieczeństwa?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Deskryptor grupy",
+                "Mapa bitowa bloków",
+                "Super blok",
+                "Tablica i-węzłów"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Super blok przechowuje globalne informacje o systemie plików, a jego kopie są umieszczane w różnych grupach na wypadek uszkodzenia oryginalnego bloku. "
+        },
+        {
+            "id": 306,
+            "questionText": "Gdzie w systemie plików ext2 przechowywana jest właściwa zawartość plików (dane)?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "W tablicy i-węzłów",
+                "W deskryptorze grupy",
+                "W super bloku",
+                "W tablicy bloków danych"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Tablica bloków danych zawiera bloki, w których przechowywana jest rzeczywista treść plików. "
+        },
+        {
+            "id": 307,
+            "questionText": "Metadane każdego pliku (uprawnienia, właściciel, wskaźniki do bloków danych) są przechowywane w strukturze zwanej i-węzłem. Gdzie w ramach grupy bloków znajdują się te i-węzły?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin", "i-węzeł"],
+            "options": [
+                "W tablicy i-węzłów",
+                "W bloku startowym",
+                "W mapach bitowych",
+                "W deskryptorze grupy"
+            ],
+            "correctAnswers": [0],
+            "explanation": "Każda grupa bloków posiada własną Tablicę i-węzłów (Inode Table), w której przechowywane są struktury i-węzłów. "
+        },
+        {
+            "id": 308,
+            "questionText": "Jak system plików ext2 śledzi, które bloki danych i i-węzły są wolne, a które zajęte?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Za pomocą Super bloku",
+                "Za pomocą Deskryptora grupy",
+                "Za pomocą Map bitowych",
+                "Poprzez sprawdzanie każdego bloku po kolei"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Każda grupa bloków zawiera Mapy bitowe (jedną dla bloków, drugą dla i-węzłów), które wskazują stan alokacji (wolny/zajęty). "
+        },
+        {
+            "id": 309,
+            "questionText": "Który element zawiera informacje specyficzne dla *swojej własnej* grupy bloków, np. lokalizację mapy bitowej i tablicy i-węzłów w tej grupie?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Deskryptor grupy",
+                "Super blok",
+                "Blok startowy",
+                "Blok danych"
+            ],
+            "correctAnswers": [0],
+            "explanation": "Deskryptor grupy (Group Descriptor) przechowuje metadane dotyczące konkretnej, pojedynczej grupy bloków. "
+        },
+        {
+            "id": 310,
+            "questionText": "W typowej grupie bloków w systemie ext2, co następuje bezpośrednio po Super bloku?",
+            "image": "/ext2.png",
+            "type": "single-choice",
+            "tags": ["linux", "system plików", "ext2", "egzamin"],
+            "options": [
+                "Tablica bloków danych",
+                "Tablica i-węzłów",
+                "Mapy bitowe",
+                "Deskryptor grupy"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Zgodnie ze schematem budowy systemu plików ext2, Deskryptor grupy znajduje się zaraz po Super bloku w każdej grupie bloków. "
+        },
+	    {
+	        "id": 311,
+	        "questionText": "Co robi poniższa linijka kodu w jądrze Linuxa: `extern struct task_struct *current_set[NR_CPUS];`?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "smp", "egzamin"],
+	        "options": [
+	            "Alokuje pamięć dla `NR_CPUS` nowych procesów.",
+	            "Deklaruje globalną tablicę wskaźników, gdzie każdy element wskazuje na strukturę bieżącego procesu na danym CPU.",
+	            "Tworzy i inicjalizuje listę wszystkich procesorów w systemie.",
+	            "Definiuje stałą `current_set` przechowującą liczbę procesorów."
+	        ],
+	        "correctAnswers": [1],
+	        "explanation": "Jest to deklaracja zewnętrznej (globalnej) tablicy wskaźników. Każdy wskaźnik w tej tablicy ('current_set') będzie wskazywał na strukturę 'task_struct' procesu aktualnie uruchomionego na konkretnym procesorze."
+	    },
+	    {
+	        "id": 312,
+	        "questionText": "Jaką rolę pełni makro zdefiniowane w poniższej linijce: `#define current (0+current_set[smp_processor_id()])`?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "smp", "egzamin"],
+	        "options": [
+	            "Zwraca liczbę wszystkich aktywnych procesów w systemie.",
+	            "Zmienia priorytet bieżącego procesu.",
+	            "Zwraca wskaźnik do struktury `task_struct` procesu aktualnie wykonywanego na danym procesorze.",
+	            "Zatrzymuje proces na procesorze o podanym ID."
+	        ],
+	        "correctAnswers": [2],
+	        "explanation": "Makro 'current' używa funkcji 'smp_processor_id()' aby uzyskać ID procesora, na którym jest wykonywane, a następnie używa tego ID jako indeksu tablicy 'current_set', aby zwrócić wskaźnik do deskryptora bieżącego zadania."
+	    },
+	    {
+	        "id": 313,
+	        "questionText": "Do czego służy makro `for_each_process(proces)` używane w jądrze Linuxa?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "egzamin"],
+	        "options": [
+	            "Do iterowania po wszystkich procesach w systemie.",
+	            "Do tworzenia nowego procesu potomnego o nazwie `proces`.",
+	            "Do zatrzymywania wszystkich procesów z wyjątkiem procesu `init`.",
+	            "Do zmiany stanu procesu wskazywanego przez wskaźnik `proces`."
+	        ],
+	        "correctAnswers": [0],
+	        "explanation": "Makro 'for_each_process' jest używane do przechodzenia po wszystkich elementach listy procesów w systemie operacyjnym."
+	    },
+	    {
+	        "id": 314,
+	        "questionText": "Jaka jest główna funkcja wywołania `set_current_state()` w jądrze Linuxa?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "egzamin"],
+	        "options": [
+	            "Pobranie i zwrócenie aktualnego stanu bieżącego procesu.",
+	            "Ustawienie priorytetu bieżącego procesu.",
+	            "Zmiana stanu bieżącego procesu (np. na TASK_RUNNING, TASK_INTERRUPTIBLE).",
+	            "Przełączenie kontekstu na inny proces."
+	        ],
+	        "correctAnswers": [2],
+	        "explanation": "Funkcja 'set_current_state()' służy do zmiany stanu procesu, który jest aktualnie wykonywany."
+	    },
+	    {
+	        "id": 315,
+	        "questionText": "Co reprezentuje zmienna `init_task` zadeklarowana jako `struct task_struct init_task;`?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "egzamin"],
+	        "options": [
+	            "Szablon używany do tworzenia wszystkich nowych procesów.",
+	            "Funkcję inicjalizującą tablicę procesów.",
+	            "Deskryptor procesu dla pierwszego procesu w systemie (procesu init).",
+	            "Listę wszystkich zadań do zainicjowania podczas startu systemu."
+	        ],
+	        "correctAnswers": [2],
+	        "explanation": "`init_task` to statycznie zdefiniowana struktura `task_struct`, która reprezentuje pierwszy proces uruchamiany w systemie."
+	    },
+	    {
+	        "id": 316,
+	        "questionText": "Jaka jest główna rola funkcji `set_task_state()` zgodnie z dostarczonymi materiałami?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],
+	        "options": [
+	            "Odczytanie aktualnego stanu procesu.",
+	            "Zmiana stanu procesu.",
+	            "Usunięcie procesu z listy zadań.",
+	            "Stworzenie nowego stanu dla procesu."
+	        ],
+	        "correctAnswers": [1],
+	        "explanation": "Zgodnie ze slajdem 'Zmiana stanu procesu', funkcja ta służy do zmiany stanu procesu na jeden z predefiniowanych stanów (np. TASK_RUNNING, TASK_STOPPED)."
+	    },
+	    {
+	        "id": 317,
+	        "questionText": "Do czego, według materiałów, służy funkcja `set_current_state()` w jądrze Linuxa?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],
+	        "options": [
+	            "Do zmiany stanu dowolnego procesu o podanym PID.",
+	            "Do ustawienia stanu procesora (CPU).",
+	            "Do zmiany stanu aktualnie wykonywanego procesu.",
+	            "Do pobrania listy wszystkich możliwych stanów procesu."
+	        ],
+	        "correctAnswers": [2],
+	        "explanation": "Nazwa 'set_current_state' wskazuje, że operuje ona na bieżącym ('current') procesie w celu zmiany jego stanu. Jest to wariant funkcji 'set_task_state'."
+	    },
+	    {
+	        "id": 318,
+	        "questionText": "Której z poniższych funkcji, wymienionych w materiałach, użyłbyś do zmiany stanu procesu, np. na `TASK_STOPPED`?",
+	        "image": "",
+	        "type": "single-choice",
+	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],
+	        "options": [
+	            "for_each_process()",
+	            "set_task_state()",
+	            "smp_processor_id()",
+	            "kthread_create()"
+	        ],
+	        "correctAnswers": [1],
+	        "explanation": "Zgodnie z materiałami, `set_task_state()` jest jedną z dwóch wymienionych funkcji służących bezpośrednio do zmiany stanu procesu."
+	    }
+	]
+}

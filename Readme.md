@@ -71,8 +71,8 @@ Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
 2.  **Utwórz i aktywuj wirtualne środowisko:**
     ```bash
     # Dla Windows
-    python -m venv venv
-    .\venv\Scripts\activate
+    python -m venv env
+    .\env\Scripts\activate
     ```
 
 3.  **Zainstaluj zależności Pythona:**

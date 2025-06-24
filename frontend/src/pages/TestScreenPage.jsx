@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useTestStore from '../store/testStore';
 import ProgressBar from '../components/ProgressBar';
 import Timer from '../components/Timer';
-import LoadingSpinner from '../components/LoadingSpinner'; // POPRAWKA: Import nowego komponentu
+import LoadingSpinner from '../components/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Komponent dla pytań otwartych ---
@@ -71,7 +71,9 @@ const OpenEndedQuestionUI = () => {
                 className="w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white"
                 aria-label="Pole odpowiedzi"
             />
-            {apiError && <p className="text-red-500 text-sm mt-2 text-center">{apiError}</p>}
+             {/* --- ZMIANA W WYŚWIETLANIU BŁĘDU --- */}
+            {/* Odwołujemy się do właściwości `message` obiektu błędu. */}
+            {apiError && <p className="text-red-500 text-sm mt-2 text-center">{apiError.message}</p>}
             <div className="mt-8 text-center min-h-[52px]">
                  <motion.button
                     whileHover={{ scale: 1.05 }}

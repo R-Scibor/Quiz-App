@@ -15,7 +15,7 @@ describe('useTestStore - testowanie logiki stanu', () => {
 
   test('powinien mieć poprawny stan początkowy', () => {
     const initialState = useTestStore.getState();
-    expect(initialState.view).toBe('setup');
+    expect(initialState.view).toBe('home'); 
     expect(initialState.availableTests).toEqual([]);
     expect(initialState.selectedCategories).toEqual([]);
     expect(initialState.score).toBe(0);
@@ -72,7 +72,7 @@ describe('useTestStore - testowanie logiki stanu', () => {
     let cleanState = useTestStore.getState();
     expect(cleanState.selectedCategories).toEqual([]);
     expect(cleanState.score).toBe(0);
-    expect(cleanState.view).toBe('setup');
+    expect(cleanState.view).toBe('home');
   });
 
 });

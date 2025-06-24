@@ -10,11 +10,6 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-# --- Założenia ---
-# Poniższy kod zakłada, że masz aplikację 'api_v1'
-# a w niej pliki serializers.py z odpowiednimi serializerami.
-# Ten plik (tests.py) powinien znajdować się w katalogu api_v1/.
-
 # Utworzenie tymczasowego katalogu media na potrzeby testów
 # Będzie on używany przez dekorator @override_settings
 TEST_MEDIA_DIR = Path(tempfile.gettempdir()) / 'django_test_media'
@@ -126,6 +121,7 @@ class ApiViewsTestCase(APITestCase):
         """
         response = self.client.get('/api/v1/questions/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'MISSING_PARAMETERS')
 
     def test_get_questions_more_than_available(self):
         """
@@ -194,12 +190,15 @@ class ApiViewsTestCase(APITestCase):
         """Sprawdza, czy błędna wartość `mode` zwraca błąd 400."""
         response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'wrong_mode'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INVALID_MODE_PARAMETER')
     
     def test_get_questions_no_questions_for_mode(self):
         """Sprawdza, czy API zwraca 404, gdy brak pytań dla danego trybu."""
         # Biologia nie ma pytań otwartych
         response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 1, 'mode': 'open'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data['error'], 'NO_QUESTIONS_FOUND')
+
 
 
 @override_settings(SECRET_KEY='a-test-secret-key-for-development')
@@ -246,8 +245,8 @@ class CheckOpenAnswerViewTestCase(APITestCase):
     def test_check_answer_no_api_key(self):
         """Sprawdza, czy serwer zwraca błąd 500, gdy brakuje klucza API."""
         response = self.client.post(self.url, self.payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertIn("Klucz API Gemini nie jest skonfigurowany", response.data['error'])
+        self.assertEqual(response.data['error'], 'API_KEY_MISSING')
+        self.assertIn('Klucz API do usługi AI nie jest skonfigurowany', response.data['message'])
 
     @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'}) # FIX: Dodano mock klucza API
     def test_check_answer_missing_payload(self):
@@ -256,6 +255,7 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         del incomplete_payload['userAnswer']
         response = self.client.post(self.url, incomplete_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INCOMPLETE_DATA')
 
     @patch('api_v1.views.genai.GenerativeModel')
     @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
@@ -271,7 +271,8 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         response = self.client.post(self.url, self.payload, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertIn("Otrzymano nieprawidłowy format odpowiedzi od AI", response.data['error'])
+        self.assertEqual(response.data['error'], 'AI_RESPONSE_INVALID_FORMAT')
+        self.assertIn('Otrzymano nieprawidłowy format odpowiedzi', response.data['message'])
 
     @unittest.skipUnless(os.environ.get('GEMINI_API_KEY'), "GEMINI_API_KEY is not set, skipping integration test.")
     def test_integration_check_answer_real_api_call(self):

@@ -5,6 +5,10 @@ import Timer from '../components/Timer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 // --- Komponent dla pytań otwartych ---
 const OpenEndedQuestionUI = () => {
     const {
@@ -105,6 +109,25 @@ const TestScreenPage = () => {
     const [showFeedback, setShowFeedback] = useState(false);
     const question = currentQuestions[currentQuestionIndex];
 
+    const markdownComponents = {
+        code({node, inline, className, children, ...props}) {
+            const match = /language-(\w+)/.exec(className || '')
+            return !inline && match ? (
+                <SyntaxHighlighter
+                    children={String(children).replace(/\n$/, '')}
+                    style={coldarkDark}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                />
+            ) : (
+                <code className={className} {...props}>
+                    {children}
+                </code>
+            )
+        }
+    };
+
     useEffect(() => {
         if (question) {
             if (question.type === 'single-choice' || question.type === 'multiple-choice') {
@@ -188,9 +211,10 @@ const TestScreenPage = () => {
                 <ProgressBar />
 
                 <div className="my-8 min-h-[96px] flex items-center">
-                    <p className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug">
-                         {question.questionText}
-                    </p>
+                    {/* --- Zastępujemy <p> komponentem ReactMarkdown --- */}
+                    <div className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full">
+                          <ReactMarkdown children={question.questionText} components={markdownComponents} />
+                    </div>
                 </div>
                 
                 {question.image && (
@@ -252,7 +276,9 @@ const TestScreenPage = () => {
                     className="mt-6 md:mt-0 md:absolute md:top-1/2 md:left-full md:-translate-y-1/2 md:ml-8 md:w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg"
                 >
                     <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2">{question.explanation}</p>
+                    <div className="prose prose-sm dark:prose-invert mt-2 text-gray-600 dark:text-gray-300">
+                        <ReactMarkdown children={question.explanation} components={markdownComponents} />
+                    </div>
                 </motion.div>
             )}
         </motion.div>

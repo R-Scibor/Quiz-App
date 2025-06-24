@@ -209,7 +209,7 @@
 	    },
 	    {
 	        "id": 316,
-	        "questionText": "Jaka jest główna rola funkcji `set_task_state()` zgodnie z dostarczonymi materiałami?",
+	        "questionText": "Jaka jest główna rola funkcji `set_task_state()` ?",
 	        "image": "",
 	        "type": "single-choice",
 	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],

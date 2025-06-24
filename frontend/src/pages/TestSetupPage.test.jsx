@@ -1,23 +1,21 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
 
 import TestSetupPage from './TestSetupPage';
 import useTestStore from '../store/testStore';
-// Kluczowa zmiana: Importujemy `getQuestions`, aby móc śledzić jego wywołania.
 import { getQuestions } from '../services/api';
 
-// Mockujemy moduł API, aby testy nie wykonywały prawdziwych zapytań sieciowych.
+// POPRAWKA: Mock API teraz zawiera 'question_counts', tak jak prawdziwe API
 vi.mock('../services/api', () => ({
   getAvailableTests: vi.fn(() => Promise.resolve({
     data: [
-      { category: 'Historia', scope: 'Polska', version: '1.0', test_id: 'historia_polska' },
-      { category: 'Biologia', scope: 'Komórka', version: '1.2', test_id: 'biologia_komorka' },
+      { category: 'Historia', scope: 'Polska', version: '1.0', test_id: 'historia_polska', question_counts: { total: 10, closed: 8, open: 2 } },
+      { category: 'Biologia', scope: 'Komórka', version: '1.2', test_id: 'biologia_komorka', question_counts: { total: 5, closed: 5, open: 0 } },
     ]
   })),
-  // Ważne: `getQuestions` jest teraz śledzoną funkcją mockującą (vi.fn).
   getQuestions: vi.fn(() => Promise.resolve({ data: [{id: 'q1', questionText: 'Test Question'}] })),
 }));
 
@@ -27,9 +25,10 @@ describe('TestSetupPage - Scenariusze interakcji użytkownika', () => {
 
   beforeEach(() => {
     act(() => {
-      useTestStore.getState().resetTest();
+      const { resetTest } = useTestStore.getState();
+      resetTest();
+      useTestStore.setState({ view: 'setup' });
     });
-    // Czyścimy historię wywołań mocków przed każdym testem.
     vi.clearAllMocks();
   });
 
@@ -61,42 +60,55 @@ describe('TestSetupPage - Scenariusze interakcji użytkownika', () => {
     expect(useTestStore.getState().selectedCategories).toEqual([]);
   });
 
-  test('przycisk "Rozpocznij Test" powinien być nieaktywny, dopóki nie zostanie wybrany żaden test', async () => {
+  test('przycisk "Rozpocznij Test" powinien być aktywny po wybraniu testu i wpisaniu liczby pytań', async () => {
     render(<TestSetupPage />);
-
-    await screen.findByText('Historia');
-    const startButton = screen.getByRole('button', { name: /Rozpocznij Test/i });
-
+    
+    // POPRAWKA: Używamy asynchronicznego findByRole, aby poczekać, aż przycisk
+    // zmieni tekst z "Ładowanie..." na "Rozpocznij Test".
+    const startButton = await screen.findByRole('button', { name: /Rozpocznij Test/i });
     expect(startButton).toBeDisabled();
 
     await user.click(screen.getByText('Historia'));
     await user.click(await screen.findByLabelText(/Polska \(1.0\)/i));
     
-    expect(startButton).not.toBeDisabled();
+    await screen.findByText(/dostępnych: 8/);
+
+    const numInput = screen.getByLabelText(/Liczba pytań/i);
+    await user.clear(numInput);
+    await user.type(numInput, '8');
+    
+    await waitFor(() => {
+      expect(startButton).not.toBeDisabled();
+    });
   });
 
   test('powinien rozpoczynać test i wywoływać pobieranie pytań po kliknięciu przycisku', async () => {
     render(<TestSetupPage />);
+    
+    // POPRAWKA: Tutaj również czekamy na załadowanie komponentu.
+    const startButton = await screen.findByRole('button', { name: /Rozpocznij Test/i });
 
     await user.click(await screen.findByText('Historia'));
     await user.click(await screen.findByLabelText(/Polska \(1.0\)/i));
+    
+    await screen.findByText(/dostępnych: 8/);
 
-    const startButton = screen.getByRole('button', { name: /Rozpocznij Test/i });
-
-    // Używamy `act` do opakowania interakcji, która powoduje asynchroniczną zmianę stanu
-    await act(async () => {
-      await user.click(startButton);
+    const numInput = screen.getByLabelText(/Liczba pytań/i);
+    await user.clear(numInput);
+    await user.type(numInput, '5');
+    
+    await waitFor(() => {
+        expect(startButton).not.toBeDisabled();
     });
 
-    // Sprawdzamy, czy widok w store został poprawnie zmieniony.
+    await user.click(startButton);
+
     expect(useTestStore.getState().view).toBe('test');
-    
-    // POPRAWKA: Sprawdzamy, czy zamockowana funkcja `getQuestions` z modułu API została wywołana.
-    expect(getQuestions).toHaveBeenCalled();
-    // Możemy też sprawdzić, z jakimi argumentami została wywołana.
+    expect(getQuestions).toHaveBeenCalledOnce();
     expect(getQuestions).toHaveBeenCalledWith({
-        categories: 'historia_polska',
-        num_questions: 10 // Domyślna wartość ze stanu
+      categories: 'historia_polska',
+      num_questions: 5,
+      mode: 'closed'
     });
   });
 });

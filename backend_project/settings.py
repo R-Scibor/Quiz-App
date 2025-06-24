@@ -159,3 +159,48 @@ if DEBUG:
     ]
 else:
     CORS_ALLOWED_ORIGINS = []
+
+# ===================================================================
+# KONFIGURACJA LOGOWANIA
+# ===================================================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'api_v1': {  # Logger specyficzny dla naszej aplikacji
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        # Można dodać inne loggery, np. dla zapytań bazodanowych
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'INFO', # Zmień na DEBUG, aby logować zapytania SQL
+            'propagate': False,
+        },
+    },
+}
+# ===================================================================

@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import logging
 from pathlib import Path
 
 from django.conf import settings
@@ -15,6 +16,8 @@ import google.generativeai as genai
 
 from .serializers import TestMetadataSerializer, QuestionSerializer
 
+# Konfiguracja loggera
+logger = logging.getLogger(__name__)
 
 class ReactAppView(View):
     """
@@ -28,10 +31,13 @@ class ReactAppView(View):
             with open(os.path.join(settings.REACT_APP_BUILD_PATH, 'index.html')) as f:
                 return render(request, 'index.html')
         except FileNotFoundError:
+            logger.error("Nie znaleziono pliku index.html aplikacji React w ścieżce: %s", settings.REACT_APP_BUILD_PATH)
+            # Ujednolicenie formatu błędu
             return Response(
-                {"error": "Plik index.html aplikacji React nie został znaleziony."},
+                {"error": "REACT_APP_NOT_FOUND", "message": "Plik index.html aplikacji React nie został znaleziony."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
 
 
 class TestListView(APIView):
@@ -82,16 +88,20 @@ class TestListView(APIView):
                             available_tests.append(serializer.data)
                         else:
                             # W środowisku produkcyjnym lepiej logować do pliku
-                            print(f"Błąd walidacji metadanych w pliku {test_file.name}: {serializer.errors}")
+                            logger.warning("Błąd walidacji metadanych w pliku %s: %s", test_file.name, serializer.errors)
                     except json.JSONDecodeError:
-                        print(f"Błąd odczytu pliku JSON: {test_file.name}")
+                        logger.warning("Błąd odczytu pliku JSON: %s", test_file.name, exc_info=True)
                         continue
 
             return Response(available_tests, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Wystąpił nieoczekiwany błąd: {e}")
-            return Response({"error": "Wystąpił wewnętrzny błąd serwera."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception("Wystąpił nieoczekiwany błąd podczas listowania testów.")
+            return Response(
+                {"error": "INTERNAL_SERVER_ERROR", "message": "Wystąpił wewnętrzny błąd serwera podczas listowania testów."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class QuestionListView(APIView):
     """
@@ -118,13 +128,13 @@ class QuestionListView(APIView):
 
         if not categories_str or not num_questions_str:
             return Response(
-                {"error": "Parametry 'categories' i 'num_questions' są wymagane."},
+                {"error": "MISSING_PARAMETERS", "message": "Parametry 'categories' i 'num_questions' są wymagane."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         if mode not in ['open', 'closed', 'mixed']:
             return Response(
-                {"error": "Parametr 'mode' musi mieć wartość 'open', 'closed' lub 'mixed'."},
+                {"error": "INVALID_MODE_PARAMETER", "message": "Parametr 'mode' musi mieć wartość 'open', 'closed' lub 'mixed'."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -133,7 +143,7 @@ class QuestionListView(APIView):
             categories = categories_str.split(',')
         except (ValueError, TypeError):
             return Response(
-                {"error": "Nieprawidłowy format parametrów."},
+                {"error": "INVALID_PARAMETER_FORMAT", "message": "Nieprawidłowy format parametrów 'num_questions' lub 'categories'."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -146,8 +156,8 @@ class QuestionListView(APIView):
                     questions_data = data.get('questions', [])
                     all_questions.extend(questions_data)
             else:
-                print(f"Ostrzeżenie: Plik testu dla kategorii '{category_id}' nie został znaleziony.")
-        
+                logger.warning("Plik testu dla kategorii '%s' nie został znaleziony.", category_id)
+
         filtered_questions = []
         if mode == 'mixed':
             filtered_questions = all_questions
@@ -157,8 +167,11 @@ class QuestionListView(APIView):
             filtered_questions = [q for q in all_questions if q.get('type') in ['single-choice', 'multiple-choice']]
 
         if not filtered_questions:
-            return Response({"error": f"Nie znaleziono pytań dla wybranych kategorii w trybie '{mode}'."}, status=status.HTTP_404_NOT_FOUND)
-
+            return Response(
+                {"error": "NO_QUESTIONS_FOUND", "message": f"Nie znaleziono pytań dla wybranych kategorii w trybie '{mode}'."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
         if len(filtered_questions) < num_questions:
             num_questions = len(filtered_questions)
 
@@ -183,8 +196,11 @@ class QuestionListView(APIView):
         if serializer.is_valid():
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            print(f"Błąd serializacji pytań: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error("Błąd serializacji pytań: %s", serializer.errors)
+            return Response(
+                {"error": "SERIALIZATION_ERROR", "message": "Wystąpił błąd podczas przetwarzania danych pytań."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
 class CheckOpenAnswerView(APIView):
     """
@@ -196,8 +212,9 @@ class CheckOpenAnswerView(APIView):
         """
         GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
+            logger.critical("Klucz API Gemini (GEMINI_API_KEY) nie jest skonfigurowany na serwerze.")
             return Response(
-                {"error": "Klucz API Gemini nie jest skonfigurowany na serwerze."}, 
+                {"error": "API_KEY_MISSING", "message": "Klucz API do usługi AI nie jest skonfigurowany na serwerze."}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
             
@@ -209,7 +226,7 @@ class CheckOpenAnswerView(APIView):
 
         if not all([user_answer, grading_criteria, question_text, max_points]):
             return Response(
-                {"error": "Brak wszystkich wymaganych pól: userAnswer, gradingCriteria, questionText, maxPoints."},
+                {"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól: userAnswer, gradingCriteria, questionText, maxPoints."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -253,8 +270,14 @@ class CheckOpenAnswerView(APIView):
             return Response(response_json, status=status.HTTP_200_OK)
 
         except json.JSONDecodeError:
-            print(f"Błąd parsowania JSON z odpowiedzi AI. Surowa odpowiedź: {ai_response.text}")
-            return Response({"error": "Otrzymano nieprawidłowy format odpowiedzi od AI."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as e:
-            print(f"Wystąpił nieoczekiwany błąd podczas komunikacji z AI: {e}")
-            return Response({"error": "Wystąpił wewnętrzny błąd serwera podczas komunikacji z AI."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error("Błąd parsowania JSON z odpowiedzi AI. Surowa odpowiedź: %s", getattr(ai_response, 'text', 'Brak tekstu w odpowiedzi AI'))
+            return Response(
+                {"error": "AI_RESPONSE_INVALID_FORMAT", "message": "Otrzymano nieprawidłowy format odpowiedzi od usługi AI."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception:
+            logger.exception("Wystąpił nieoczekiwany błąd podczas komunikacji z AI.")
+            return Response(
+                {"error": "AI_COMMUNICATION_ERROR", "message": "Wystąpił wewnętrzny błąd serwera podczas komunikacji z usługą AI."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

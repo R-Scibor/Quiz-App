@@ -267,7 +267,13 @@ const TestSetupPage = () => {
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Wybierz Kategorię</h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Sprawdź swoją wiedzę w różnych dziedzinach.</p>
                 
-                {error && <p className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-md mb-6">{error}</p>}
+                {/* --- ZMIANA W WYŚWIETLANIU BŁĘDU --- */}
+                {error && (
+                    <div className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-md mb-6">
+                        <p className="font-bold">Wystąpił błąd</p>
+                        <p>{error.message}</p>
+                    </div>
+                )}
                 
                 {/* --- ZMIANA: Lista kategorii z animacjami --- */}
                 <div className="mb-8 text-left">

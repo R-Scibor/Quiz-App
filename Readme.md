@@ -140,13 +140,16 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 - [ ] **Formatowanie tekstu pytań** Rozszerzenie formatowania tekstu w pytaniach np. znaki końca linii, oraz dodanie formatowanych bloków kodu 
 - [ ] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
 - [ ] **Migracja danych:** Przeniesienie treści quizów z plików JSON do relacyjnej bazy danych w celu zwiększenia wydajności i skalowalności.
-- [ ] **System uwierzytelniania:** Dodanie logowania i rejestracji użytkowników.
-- [ ] **Historia wyników:** Zapisywanie wyników testów dla zalogowanych użytkowników.
-- [ ] **Lepsza obsługa błędów:** Wyświetlanie bardziej przyjaznych komunikatów o błędach (np. problem z połączeniem z API).
 
 ### Możliwe rozszerzenia (pomysły na przyszłość)
 
+- [ ] **System uwierzytelniania:** Dodanie logowania i rejestracji użytkowników.
+- [ ] **Historia wyników:** Zapisywanie wyników testów dla zalogowanych użytkowników.
 - [ ] **Panel administratora:** Możliwość dodawania, edytowania i usuwania quizów z poziomu interfejsu graficznego.
 - [ ] **Rozbudowane statystyki:** Wykresy i bardziej szczegółowe analizy wyników.
 - [ ] **Kategorie pytań:** Możliwość filtrowania i grupowania pytań według kategorii.
 - [ ] **Tryb wieloosobowy:** Możliwość rywalizacji ze znajomymi w czasie rzeczywistym.
+
+### Ukończone
+
+- [x] **Lepsza obsługa błędów:** Wprowadzono kompleksową obsługę błędów na wszystkich poziomach aplikacji. Backend zwraca ustrukturyzowane odpowiedzi JSON i wykorzystuje standardowe logowanie. Frontend globalnie przechwytuje błędy API za pomocą interceptora i jest chroniony przez komponent `ErrorBoundary` łapiący błędy renderowania.

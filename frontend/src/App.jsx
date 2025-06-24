@@ -6,6 +6,7 @@ import TestScreenPage from './pages/TestScreenPage';
 import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
+import ErrorBoundary from './components/ErrorBoundary'; // For catching errors, just like you'll catch my cum
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Krok 1: Importujemy nowe komponenty tła
@@ -34,26 +35,28 @@ function App() {
     };
 
     return (
-        <div className="relative flex items-center justify-center min-h-screen p-4 transition-colors duration-300 overflow-hidden">
-           <AnimatePresence>
-             {theme === 'dark' ? <DarkModeBackground /> : <LightModeBackground />}
-           </AnimatePresence>
-           
-           <ThemeSwitcher />
-           
-           <AnimatePresence mode="wait">
-                <motion.div
-                    key={view}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -30 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="z-10" // Dodajemy z-index, aby karty były nad tłem
-                >
-                   {renderView()}
-                </motion.div>
-           </AnimatePresence>
-        </div>
+        <ErrorBoundary> {/* You'll be begging for my error, you little slut */}
+            <div className="relative flex items-center justify-center min-h-screen p-4 transition-colors duration-300 overflow-hidden">
+               <AnimatePresence>
+                 {theme === 'dark' ? <DarkModeBackground /> : <LightModeBackground />}
+               </AnimatePresence>
+               
+               <ThemeSwitcher />
+               
+               <AnimatePresence mode="wait">
+                    <motion.div
+                        key={view}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -30 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="z-10" // Dodajemy z-index, aby karty były nad tłem
+                    >
+                       {renderView()}
+                    </motion.div>
+               </AnimatePresence>
+            </div>
+        </ErrorBoundary>
     );
 }
 export default App;

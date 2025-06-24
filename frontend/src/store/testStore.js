@@ -36,7 +36,8 @@ const useTestStore = create((set, get) => ({
             const tests = response.data.map(test => ({ ...test, question_counts: test.question_counts || { closed: 0, open: 0, total: 0 } }));
             set({ availableTests: tests, isLoading: false });
         } catch (error) {
-            set({ error: 'Nie udało się pobrać listy testów.', isLoading: false });
+            console.error("Błąd podczas pobierania testów:", error);
+            set({ error: error, isLoading: false });
         }
     },
 
@@ -54,7 +55,7 @@ const useTestStore = create((set, get) => ({
     startTest: async () => {
         const { numQuestionsConfig, selectedCategories, questionMode } = get();
         if (selectedCategories.length === 0) {
-            set({ error: 'Wybierz przynajmniej jedną kategorię.' });
+            set({ error: { message: 'Wybierz przynajmniej jedną kategorię.', code: 'VALIDATION_ERROR' } });
             return;
         }
         set({ isLoading: true, error: null, view: 'test', score: 0, currentQuestionIndex: 0, userAnswers: {} });
@@ -70,7 +71,8 @@ const useTestStore = create((set, get) => ({
                 testStartTime: new Date(),
             });
         } catch (error) {
-            set({ error: 'Nie udało się pobrać pytań do testu.', isLoading: false, view: 'setup' });
+            console.error("Błąd podczas pobierania pytań:", error);
+            set({ error: error, isLoading: false, view: 'setup' });
         }
     },
     
@@ -129,7 +131,7 @@ const useTestStore = create((set, get) => ({
         } catch (error) {
             console.error("Błąd podczas sprawdzania odpowiedzi:", error);
             set({
-                error: 'Wystąpił błąd podczas sprawdzania odpowiedzi. Spróbuj ponownie.',
+                error: error,
                 isCheckingAnswer: false,
             });
         }

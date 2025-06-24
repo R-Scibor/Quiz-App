@@ -138,7 +138,7 @@
             "image": "",
             "type": "open-ended",
             "tags": ["pamięć", "jądro", "vmalloc", "programowanie"],
-            "gradingCriteria": "Odpowiedź musi wskazywać, że funkcja zwraca wskaźnik do początku przydzielonego wirtualnie ciągłego obszaru pamięci.",
+            "gradingCriteria": "Odpowiedź musi wskazywać, że funkcja zwraca wskaźnik do początku przydzielonego obszaru pamięci.",
             "maxPoints": 2
         },
         {

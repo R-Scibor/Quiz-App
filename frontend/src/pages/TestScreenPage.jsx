@@ -111,16 +111,25 @@ const TestScreenPage = () => {
 
     const markdownComponents = {
         code({node, inline, className, children, ...props}) {
-            const match = /language-(\w+)/.exec(className || '')
+            const match = /language-(\w+)/.exec(className || '');
+            
+            // Styl jest teraz stosowany bezwarunkowo do wszystkich bloków kodu
+            const blockStyle = {
+                fontSize: '1.1rem',
+                lineHeight: '1.4',
+            };
+
             return !inline && match ? (
                 <SyntaxHighlighter
                     children={String(children).replace(/\n$/, '')}
                     style={coldarkDark}
                     language={match[1]}
                     PreTag="div"
+                    customStyle={blockStyle} // Zastosuj jednolity styl do wszystkich bloków
                     {...props}
                 />
             ) : (
+                // Kod wewnątrz linii (np. `let x = 1;`) pozostaje bez zmian
                 <code className={className} {...props}>
                     {children}
                 </code>

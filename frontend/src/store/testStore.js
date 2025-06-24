@@ -21,6 +21,9 @@ const useTestStore = create((set, get) => ({
     isLoading: false,
     error: null,
     theme: initialTheme,
+    isTimerRunning: false, // New state to control timer
+    questionStartTime: null, // New state to mark when current question started
+    totalTimeSpent: 0, // New state to accumulate time spent on questions
 
     isCheckingAnswer: false,
     lastAnswerFeedback: null,
@@ -69,6 +72,8 @@ const useTestStore = create((set, get) => ({
                 currentQuestions: response.data,
                 isLoading: false,
                 testStartTime: new Date(),
+                isTimerRunning: true, // Start timer when questions are loaded
+                questionStartTime: new Date(), // Mark start of first question
             });
         } catch (error) {
             console.error("Błąd podczas pobierania pytań:", error);
@@ -80,18 +85,37 @@ const useTestStore = create((set, get) => ({
         userAnswers: { ...state.userAnswers, [questionId]: answer },
     })),
 
+    // Pause timer when answer is confirmed for closed questions
     confirmAnswer: () => {
-        const { currentQuestionIndex, currentQuestions, userAnswers } = get();
+        const { currentQuestionIndex, currentQuestions, userAnswers, questionStartTime, totalTimeSpent } = get();
         const question = currentQuestions[currentQuestionIndex];
         const userSelection = userAnswers[question.id] || [];
         const isCorrect = JSON.stringify(userSelection.sort()) === JSON.stringify(question.correctAnswers.sort());
         if(isCorrect) set(state => ({ score: state.score + 1 }));
+        
+        // Accumulate time and pause timer
+        if (questionStartTime) {
+            const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);
+            set(state => ({
+                totalTimeSpent: state.totalTimeSpent + timeElapsed,
+                isTimerRunning: false, // Pause timer
+            }));
+        }
     },
     
     checkOpenAnswer: async (userAnswer) => {
-        const { currentQuestionIndex, currentQuestions } = get();
+        const { currentQuestionIndex, currentQuestions, questionStartTime, totalTimeSpent } = get();
         const question = currentQuestions[currentQuestionIndex];
         
+        // Pause timer and accumulate time before checking answer
+        if (questionStartTime) {
+            const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);
+            set(state => ({
+                totalTimeSpent: state.totalTimeSpent + timeElapsed,
+                isTimerRunning: false, // Pause timer
+            }));
+        }
+
         set({ isCheckingAnswer: true, lastAnswerFeedback: null, error: null });
 
         try {
@@ -138,9 +162,21 @@ const useTestStore = create((set, get) => ({
     },
 
     nextQuestion: () => set((state) => {
-        set({ lastAnswerFeedback: null, error: null }); 
+        // Calculate time spent on the current question before moving to the next
+        // This case handles moving to the next question after viewing feedback for open-ended questions
+        // or if the user clicks "Dalej" without confirming a closed question (though confirmAnswer handles closed questions)
+        if (state.questionStartTime && state.isTimerRunning) {
+            const timeElapsed = Math.floor((new Date() - new Date(state.questionStartTime)) / 1000);
+            state.totalTimeSpent += timeElapsed;
+        }
+
+        set({ lastAnswerFeedback: null, error: null });
         if (state.currentQuestionIndex + 1 < state.currentQuestions.length) {
-            return { currentQuestionIndex: state.currentQuestionIndex + 1 };
+            return {
+                currentQuestionIndex: state.currentQuestionIndex + 1,
+                questionStartTime: new Date(), // Reset start time for the new question
+                isTimerRunning: true, // Resume timer for the new question
+            };
         }
         return { view: 'results', testEndTime: new Date() };
     }),
@@ -153,11 +189,14 @@ const useTestStore = create((set, get) => ({
         currentQuestionIndex: 0, 
         userAnswers: {}, 
         score: 0,
-        testStartTime: null, 
-        testEndTime: null, 
+        testStartTime: null,
+        testEndTime: null,
         error: null,
         lastAnswerFeedback: null,
         openQuestionResults: {},
+        isTimerRunning: false, // Reset timer state
+        questionStartTime: null, // Reset question start time
+        totalTimeSpent: 0, // Reset total time spent
     }),
 
     toggleTheme: () => set((state) => {

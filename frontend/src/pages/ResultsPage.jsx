@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
-    const { score, currentQuestions, resetTest, timerEnabled, testStartTime, testEndTime, reviewAnswers } = useTestStore();
+    const { score, currentQuestions, resetTest, timerEnabled, totalTimeSpent, reviewAnswers } = useTestStore();
     
     const totalMaxPoints = useMemo(() => {
         return currentQuestions.reduce((total, question) => {
@@ -15,13 +15,12 @@ const ResultsPage = () => {
     const percentage = totalMaxPoints > 0 ? Math.round((score / totalMaxPoints) * 100) : 0;
 
     const timeTaken = useMemo(() => {
-        if (!timerEnabled || !testStartTime || !testEndTime) {
+        if (!timerEnabled) {
             return null;
         }
-        const start = new Date(testStartTime);
-        const end = new Date(testEndTime);
-        return Math.round((end - start) / 1000);
-    }, [timerEnabled, testStartTime, testEndTime]);
+        // Use totalTimeSpent directly, as it already accumulates active time
+        return totalTimeSpent;
+    }, [timerEnabled, totalTimeSpent]);
 
     const formatTime = (totalSeconds) => {
         if (typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {

@@ -135,7 +135,6 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ### Planowane rozszerzenia (najbliższe priorytety)
 
-- [ ] **Naprawa licznika** - Licznik powinien albo zatrzymywać się gdy user sprawdza odpowiedź albo powinien uniemożliwiać sprawdzanie odpowiedzi w trakcie testu
 - [ ] **Zgłaszanie pytań/odpowiedzi** Umożliwienie użytkownikowi zgłoszenia błędu w pytaniu/odpowiedzi lub w ocenie AI
 - [ ] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
 - [ ] **Migracja danych:** Przeniesienie treści quizów z plików JSON do relacyjnej bazy danych w celu zwiększenia wydajności i skalowalności.
@@ -151,5 +150,6 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ### Ukończone
 
+- [x] **Naprawa licznika** - Licznik teraz zatrzymuje się po tym jak użytkownik zatwierdzi odpowiedź na pytanie i wznawia ponownie przy następnym pytaniu.
 - [x] **Formatowanie tekstu pytań i wyjaśnień:** Zaimplementowano obsługę formatowania Markdown dla treści pytań i wyjaśnień przy użyciu biblioteki `react-markdown`. Dodano wsparcie dla wieloliniowych tekstów oraz kolorowanych bloków kodu (` ``` `) dzięki integracji z `react-syntax-highlighter`.
 - [x] **Lepsza obsługa błędów:** Wprowadzono kompleksową obsługę błędów na wszystkich poziomach aplikacji. Backend zwraca ustrukturyzowane odpowiedzi JSON i wykorzystuje standardowe logowanie. Frontend globalnie przechwytuje błędy API za pomocą interceptora i jest chroniony przez komponent `ErrorBoundary` łapiący błędy renderowania.

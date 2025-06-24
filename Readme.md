@@ -135,6 +135,9 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ### Planowane rozszerzenia (najbliższe priorytety)
 
+- [ ] **Naprawa licznika** - Licznik powinien albo zatrzymywać się gdy user sprawdza odpowiedź albo powinien uniemożliwiać sprawdzanie odpowiedzi w trakcie testu
+- [ ] **Zgłaszanie pytań/odpowiedzi** Umożliwienie użytkownikowi zgłoszenia błędu w pytaniu/odpowiedzi lub w ocenie AI
+- [ ] **Formatowanie tekstu pytań** Rozszerzenie formatowania tekstu w pytaniach np. znaki końca linii, oraz dodanie formatowanych bloków kodu 
 - [ ] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
 - [ ] **Migracja danych:** Przeniesienie treści quizów z plików JSON do relacyjnej bazy danych w celu zwiększenia wydajności i skalowalności.
 - [ ] **System uwierzytelniania:** Dodanie logowania i rejestracji użytkowników.

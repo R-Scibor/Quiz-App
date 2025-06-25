@@ -5,7 +5,7 @@
     "questions": [
         {
             "id": 801,
-            "questionText": "Jaki plik nagłówkowy należy dołączyć, aby korzystać z liczników czasu o wysokiej rozdzielczości (hrtimer)?",
+            "questionText": "Jaki plik nagłówkowy należy dołączyć, aby korzystać z liczników czasu o wysokiej rozdzielczości?",
             "image": "/static/jakinaglowek.png",
             "type": "single-choice",
             "tags": ["liczniki czasu", "hrtimer", "nagłówki", "api"],

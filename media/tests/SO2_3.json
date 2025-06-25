@@ -312,7 +312,7 @@
             "image": "",
             "type": "open-ended",
             "tags": ["wątki", "jądro", "programowanie", "kthread_stop"],
-            "gradingCriteria": "Odpowiedź musi zawierać dwie części: 1. Nazwa funkcji: `kthread_stop()`. 2. Warunek: pętla główna wątku musi cyklicznie sprawdzać wynik funkcji `kthread_should_stop()`. Gdy funkcja ta zwróci prawdę, wątek powinien zakończyć pętlę i wyjść. Pełna punktacja za podanie obu elementów.",
+            "gradingCriteria": "Odpowiedź musi zawierać dwie części: 1. Nazwa funkcji: `kthread_stop()`. 2. Warunek: pętla główna wątku musi cyklicznie sprawdzać wynik funkcji `kthread_should_stop()`. Pełna punktacja za podanie obu elementów.",
             "maxPoints": 5
         },
         {

@@ -91,11 +91,11 @@ const ResultsPage = () => {
                     <p className="text-2xl font-bold text-gray-800 dark:text-white">{score} / {totalMaxPoints}</p>
                 </div>
                 <div>
-                    <p className="text-lg text-gray-500 dark:text-gray-400">Poprawne</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Uzyskane</p>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">{score}</p>
                 </div>
                 <div>
-                    <p className="text-lg text-gray-500 dark:text-gray-400">Błędne</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Stracone</p>
                     <p className="text-2xl font-bold text-red-600 dark:text-brand-primary">{incorrectAnswers}</p>
                 </div>
             </div>

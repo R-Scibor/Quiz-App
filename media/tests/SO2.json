@@ -224,7 +224,7 @@
 	    },
 	    {
 	        "id": 317,
-	        "questionText": "Do czego, według materiałów, służy funkcja `set_current_state()` w jądrze Linuxa?",
+	        "questionText": "Do czego służy funkcja `set_current_state()` w jądrze Linuxa?",
 	        "image": "",
 	        "type": "single-choice",
 	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],
@@ -239,7 +239,7 @@
 	    },
 	    {
 	        "id": 318,
-	        "questionText": "Której z poniższych funkcji, wymienionych w materiałach, użyłbyś do zmiany stanu procesu, np. na `TASK_STOPPED`?",
+	        "questionText": "Której z poniższych funkcji, użyłbyś do zmiany stanu procesu, np. na `TASK_STOPPED`?",
 	        "image": "",
 	        "type": "single-choice",
 	        "tags": ["linux", "jądro", "procesy", "stan procesu", "egzamin"],

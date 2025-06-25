@@ -56,7 +56,7 @@ local_settings.py
 htmlcov/
 
 # Pliki testów
-#media/tests/*
+media/tests/*
 
 
 # ===================================================================

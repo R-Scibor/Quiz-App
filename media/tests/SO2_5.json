@@ -1,0 +1,340 @@
+{
+    "category": "Systemy Operacyjne 2",
+    "scope": "Wykład 5: Czas i urządzenia w jądrze Linux",
+    "version": "1.1",
+    "questions": [
+        {
+            "id": 801,
+            "questionText": "Jaki plik nagłówkowy należy dołączyć, aby korzystać z liczników czasu o wysokiej rozdzielczości (hrtimer)?",
+            "image": "/static/jakinaglowek.png",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "hrtimer", "nagłówki", "api"],
+            "options": [
+                "#include <linux/timer.h>",
+                "#include <linux/time.h>",
+                "#include <linux/hrtimer.h>",
+                "#include <linux/jiffies.h>"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Do obsługi liczników o wysokiej rozdzielczości (high-resolution timers) służy plik nagłówkowy <linux/hrtimer.h>."
+        },
+        {
+            "id": 802,
+            "questionText": "Jaki plik nagłówkowy jest potrzebny do pracy z klasycznymi licznikami czasu o niskiej rozdzielczości?",
+            "image": "/static/jakinaglowek.png",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "timer_list", "nagłówki", "api"],
+            "options": [
+                "#include <linux/hrtimer.h>",
+                "#include <linux/timer.h>",
+                "#include <linux/ktime.h>",
+                "#include <linux/delay.h>"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Do obsługi standardowych liczników czasu opartych na zmiennej `jiffies` (struktura `timer_list`) służy plik nagłówkowy <linux/timer.h>."
+        },
+        {
+            "id": 803,
+            "questionText": "Która funkcja służy do inicjalizacji licznika czasu o wysokiej rozdzielczości?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "hrtimer", "api"],
+            "options": [
+                "init_timer()",
+                "hrtimer_init()",
+                "add_timer()",
+                "ktime_set()"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Funkcja `hrtimer_init()` służy do zainicjowania struktury `hrtimer`, ustawienia zegara odniesienia (np. CLOCK_MONOTONIC) oraz trybu pracy (np. HRTIMER_MODE_REL)."
+        },
+        {
+            "id": 804,
+            "questionText": "Jak inicjuje się licznik czasu o niskiej rozdzielczości (strukturę `timer_list`)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "timer_list", "api"],
+            "options": [
+                "add_timer()",
+                "timer_create()",
+                "hrtimer_init()",
+                "init_timer()"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Do inicjalizacji struktury `timer_list` przed jej użyciem służy makro `init_timer()`."
+        },
+        {
+            "id": 805,
+            "questionText": "Jaką funkcją usuwa się (anuluje) aktywny licznik czasu o wysokiej rozdzielczości?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "hrtimer", "api"],
+            "options": [
+                "del_timer_sync()",
+                "hrtimer_delete()",
+                "hrtimer_cancel()",
+                "hrtimer_stop()"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Do anulowania oczekującego licznika `hrtimer` służy funkcja `hrtimer_cancel()`."
+        },
+        {
+            "id": 806,
+            "questionText": "Która funkcja służy do usunięcia licznika czasu o niskiej rozdzielczości, zapewniając, że po jej zakończeniu funkcja obsługi licznika już nie będzie wykonywana?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["liczniki czasu", "timer_list", "api"],
+            "options": [
+                "del_timer()",
+                "del_timer_sync()",
+                "remove_timer()",
+                "cancel_timer()"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Funkcja `del_timer_sync()` usuwa licznik i dodatkowo czeka na ewentualne zakończenie jego procedury obsługi, jeśli została ona uruchomiona na innym CPU, co zapobiega 'race conditions'."
+        },
+        {
+            "id": 807,
+            "questionText": "Jak w systemie Linux dzielone są urządzenia?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["urządzenia", "sterowniki", "znakowe", "blokowe"],
+            "options": [
+                "Znakowe",
+                "Logiczne",
+                "Blokowe",
+                "Sieciowe"
+            ],
+            "correctAnswers": [0, 2, 3],
+            "explanation": "Podstawowy podział urządzeń w Linuksie to urządzenia znakowe (przesyłające dane bajt po bajcie), blokowe (przesyłające dane w blokach) i sieciowe (przesyłające pakiety)."
+        },
+        {
+            "id": 808,
+            "questionText": "Jakie dwie liczby charakteryzują każde urządzenie w systemie i jaki jest ich zakres?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "major", "minor"],
+            "options": [
+                "Device ID i Group ID, zakres 0-65535",
+                "Numer główny (major) i numer poboczny (minor), zakres 0-255",
+                "Numer portu i numer magistrali, zakres 0-1023",
+                "Numer seryjny i numer producenta, bez określonego zakresu"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Każde urządzenie jest identyfikowane przez parę liczb: numer główny (major number) identyfikujący sterownik oraz numer poboczny (minor number) identyfikujący konkretne urządzenie obsługiwane przez ten sterownik. Ich klasyczny zakres to 0-255."
+        },
+        {
+            "id": 809,
+            "questionText": "Co identyfikuje numer główny (major number) urządzenia?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "major", "minor"],
+            "options": [
+                "Konkretny, pojedynczy port USB.",
+                "Grupę urządzeń obsługiwaną przez ten sam sterownik.",
+                "Partycję na dysku twardym.",
+                "Konkretny plik na urządzeniu."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Sterownik jest odpowiedzialny za obsługę całej grupy urządzeń, które mają ten sam numer główny. Numer poboczny pozwala sterownikowi rozróżnić, do którego konkretnie urządzenia odnosi się operacja."
+        },
+        {
+            "id": 810,
+            "questionText": "Gdzie w systemie plików znajdują się pliki specjalne zapewniające bezpośredni dostęp do urządzeń?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "system plików", "dev"],
+            "options": [
+                "/proc",
+                "/sys",
+                "/etc/devices",
+                "/dev"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Katalog /dev jest wirtualnym systemem plików, w którym jądro (poprzez udev) tworzy specjalne pliki, które reprezentują urządzenia i pozwalają na komunikację z nimi."
+        },
+        {
+            "id": 811,
+            "questionText": "Co oznacza pierwsza litera ('c' lub 'b') w uprawnieniach pliku specjalnego urządzenia, wyświetlanych przez polecenie `ls -l`?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "polecenia", "ls"],
+            "options": [
+                "'c' - plik skompresowany, 'b' - plik binarny",
+                "'c' - plik konfiguracyjny, 'b' - plik buforowany",
+                "'c' - urządzenie znakowe, 'b' - urządzenie blokowe",
+                "'c' - plik należy do CPU, 'b' - plik należy do BIOS"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Pierwszy znak w listingu `ls -l` określa typ pliku. Dla urządzeń, 'c' (character) oznacza urządzenie znakowe, a 'b' (block) oznacza urządzenie blokowe."
+        },
+        {
+            "id": 812,
+            "questionText": "Jakie parametry przyjmuje polecenie `mknod` służące do ręcznego tworzenia pliku specjalnego urządzenia?",
+            "image": "",
+            "type": "open-ended",
+            "tags": ["urządzenia", "polecenia", "mknod"],
+            "gradingCriteria": "Odpowiedź musi zawierać 4 kluczowe parametry: 1. Nazwa pliku (ze ścieżką, np. /dev/moje_urzadzenie). 2. Typ urządzenia ('c' dla znakowego lub 'b' dla blokowego). 3. Numer główny (major). 4. Numer poboczny (minor). Pełna punktacja za wymienienie wszystkich czterech.",
+            "maxPoints": 4
+        },
+        {
+            "id": 813,
+            "questionText": "Jakie informacje zawiera plik `/proc/devices`?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "procfs", "sterowniki"],
+            "options": [
+                "Listę wszystkich plików w katalogu /dev.",
+                "Listę aktualnie załadowanych modułów jądra.",
+                "Listę zarejestrowanych w systemie sterowników urządzeń, pogrupowanych na znakowe i blokowe, wraz z ich numerami głównymi.",
+                "Statystyki dotyczące operacji odczytu i zapisu dla wszystkich urządzeń."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Plik /proc/devices pozwala sprawdzić, które numery główne są aktualnie zajęte i przez jakie sterowniki (identyfikowane z nazwy)."
+        },
+        {
+            "id": 814,
+            "questionText": "Do czego służy wywołanie systemowe `ioctl`?",
+            "image": "",
+            "type": "open-ended",
+            "tags": ["urządzenia", "api", "ioctl"],
+            "gradingCriteria": "Odpowiedź musi wyjaśniać, że `ioctl` (Input/Output Control) służy do wykonywania operacji specyficznych dla danego urządzenia, które nie mieszczą się w standardowych operacjach read/write, np. zmiana konfiguracji, odczyt statusu.",
+            "maxPoints": 3
+        },
+        {
+            "id": 815,
+            "questionText": "Gdzie w strukturze jądra znajduje się implementacja standardowych wywołań systemowych operujących na plikach (np. `open`, `read`)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "system plików", "api"],
+            "options": [
+                "W katalogu ./drivers",
+                "W katalogu ./ipc",
+                "W katalogu ./fs",
+                "W katalogu ./mm"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Implementacje wywołań systemowych związanych z systemem plików (File System) znajdują się w katalogu ./fs drzewa źródeł jądra, a nazwy funkcji często zaczynają się od prefiksu `sys_` (np. `sys_open`)."
+        },
+        {
+            "id": 816,
+            "questionText": "Jaka jest główna rola struktury `file_operations` w sterowniku urządzenia?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "file_operations"],
+            "options": [
+                "Przechowuje listę otwartych plików dla danego urządzenia.",
+                "Przechowuje dane odczytane z urządzenia.",
+                "Zawiera wskaźniki do funkcji, które implementują standardowe operacje (open, read, write, etc.) dla danego sterownika.",
+                "Opisuje atrybuty pliku urządzenia, takie jak uprawnienia i właściciel."
+            ],
+            "correctAnswers": [2],
+            "explanation": "Struktura `file_operations` działa jak tablica wirtualnych funkcji. Kiedy proces użytkownika wywołuje np. `read()` na pliku urządzenia, jądro odnajduje odpowiednią strukturę `file_operations` i wywołuje funkcję wskazywaną przez jej pole `.read`."
+        },
+        {
+            "id": 817,
+            "questionText": "Które z pól struktury `file_operations` wskazuje na moduł jądra będący właścicielem sterownika, co zapobiega jego usunięciu, gdy urządzenie jest w użyciu?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "file_operations"],
+            "options": [
+                ".module",
+                ".driver",
+                ".this",
+                ".owner"
+            ],
+            "correctAnswers": [3],
+            "explanation": "Pole `.owner`, zazwyczaj ustawiane na `THIS_MODULE`, jest kluczowe dla prawidłowego zarządzania czasem życia modułu. Dzięki niemu licznik użycia modułu jest inkrementowany, gdy plik urządzenia jest otwierany."
+        },
+        {
+            "id": 818,
+            "questionText": "Jaką funkcję w sterowniku urządzenia wywoła jądro, gdy proces użytkownika zamknie plik urządzenia (np. za pomocą `close()`)?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "file_operations"],
+            "options": [
+                "wskazywaną przez pole .close",
+                "wskazywaną przez pole .exit",
+                "wskazywaną przez pole .release",
+                "wskazywaną przez pole .destroy"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Operacji zamknięcia pliku przez ostatni proces, który go używał, odpowiada pole `.release` w strukturze `file_operations`."
+        },
+        {
+            "id": 819,
+            "questionText": "Wskaż, które z poniższych są prawidłowymi polami w strukturze `file_operations`.",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["urządzenia", "sterowniki", "file_operations"],
+            "options": [
+                ".read",
+                ".open",
+                ".ioctl",
+                ".llseek"
+            ],
+            "correctAnswers": [0, 1, 3],
+            "explanation": "Pola `.read`, `.open` i `.llseek` są standardowymi elementami struktury `file_operations`. Obsługa `ioctl` jest realizowana przez pola `.unlocked_ioctl` lub `.compat_ioctl`."
+        },
+        {
+            "id": 820,
+            "questionText": "Czym różni się struktura `inode` od struktury `file`?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "inode", "file"],
+            "options": [
+                "Nie ma różnicy, są to synonimy.",
+                "`inode` reprezentuje plik na dysku, a `file` reprezentuje otwarty plik w pamięci.",
+                "`inode` przechowuje dane pliku, a `file` jego metadane.",
+                "`inode` jest używana dla urządzeń blokowych, a `file` dla znakowych."
+            ],
+            "correctAnswers": [1],
+            "explanation": "Struktura `inode` (index node) opisuje plik jako byt w systemie plików (jego typ, uprawnienia, rozmiar, numery urządzenia). Struktura `file` jest tworzona dla każdej operacji `open()` i opisuje interakcję konkretnego procesu z tym plikiem (np. bieżącą pozycję wskaźnika)."
+        },
+        {
+            "id": 821,
+            "questionText": "Która funkcja służy do rejestracji sterownika urządzenia znakowego w systemie?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "rejestracja"],
+            "options": [
+                "register_device()",
+                "register_chrdev()",
+                "create_char_device()",
+                "add_chrdev()"
+            ],
+            "correctAnswers": [1],
+            "explanation": "Starszą, ale wciąż używaną metodą rejestracji urządzenia znakowego jest funkcja `register_chrdev()`, która przyjmuje numer główny, nazwę i wskaźnik do struktury `file_operations`."
+        },
+        {
+            "id": 822,
+            "questionText": "Jakiej funkcji należy użyć do wyrejestrowania sterownika urządzenia znakowego, który był zarejestrowany za pomocą `register_chrdev()`?",
+            "image": "",
+            "type": "single-choice",
+            "tags": ["urządzenia", "sterowniki", "rejestracja"],
+            "options": [
+                "unregister_device()",
+                "delete_chrdev()",
+                "unregister_chrdev()",
+                "remove_chrdev()"
+            ],
+            "correctAnswers": [2],
+            "explanation": "Funkcją odwrotną do `register_chrdev()` jest `unregister_chrdev()`, która zwalnia numer główny i odłącza sterownik."
+        },
+        {
+            "id": 823,
+            "questionText": "Które z poniższych są typowymi parametrami przekazywanymi do funkcji `ioctl`?",
+            "image": "",
+            "type": "multiple-choice",
+            "tags": ["urządzenia", "api", "ioctl"],
+            "options": [
+                "fd (deskryptor pliku)",
+                "command (numer komendy)",
+                "data (wskaźnik do danych)",
+                "buffer_size (rozmiar bufora)"
+            ],
+            "correctAnswers": [0, 1, 2],
+            "explanation": "Funkcja `ioctl` przyjmuje deskryptor pliku otwartego urządzenia, specyficzną dla sterownika komendę oraz opcjonalny, nietypowany wskaźnik do danych, które mają być przekazane lub odebrane."
+        }
+    ]
+}

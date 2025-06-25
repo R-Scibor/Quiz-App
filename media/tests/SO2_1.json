@@ -23,7 +23,7 @@
         },
         {
             "id": 410,
-            "questionText": "Jakiego typu jądrem, zgodnie z prezentacją, jest jądro systemu Linux?",
+            "questionText": "Jakiego typu jądrem, jest jądro systemu Linux?",
             "image": "",
             "type": "single-choice",
             "tags": ["linux", "jądro", "monolityczne", "moduły"],

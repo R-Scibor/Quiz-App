@@ -253,29 +253,22 @@
 	        "explanation": "Zgodnie z materiałami, `set_task_state()` jest jedną z dwóch wymienionych funkcji służących bezpośrednio do zmiany stanu procesu."
 	    },
 		{
-			"id": 320,
-			"questionText": "Na diagramie przedstawiono klasyczną strukturę systemu plików Unix System V składającą się z 5 pól. Twoim zadaniem jest przyporządkowanie poniższych nazw elementów do odpowiednich numerów pól (od 1 do 5) na diagramie. Nazwy podano w losowej kolejności:\n\n- Super blok (Superblock)\n- Tablica bloków danych (Data Blocks)\n- Blok startowy (Boot Block)\n- Tablica i-węzłów (Inode Table)\n- Mapy bitowe (Bitmaps)",
-			"image": "/static/unixfile.png",
-			"type": "open-ended",
-			"tags": ["unix", "system plików", "systemv", "egzamin", "diagram", "otwarte"],
-			"gradingCriteria": "Odpowiedź musi być w formacie 'Pole X: Nazwa Elementu'. Przyznaj 1 punkt za każde poprawne przyporządkowanie. Maksymalna liczba punktów to 5. \n\nPrawidłowa odpowiedź:\nPole 1: Blok startowy\nPole 2: Super blok\nPole 3: Mapy bitowe\nPole 4: Tablica i-węzłów\nPole 5: Tablica bloków danych.\n\nAkceptuj również angielskie nazwy (Boot Block, Superblock, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za literówki.",
-			"maxPoints": 5
+    		"id": 320,
+    		"questionText": "Na diagramie przedstawiono klasyczną strukturę systemu plików Unix System V składającą się z 5 pól. Twoim zadaniem jest przyporządkowanie poniższych nazw elementów do odpowiednich numerów pól (od 1 do 5) na diagramie.\n\nNazwy podano w losowej kolejności:\n\n* Super blok (Superblock)\n* Tablica bloków danych (Data Blocks)\n* Blok startowy (Boot Block)\n* Tablica i-węzłów (Inode Table)\n* Mapy bitowe (Bitmaps)",
+    		"image": "/static/unixfile.png",
+    		"type": "open-ended",
+    		"tags": ["unix", "system plików", "systemv", "egzamin", "diagram", "otwarte"],
+    		"gradingCriteria": "Odpowiedź musi być w formacie 'Pole X: Nazwa Elementu'. Przyznaj 1 punkt za każde poprawne przyporządkowanie. Maksymalna liczba punktów to 5. \n\nPrawidłowa odpowiedź:\nPole 1: Blok startowy\nPole 2: Super blok\nPole 3: Mapy bitowe\nPole 4: Tablica i-węzłów\nPole 5: Tablica bloków danych.\n\nAkceptuj również angielskie nazwy (Boot Block, Superblock, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za literówki.",
+    		"maxPoints": 5
 		},
 		{
-			"id": 321,
-			"questionText": "Diagram w materiale źródłowym (obraz.png) przedstawia strukturę 'Grupy bloków' w systemie plików ext2. Składa się ona z 5 głównych elementów. Twoim zadaniem jest podanie prawidłowej kolejności tych elementów w grupie bloków, numerując je od 1 do 5. Elementy do uporządkowania (w losowej kolejności) to:\n\n- Tablica i-węzłów\n- Mapy bitowe\n- Deskryptor grupy\n- Super blok\n- Tablica bloków danych",
-			"image": "obraz.png",
-			"type": "open-ended",
-			"tags": [
-				"linux",
-				"system plików",
-				"ext2",
-				"egzamin",
-				"kolejność",
-				"otwarte"
-			],
-			"gradingCriteria": "Odpowiedź musi być w formacie '1: Nazwa Elementu, 2: Nazwa Elementu...'. Przyznaj 1 punkt za każdą poprawną pozycję. Maksymalna liczba punktów to 5.\n\nPrawidłowa odpowiedź:\n1: Super blok\n2: Deskryptor grupy\n3: Mapy bitowe\n4: Tablica i-węzłów\n5: Tablica bloków danych\n\nPodczas oceniania akceptuj również angielskie nazwy (Superblock, Group Descriptor, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za ewentualne literówki.",
-			"maxPoints": 5
+    		"id": 321,
+    		"questionText": "Na diagramie przedstawiono strukturę 'Grupy bloków' w systemie plików ext2. Składa się ona z 5 głównych elementów. Twoim zadaniem jest podanie prawidłowej kolejności tych elementów w grupie bloków, numerując je od 1 do 5.\n\nElementy do uporządkowania (w losowej kolejności) to:\n\n* Tablica i-węzłów\n* Mapy bitowe\n* Deskryptor grupy\n* Super blok\n* Tablica bloków danych",
+    		"image": "/static/ext2file.png",
+    		"type": "open-ended",
+    		"tags": ["linux", "system plików", "ext2", "egzamin", "kolejność", "otwarte"],
+    		"gradingCriteria": "Odpowiedź musi być w formacie '1: Nazwa Elementu, 2: Nazwa Elementu...'. Przyznaj 1 punkt za każdą poprawną pozycję. Maksymalna liczba punktów to 5.\n\nPrawidłowa odpowiedź:\n1: Super blok\n2: Deskryptor grupy\n3: Mapy bitowe\n4: Tablica i-węzłów\n5: Tablica bloków danych\n\nPodczas oceniania akceptuj również angielskie nazwy (Superblock, Group Descriptor, Bitmaps, Inode Table, Data Blocks) i nie odejmuj punktów za ewentualne literówki.",
+    		"maxPoints": 5
 		},
 		{
 			"id": 322,

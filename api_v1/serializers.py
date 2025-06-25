@@ -61,6 +61,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     type = serializers.CharField(source='question_type')
     gradingCriteria = serializers.CharField(source='grading_criteria')
     maxPoints = serializers.IntegerField(source='max_points')
+    image = serializers.URLField()
     
     # Zagnieżdżony serializer dla tagów, zwracający listę ich nazw
     tags = serializers.StringRelatedField(many=True)
@@ -68,15 +69,15 @@ class QuestionSerializer(serializers.ModelSerializer):
     # Pola generowane dynamicznie w celu dopasowania do starej struktury
     options = serializers.SerializerMethodField()
     correctAnswers = serializers.SerializerMethodField()
+
     
     class Meta:
         model = Question
         # Lista pól, które mają zostać zwrócone w JSON
         fields = [
-            'id', 'questionText', 'type', 'tags', 'options', 
+            'id', 'questionText', 'image', 'type', 'tags', 'options', 
             'correctAnswers', 'explanation', 'gradingCriteria', 'maxPoints'
         ]
-
     def get_options(self, obj):
         """
         Zbiera teksty wszystkich odpowiedzi powiązanych z tym pytaniem

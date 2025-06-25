@@ -10,9 +10,9 @@ from api_v1.models import Category, Tag, Test, Question, Answer
 class Command(BaseCommand):
     """
     Komenda Django do importowania quizów z plików JSON wraz z pełną weryfikacją.
-    Obsługuje pytania zamknięte (jednokrotnego i wielokrotnego wyboru) oraz otwarte.
+    Obsługuje pytania zamknięte, otwarte oraz linki do obrazków.
     """
-    help = 'Importuje testy i pytania (w tym otwarte) z plików JSON i weryfikuje poprawność importu.'
+    help = 'Importuje testy i pytania (w tym otwarte i z obrazkami) z plików JSON i weryfikuje poprawność importu.'
 
     def add_arguments(self, parser):
         parser.add_argument('json_dir', type=str, help='Ścieżka do katalogu zawierającego pliki JSON z quizami.')
@@ -78,6 +78,7 @@ class Command(BaseCommand):
                     question_obj = Question.objects.create(
                         test=test_obj,
                         text=q_text,
+                        image=q_data.get('image'), # <-- TUTAJ ZMIANA: Dodajemy import obrazka
                         explanation=q_data.get('explanation', ''),
                         question_type=q_type,
                         grading_criteria=q_data.get('gradingCriteria'),
@@ -161,4 +162,3 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("\nWERDYKT: Pełna zgodność. Wszystkie dane wyglądają na poprawnie zaimportowane."))
         else:
             self.stdout.write(self.style.ERROR("\nWERDYKT: Wykryto rozbieżności. Sprawdź powyższe komunikaty o błędach."))
-

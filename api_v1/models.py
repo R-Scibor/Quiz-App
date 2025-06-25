@@ -2,9 +2,6 @@ import uuid
 from django.db import models
 
 # -----------------------------------------------------------------------------
-# Wprowadzenie do Modeli
-# -----------------------------------------------------------------------------
-#
 # Poniższe modele definiują strukturę bazy danych dla aplikacji Quiz App.
 # Zgodnie z planem migracji, implementacja uwzględnia najlepsze praktyki:
 #
@@ -75,7 +72,6 @@ class Test(models.Model):
         return self.title
 
 class Question(models.Model):
-    # <--- ZMIANA: Dodajemy stałe dla typów pytań
     SINGLE_CHOICE = 'single-choice'
     MULTIPLE_CHOICE = 'multiple-choice'
     OPEN_ENDED = 'open-ended'
@@ -89,9 +85,10 @@ class Question(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla pytania.")
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions", help_text="Test, do którego przypisane jest to pytanie.")
     text = models.TextField(help_text="Treść pytania.")
+    image = models.URLField(max_length=1024, blank=True, null=True, help_text="Opcjonalny link URL do obrazka powiązanego z pytaniem.")
+
     explanation = models.TextField(blank=True, null=True, help_text="Opcjonalne wyjaśnienie poprawnej odpowiedzi.")
     
-    # <--- ZMIANA: Zastępujemy 'is_multiple_choice' nowym polem 'question_type'
     question_type = models.CharField(
         max_length=20,
         choices=QUESTION_TYPE_CHOICES,
@@ -99,7 +96,6 @@ class Question(models.Model):
         help_text="Typ pytania (jednokrotnego wyboru, wielokrotnego wyboru, otwarte)."
     )
 
-    # <--- ZMIANA: Dodajemy pola dla pytań otwartych
     grading_criteria = models.TextField(
         blank=True, null=True, 
         help_text="Kryteria oceny dla pytań otwartych."

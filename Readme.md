@@ -66,7 +66,7 @@ Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
 
 1.  **Sklonuj repozytorium:**
     ```bash
-    git clone [https://github.com/Zyrandool/Quiz-App](https://github.com/Zyrandool/Quiz-App)
+    git clone https://github.com/Zyrandool/Quiz-App
     cd Quiz-App
     ```
 
@@ -132,7 +132,7 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 Chcesz dodać własne pytania lub całe testy do aplikacji? Przygotowaliśmy szczegółowy poradnik, który krok po kroku wyjaśnia, jak tworzyć pliki JSON z quizami i importować je do bazy danych.
 
-➡️ **[Przeczytaj Poradnik Tworzenia i Importowania Quizów](./docs/quiz_authoring_guide.md)**
+➡️ **[Przeczytaj Poradnik Tworzenia i Importowania Quizów](./docs/questions_guide.md)**
 
 ---
 

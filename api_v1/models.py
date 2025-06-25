@@ -30,10 +30,10 @@ from django.db import models
 # -----------------------------------------------------------------------------
 
 
+import uuid
+from django.db import models
+
 class Category(models.Model):
-    """
-    Model reprezentujący kategorię tematyczną testu (np. "Programowanie", "Historia").
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla kategorii.")
     name = models.CharField(max_length=255, unique=True, help_text="Nazwa kategorii.")
     description = models.TextField(blank=True, null=True, help_text="Opcjonalny opis kategorii.")
@@ -46,12 +46,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
 class Tag(models.Model):
-    """
-    Model reprezentujący tag, który można przypisać do pytania (np. "Python", "Piastowie", "SQL").
-    Umożliwia bardziej szczegółową klasyfikację.
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla tagu.")
     name = models.CharField(max_length=100, unique=True, help_text="Nazwa tagu.")
 
@@ -63,24 +58,13 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
-
 class Test(models.Model):
-    """
-    Główny model reprezentujący pojedynczy test (quiz).
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla testu.")
     title = models.CharField(max_length=255, help_text="Tytuł testu.")
     description = models.TextField(blank=True, null=True, help_text="Opcjonalny opis testu.")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Data i czas utworzenia testu.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Data i czas ostatniej aktualizacji testu.")
-
-    # Relacje
-    categories = models.ManyToManyField(
-        Category,
-        related_name="tests",
-        blank=True,
-        help_text="Kategorie, do których należy test."
-    )
+    categories = models.ManyToManyField(Category, related_name="tests", blank=True, help_text="Kategorie, do których należy test.")
 
     class Meta:
         verbose_name = "Test"
@@ -90,70 +74,66 @@ class Test(models.Model):
     def __str__(self):
         return self.title
 
-
 class Question(models.Model):
-    """
-    Model reprezentujący pojedyncze pytanie w ramach testu.
-    """
+    # <--- ZMIANA: Dodajemy stałe dla typów pytań
+    SINGLE_CHOICE = 'single-choice'
+    MULTIPLE_CHOICE = 'multiple-choice'
+    OPEN_ENDED = 'open-ended'
+    
+    QUESTION_TYPE_CHOICES = [
+        (SINGLE_CHOICE, 'Jednokrotnego wyboru'),
+        (MULTIPLE_CHOICE, 'Wielokrotnego wyboru'),
+        (OPEN_ENDED, 'Otwarte'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla pytania.")
-    test = models.ForeignKey(
-        Test,
-        on_delete=models.CASCADE,
-        related_name="questions",
-        help_text="Test, do którego przypisane jest to pytanie."
-    )
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions", help_text="Test, do którego przypisane jest to pytanie.")
     text = models.TextField(help_text="Treść pytania.")
     explanation = models.TextField(blank=True, null=True, help_text="Opcjonalne wyjaśnienie poprawnej odpowiedzi.")
-    is_multiple_choice = models.BooleanField(default=False, help_text="Czy pytanie jest wielokrotnego wyboru?")
-
-    # Relacja z Tagami przeniesiona tutaj z modelu Test
-    tags = models.ManyToManyField(
-        Tag,
-        related_name="questions",
-        blank=True,
-        help_text="Tagi powiązane z pytaniem."
+    
+    # <--- ZMIANA: Zastępujemy 'is_multiple_choice' nowym polem 'question_type'
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPE_CHOICES,
+        default=SINGLE_CHOICE,
+        help_text="Typ pytania (jednokrotnego wyboru, wielokrotnego wyboru, otwarte)."
     )
 
+    # <--- ZMIANA: Dodajemy pola dla pytań otwartych
+    grading_criteria = models.TextField(
+        blank=True, null=True, 
+        help_text="Kryteria oceny dla pytań otwartych."
+    )
+    max_points = models.PositiveIntegerField(
+        blank=True, null=True,
+        help_text="Maksymalna liczba punktów dla pytań otwartych."
+    )
+
+    tags = models.ManyToManyField(Tag, related_name="questions", blank=True, help_text="Tagi powiązane z pytaniem.")
 
     class Meta:
         verbose_name = "Pytanie"
         verbose_name_plural = "Pytania"
-        ordering = ['id']  # Domyślne sortowanie, aby zachować kolejność
-        indexes = [
-            models.Index(fields=['test'], name='question_test_id_idx'),
-        ]
-        constraints = [
-            models.UniqueConstraint(fields=['test', 'text'], name='unique_question_text_in_test')
-        ]
+        ordering = ['id']
+        indexes = [models.Index(fields=['test'], name='question_test_id_idx')]
+        constraints = [models.UniqueConstraint(fields=['test', 'text'], name='unique_question_text_in_test')]
 
     def __str__(self):
         return f"{self.text[:80]}..." if len(self.text) > 80 else self.text
 
-
 class Answer(models.Model):
-    """
-    Model reprezentujący pojedynczą odpowiedź na pytanie.
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla odpowiedzi.")
-    question = models.ForeignKey(
-        Question,
-        on_delete=models.CASCADE,
-        related_name="answers",
-        help_text="Pytanie, do którego przypisana jest ta odpowiedź."
-    )
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers", help_text="Pytanie, do którego przypisana jest ta odpowiedź.")
     text = models.CharField(max_length=1024, help_text="Treść odpowiedzi.")
     is_correct = models.BooleanField(default=False, help_text="Czy ta odpowiedź jest poprawna?")
 
     class Meta:
         verbose_name = "Odpowiedź"
         verbose_name_plural = "Odpowiedzi"
-        ordering = ['id'] # Domyślne sortowanie, aby zachować kolejność
-        indexes = [
-            models.Index(fields=['question'], name='answer_question_id_idx'),
-        ]
-        constraints = [
-            models.UniqueConstraint(fields=['question', 'text'], name='unique_answer_text_for_question')
-        ]
+        ordering = ['id']
+        indexes = [models.Index(fields=['question'], name='answer_question_id_idx')]
+        constraints = [models.UniqueConstraint(fields=['question', 'text'], name='unique_answer_text_for_question')]
 
     def __str__(self):
         return f"{self.text[:80]}..." if len(self.text) > 80 else self.text
+

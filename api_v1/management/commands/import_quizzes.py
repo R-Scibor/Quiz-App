@@ -1,52 +1,22 @@
-import os
 import json
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction, models
+from django.db import transaction
 from tqdm import tqdm
 
+# Poprawny import modeli z ich właściwej lokalizacji
 from api_v1.models import Category, Tag, Test, Question, Answer
-
-# -----------------------------------------------------------------------------
-# Wprowadzenie do Skryptu Importującego
-# -----------------------------------------------------------------------------
-#
-# Ten skrypt to dedykowana komenda zarządzania Django, zaprojektowana do
-# jednorazowego, wydajnego importu danych o quizach z plików JSON do bazy
-# danych. Implementuje ona kluczowe założenia z planu migracji:
-#
-# 1.  **Transakcyjność**: Cały proces importu dla pojedynczego pliku jest
-#     opakowany w blok `transaction.atomic`. Gwarantuje to, że albo cały
-#     test z pytaniami i odpowiedziami zostanie zaimportowany poprawnie,
-#     albo żadne dane z tego pliku nie zostaną zapisane w przypadku błędu.
-#
-# 2.  **Idempotentność**: Skrypt można uruchamiać wielokrotnie bez ryzyka
-#     tworzenia duplikatów. Używa metody `update_or_create` dla Testów,
-#     bazując na tytule, oraz `get_or_create` dla Kategorii i Tagów.
-#
-# 3.  **Pełna Weryfikacja po imporcie**: Po zakończeniu importu skrypt
-#     automatycznie uruchamia procedurę weryfikacyjną. Porównuje liczbę
-#     pytań ORAZ odpowiedzi w każdym pliku źródłowym z danymi zapisanymi
-#     w bazie, dostarczając kompletnego raportu o integralności danych.
-#
-# 4.  **Obsługa argumentów**: Komenda przyjmuje ścieżkę do folderu z testami
-#     oraz opcjonalną flagę `--clean` do wyczyszczenia bazy przed importem.
-#
-# -----------------------------------------------------------------------------
 
 class Command(BaseCommand):
     """
     Komenda Django do importowania quizów z plików JSON wraz z pełną weryfikacją.
+    Obsługuje pytania zamknięte (jednokrotnego i wielokrotnego wyboru) oraz otwarte.
     """
-    help = 'Importuje testy, pytania, odpowiedzi, kategorie i tagi z plików JSON i weryfikuje poprawność importu.'
+    help = 'Importuje testy i pytania (w tym otwarte) z plików JSON i weryfikuje poprawność importu.'
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            'json_dir', type=str, help='Ścieżka do katalogu zawierającego pliki JSON z quizami.'
-        )
-        parser.add_argument(
-            '--clean', action='store_true', help='Usuwa wszystkie istniejące dane przed importem.'
-        )
+        parser.add_argument('json_dir', type=str, help='Ścieżka do katalogu zawierającego pliki JSON z quizami.')
+        parser.add_argument('--clean', action='store_true', help='Usuwa wszystkie istniejące dane przed importem.')
 
     def handle(self, *args, **options):
         json_dir = Path(options['json_dir'])
@@ -100,10 +70,18 @@ class Command(BaseCommand):
                 for q_data in data.get('questions', []):
                     q_text = q_data.get('questionText')
                     if not q_text: continue
+                    
+                    q_type = q_data.get('type', 'single-choice')
+                    if q_type not in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE, Question.OPEN_ENDED]:
+                        q_type = Question.SINGLE_CHOICE
 
                     question_obj = Question.objects.create(
-                        test=test_obj, text=q_text, explanation=q_data.get('explanation', ''),
-                        is_multiple_choice=(q_data.get('type') == 'multiple-choice')
+                        test=test_obj,
+                        text=q_text,
+                        explanation=q_data.get('explanation', ''),
+                        question_type=q_type,
+                        grading_criteria=q_data.get('gradingCriteria'),
+                        max_points=q_data.get('maxPoints')
                     )
 
                     tags_to_assign = []
@@ -116,9 +94,10 @@ class Command(BaseCommand):
                     if tags_to_assign:
                         question_obj.tags.set(tags_to_assign)
 
-                    correct_indices = q_data.get('correctAnswers', [])
-                    for i, opt_text in enumerate(q_data.get('options', [])):
-                        Answer.objects.create(question=question_obj, text=opt_text, is_correct=(i in correct_indices))
+                    if q_type in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]:
+                        correct_indices = q_data.get('correctAnswers', [])
+                        for i, opt_text in enumerate(q_data.get('options', [])):
+                            Answer.objects.create(question=question_obj, text=opt_text, is_correct=(i in correct_indices))
 
         except json.JSONDecodeError:
             self.stderr.write(self.style.ERROR(f"Błąd: Plik '{file_path.name}' zawiera nieprawidłowy JSON."))
@@ -140,18 +119,15 @@ class Command(BaseCommand):
                     data = json.load(f)
 
                 test_title = data.get('scope', file_path.stem)
-                
-                # Zlicz pytania i odpowiedzi w pliku JSON
                 questions_data = data.get('questions', [])
                 q_in_json = len(questions_data)
-                a_in_json = sum(len(q.get('options', [])) for q in questions_data)
+                a_in_json = sum(len(q.get('options', [])) for q in questions_data if q.get('type') != 'open-ended')
 
                 total_q_json += q_in_json
                 total_a_json += a_in_json
 
                 try:
                     test_obj = Test.objects.get(title=test_title)
-                    # Zlicz pytania i odpowiedzi w bazie danych dla danego testu
                     q_in_db = test_obj.questions.count()
                     a_in_db = Answer.objects.filter(question__test=test_obj).count()
 
@@ -167,9 +143,7 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.ERROR(f"BŁĄD: '{test_title}' -> Niezgodność odpowiedzi! JSON: {a_in_json}, DB: {a_in_db}"))
                         has_error = True
 
-                    if has_error:
-                         all_ok = False
-
+                    if has_error: all_ok = False
                 except Test.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f"BŁĄD: Nie znaleziono w DB testu '{test_title}' dla pliku {file_path.name}"))
                     all_ok = False
@@ -187,3 +161,4 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("\nWERDYKT: Pełna zgodność. Wszystkie dane wyglądają na poprawnie zaimportowane."))
         else:
             self.stdout.write(self.style.ERROR("\nWERDYKT: Wykryto rozbieżności. Sprawdź powyższe komunikaty o błędach."))
+

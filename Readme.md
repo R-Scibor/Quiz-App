@@ -64,7 +64,7 @@ Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
 
 1.  **Sklonuj repozytorium:**
     ```bash
-    git clone [https://github.com/Zyrandool/Quiz-App](https://github.com/Zyrandool/Quiz-App)
+    git clone https://github.com/Zyrandool/Quiz-App
     cd quiz-app
     ```
 

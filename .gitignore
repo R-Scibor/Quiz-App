@@ -48,12 +48,16 @@ db.sqlite3
 
 # Pliki konfiguracyjne i wrażliwe
 .env
-#local_settings.py
+local_settings.py
 
 # Pliki generowane przez biblioteki
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Pliki testów
+media/tests/*
+
 
 # ===================================================================
 # Sekcja Node.js / React (dla Vite/Create-React-App)

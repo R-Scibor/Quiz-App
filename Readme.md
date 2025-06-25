@@ -15,6 +15,7 @@ Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. U�
   - [Konfiguracja Backendu (Django)](#konfiguracja-backendu-django)
   - [Konfiguracja Frontendu (React)](#konfiguracja-frontendu-react)
 - [📂 Struktura projektu](#-struktura-projektu)
+- [✍️ Tworzenie Treści](#️-tworzenie-treści)
 - [📝 Plany rozwoju](#-plany-rozwoju)
 
 ---
@@ -48,6 +49,7 @@ Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. U�
 - **Django:** Framework webowy Pythona do szybkiego tworzenia bezpiecznych i skalowalnych aplikacji.
 - **Django REST Framework:** Potężny zestaw narzędzi do budowy API webowych.
 - **Python:** Język programowania używany po stronie serwera.
+- **PostgreSQL:** Produkcyjna, relacyjna baza danych.
 
 ---
 
@@ -64,8 +66,8 @@ Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
 
 1.  **Sklonuj repozytorium:**
     ```bash
-    git clone https://github.com/Zyrandool/Quiz-App
-    cd quiz-app
+    git clone [https://github.com/Zyrandool/Quiz-App](https://github.com/Zyrandool/Quiz-App)
+    cd Quiz-App
     ```
 
 2.  **Utwórz i aktywuj wirtualne środowisko:**
@@ -114,14 +116,9 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 .
 ├── api_v1/           # Aplikacja Django z logiką API
 ├── backend_project/  # Główny folder konfiguracyjny Django
+├── docs/             # Dokumentacja projektu
+│   └── quiz_authoring_guide.md
 ├── frontend/         # Kod źródłowy aplikacji React
-│   ├── src/
-│   │   ├── components/ # Komponenty wielokrotnego użytku
-│   │   ├── pages/      # Komponenty reprezentujące strony
-│   │   ├── services/   # Logika komunikacji z API
-│   │   └── store/      # Zarządzanie stanem (Zustand)
-│   └── ...
-├── media/            # Pliki statyczne, w tym pliki JSON z testami
 ├── .gitignore
 ├── build.sh          # Skrypt do budowania aplikacji na produkcję
 ├── manage.py         # Narzędzie linii komend Django
@@ -131,25 +128,32 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ---
 
+## ✍️ Tworzenie Treści
+
+Chcesz dodać własne pytania lub całe testy do aplikacji? Przygotowaliśmy szczegółowy poradnik, który krok po kroku wyjaśnia, jak tworzyć pliki JSON z quizami i importować je do bazy danych.
+
+➡️ **[Przeczytaj Poradnik Tworzenia i Importowania Quizów](./docs/quiz_authoring_guide.md)**
+
+---
+
 ## 📝 Plany rozwoju
 
 ### Planowane rozszerzenia (najbliższe priorytety)
 
 - [ ] **Zgłaszanie pytań/odpowiedzi** Umożliwienie użytkownikowi zgłoszenia błędu w pytaniu/odpowiedzi lub w ocenie AI
 - [ ] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
-- [ ] **Migracja danych:** Przeniesienie treści quizów z plików JSON do relacyjnej bazy danych w celu zwiększenia wydajności i skalowalności.
+- [ ] **Panel administratora:** Rozbudowa panelu admina o możliwość wygodnego tworzenia i edycji quizów z poziomu interfejsu graficznego.
 
 ### Możliwe rozszerzenia (pomysły na przyszłość)
 
 - [ ] **System uwierzytelniania:** Dodanie logowania i rejestracji użytkowników.
 - [ ] **Historia wyników:** Zapisywanie wyników testów dla zalogowanych użytkowników.
-- [ ] **Panel administratora:** Możliwość dodawania, edytowania i usuwania quizów z poziomu interfejsu graficznego.
 - [ ] **Rozbudowane statystyki:** Wykresy i bardziej szczegółowe analizy wyników.
-- [ ] **Kategorie pytań:** Możliwość filtrowania i grupowania pytań według kategorii.
 - [ ] **Tryb wieloosobowy:** Możliwość rywalizacji ze znajomymi w czasie rzeczywistym.
 
 ### Ukończone
 
+- [x] **Migracja danych:** Przeniesiono treść quizów z plików JSON do relacyjnej bazy danych (PostgreSQL) w celu zwiększenia wydajności i skalowalności.
 - [x] **Naprawa licznika** - Licznik teraz zatrzymuje się po tym jak użytkownik zatwierdzi odpowiedź na pytanie i wznawia ponownie przy następnym pytaniu.
-- [x] **Formatowanie tekstu pytań i wyjaśnień:** Zaimplementowano obsługę formatowania Markdown dla treści pytań i wyjaśnień przy użyciu biblioteki `react-markdown`. Dodano wsparcie dla wieloliniowych tekstów oraz kolorowanych bloków kodu (` ``` `) dzięki integracji z `react-syntax-highlighter`.
-- [x] **Lepsza obsługa błędów:** Wprowadzono kompleksową obsługę błędów na wszystkich poziomach aplikacji. Backend zwraca ustrukturyzowane odpowiedzi JSON i wykorzystuje standardowe logowanie. Frontend globalnie przechwytuje błędy API za pomocą interceptora i jest chroniony przez komponent `ErrorBoundary` łapiący błędy renderowania.
+- [x] **Formatowanie tekstu pytań i wyjaśnień:** Zaimplementowano obsługę formatowania Markdown dla treści pytań i wyjaśnień przy użyciu biblioteki `react-markdown`.
+- [x] **Lepsza obsługa błędów:** Wprowadzono kompleksową obsługę błędów na wszystkich poziomach aplikacji.

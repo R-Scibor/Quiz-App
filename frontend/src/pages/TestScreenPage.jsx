@@ -201,13 +201,13 @@ const TestScreenPage = () => {
     const isClosedQuestion = question.type === 'single-choice' || question.type === 'multiple-choice';
 
     return (
-         <motion.div 
-            key={currentQuestionIndex} 
+         <motion.div
+            key={currentQuestionIndex}
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.5 }}
-            className="relative w-full max-w-2xl mx-auto px-4"
+            className="relative w-[768px] mx-auto px-4"
         >
             <div className="main-card bg-white dark:bg-card-bg w-full p-8 md:p-12">
                 <div className="flex justify-between items-center mb-6">

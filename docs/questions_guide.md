@@ -15,7 +15,7 @@ Niniejszy dokument stanowi kompletny przewodnik po tworzeniu nowych testów w fo
 
 ---
 
-## โครงสร้างของไฟล์ JSON
+## Struktura Pliku JSON
 
 Każdy plik `.json` reprezentuje jeden kompletny test i powinien mieć następującą strukturę główną:
 

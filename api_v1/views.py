@@ -199,7 +199,7 @@ class CheckOpenAnswerView(APIView):
 
         Twoje zadania:
         - Oceń, w jakim stopniu odpowiedź użytkownika spełnia kryteria oceniania.
-        - Przyznaj liczbę punktów od 0 do {max_points}. Bądź sprawiedliwy, ale wymagający. Nie przyznawaj punktów, jeśli odpowiedź nie odnosi się do kryteriów.
+        - Przyznaj liczbę punktów od 0 do {max_points}. Bądź sprawiedliwy, ale wymagający. Nie przyznawaj punktów, jeśli odpowiedź nie odnosi się do kryteriów. Nie odejmuj punktów za błędy ortograficzne, gramatyczne czy stylistyczne, chyba że są one kluczowe dla zrozumienia odpowiedzi.
         - Napisz krótkie, jedno- lub dwuzdaniowe uzasadnienie swojej oceny w języku polskim, wyjaśniając, dlaczego przyznałeś tyle punktów (np. co było dobrze, a czego zabrakło).
 
         Zwróć swoją ocenę jako idealnie sformatowany obiekt JSON. Bez żadnych dodatkowych znaków, komentarzy czy formatowania markdown. JSON musi zawierać DOKŁADNIE dwa klucze: "score" (typu integer) i "feedback" (typu string).

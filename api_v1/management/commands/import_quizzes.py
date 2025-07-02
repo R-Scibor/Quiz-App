@@ -49,21 +49,30 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Brak plików JSON do zaimportowania."))
             return
 
+        self.imported_files = []  # Initialize the list here
         for file_path in tqdm(json_files_to_import, desc="Importowanie quizów"):
+            imported = False
             # Uruchamiamy walidację dla każdego pliku
             validator = ValidateQuizCommand()
             validation_errors = validator.validate_quiz_data(self.load_json(file_path))
 
             if validation_errors:
-                self.stdout.write(self.style.ERROR(f"Błąd walidacji pliku '{file_path.name}'. Pomijanie importu."))
+                self.stdout.write(self.style.ERROR(f"\nBłąd walidacji pliku '{file_path.name}'. Pomijanie importu."))
                 for error in validation_errors:
                     self.stdout.write(self.style.ERROR(f"- {error}"))
             else:
-                self.stdout.write(self.style.SUCCESS(f"Plik '{file_path.name}' przeszedł walidację. Rozpoczynanie importu..."))
-                self.import_quiz_from_file(file_path)
+                try:
+                    self.stdout.write(self.style.SUCCESS(f"\nPlik '{file_path.name}' przeszedł walidację. Rozpoczynanie importu..."))
+                    self.import_quiz_from_file(file_path)
+                    imported = True
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"\nBłąd podczas importu pliku '{file_path.name}': {e}. Pomijanie."))
+
+            if imported:
+                self.imported_files.append(file_path)
 
         self.stdout.write(self.style.SUCCESS("\nImport zakończony. Rozpoczynanie weryfikacji..."))
-        self.verify_import(json_files_to_import)
+        self.verify_import(self.imported_files, len(json_files_to_import))
 
     def import_quiz_from_file(self, file_path: Path):
         try:
@@ -134,7 +143,7 @@ class Command(BaseCommand):
         except json.JSONDecodeError as e:
             raise CommandError(f"Błąd dekodowania JSON w pliku '{file_path}': {e}")
 
-    def verify_import(self, json_files: list):
+    def verify_import(self, imported_files: list, total_files: int):
         self.stdout.write("=" * 70)
         self.stdout.write("RAPORT WERYFIKACJI IMPORTU")
         self.stdout.write("=" * 70)
@@ -143,7 +152,7 @@ class Command(BaseCommand):
         total_q_json, total_q_db = 0, 0
         total_a_json, total_a_db = 0, 0
 
-        for file_path in tqdm(json_files, desc="Weryfikowanie importu"):
+        for file_path in tqdm(imported_files, desc="Weryfikowanie importu"):
             try:
                 with file_path.open('r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -181,6 +190,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"Krytyczny błąd weryfikacji pliku '{file_path.name}': {e}"))
                 all_ok = False
         
+        self.stdout.write("-" * 70)
+        self.stdout.write(f"Próbowano zaimportować łącznie {total_files} plików.")
+        self.stdout.write(f"Pominięto {total_files - len(imported_files)} plików z powodu błędów walidacji lub importu.")
+        self.stdout.write(f"Pomyślnie zaimportowano i zweryfikowano {len(imported_files)} plików.")
+
         self.stdout.write("-" * 70)
         self.stdout.write("Podsumowanie ogólne:")
         self.stdout.write(f"  - Łączna liczba pytań w JSON: {total_q_json} | w DB: {total_q_db}")

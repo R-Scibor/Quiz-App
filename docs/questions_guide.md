@@ -119,6 +119,14 @@ Użytkownik musi wpisać odpowiedź tekstową, która jest oceniana przez AI.
 
 ---
 
+**WAŻNE:** Przed załadowaniem testów do bazy danych, zaleca się użycie komendy `validate_quiz_json`, aby upewnić się, że pliki są poprawne i nie zawierają błędów.
+
+**Przykład użycia:**
+
+```bash
+python manage.py validate_quiz_json media/tests/moj_quiz.json
+```
+
 ## 🚀 Jak Załadować Nowe Testy do Bazy Danych
 
 Po stworzeniu nowych plików `.json` z testami, należy zaimportować je do produkcyjnej bazy danych. Proces ten wykonuje się jednorazowo dla każdego nowego zestawu plików, używając specjalnej komendy Django.
@@ -146,9 +154,18 @@ Po stworzeniu nowych plików `.json` z testami, należy zaimportować je do prod
     ```bash
     python manage.py import_quizzes media/tests
     ```
-    **Uwaga:** Jeśli chcesz całkowicie wyczyścić bazę i zaimportować wszystko od nowa, użyj flagi `--clean`:
+    **Importowanie pojedynczego pliku:**
+    Możesz również załadować pojedynczy plik JSON, podając bezpośrednią ścieżkę do niego:
+    ```bash
+    python manage.py import_quizzes media/tests/moj_nowy_quiz.json
+    ```
+    **Uwaga:** Jeśli chcesz całkowicie wyczyścić bazę i zaimportować wszystko od nowa, użyj flagi `--clean` (działa zarówno dla katalogów, jak i pojedynczych plików):
     ```bash
     python manage.py import_quizzes media/tests --clean
+    ```
+    lub
+    ```bash
+    python manage.py import_quizzes media/tests/moj_nowy_quiz.json --clean
     ```
 
 4.  Skrypt połączy się z produkcyjną bazą danych i zaimportuje wszystkie pliki `.json` z katalogu `media/tests`. Po zakończeniu zobaczysz raport weryfikacyjny.

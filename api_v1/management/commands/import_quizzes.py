@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 # Poprawny import modeli z ich właściwej lokalizacji
 from api_v1.models import Category, Tag, Test, Question, Answer
+from api_v1.management.commands.validate_quiz_json import Command as ValidateQuizCommand
 
 class Command(BaseCommand):
     """
@@ -49,7 +50,17 @@ class Command(BaseCommand):
             return
 
         for file_path in tqdm(json_files_to_import, desc="Importowanie quizów"):
-            self.import_quiz_from_file(file_path)
+            # Uruchamiamy walidację dla każdego pliku
+            validator = ValidateQuizCommand()
+            validation_errors = validator.validate_quiz_data(self.load_json(file_path))
+
+            if validation_errors:
+                self.stdout.write(self.style.ERROR(f"Błąd walidacji pliku '{file_path.name}'. Pomijanie importu."))
+                for error in validation_errors:
+                    self.stdout.write(self.style.ERROR(f"- {error}"))
+            else:
+                self.stdout.write(self.style.SUCCESS(f"Plik '{file_path.name}' przeszedł walidację. Rozpoczynanie importu..."))
+                self.import_quiz_from_file(file_path)
 
         self.stdout.write(self.style.SUCCESS("\nImport zakończony. Rozpoczynanie weryfikacji..."))
         self.verify_import(json_files_to_import)
@@ -115,6 +126,13 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"Błąd: Plik '{file_path.name}' zawiera nieprawidłowy JSON."))
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Nieoczekiwany błąd importu pliku '{file_path.name}': {e}"))
+
+    def load_json(self, file_path: Path):
+        try:
+            with file_path.open('r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            raise CommandError(f"Błąd dekodowania JSON w pliku '{file_path}': {e}")
 
     def verify_import(self, json_files: list):
         self.stdout.write("=" * 70)

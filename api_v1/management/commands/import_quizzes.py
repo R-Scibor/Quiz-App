@@ -15,13 +15,11 @@ class Command(BaseCommand):
     help = 'Importuje testy i pytania (w tym otwarte i z obrazkami) z plików JSON i weryfikuje poprawność importu.'
 
     def add_arguments(self, parser):
-        parser.add_argument('json_dir', type=str, help='Ścieżka do katalogu zawierającego pliki JSON z quizami.')
+        parser.add_argument('path', type=str, help='Ścieżka do katalogu zawierającego pliki JSON z quizami lub do pojedynczego pliku JSON.')
         parser.add_argument('--clean', action='store_true', help='Usuwa wszystkie istniejące dane przed importem.')
 
     def handle(self, *args, **options):
-        json_dir = Path(options['json_dir'])
-        if not json_dir.is_dir():
-            raise CommandError(f"Podana ścieżka '{json_dir}' nie jest prawidłowym katalogiem.")
+        input_path = Path(options['path'])
 
         if options['clean']:
             self.stdout.write(self.style.WARNING("Rozpoczynanie czyszczenia bazy danych..."))
@@ -30,18 +28,31 @@ class Command(BaseCommand):
             Tag.objects.all().delete()
             self.stdout.write(self.style.SUCCESS("Baza danych została wyczyszczona."))
 
-        json_files = list(json_dir.glob('*.json'))
-        if not json_files:
-            self.stdout.write(self.style.WARNING(f"W katalogu '{json_dir}' nie znaleziono żadnych plików .json."))
+        json_files_to_import = []
+        if input_path.is_file():
+            if input_path.suffix.lower() == '.json':
+                json_files_to_import.append(input_path)
+                self.stdout.write(f"Znaleziono 1 plik JSON do zaimportowania: {input_path.name}")
+            else:
+                raise CommandError(f"Podana ścieżka '{input_path}' nie jest plikiem JSON.")
+        elif input_path.is_dir():
+            json_files_to_import = list(input_path.glob('*.json'))
+            if not json_files_to_import:
+                self.stdout.write(self.style.WARNING(f"W katalogu '{input_path}' nie znaleziono żadnych plików .json."))
+                return
+            self.stdout.write(f"Znaleziono {len(json_files_to_import)} plików JSON do zaimportowania z katalogu '{input_path}'.")
+        else:
+            raise CommandError(f"Podana ścieżka '{input_path}' nie jest prawidłowym plikiem ani katalogiem.")
+
+        if not json_files_to_import:
+            self.stdout.write(self.style.WARNING("Brak plików JSON do zaimportowania."))
             return
 
-        self.stdout.write(f"Znaleziono {len(json_files)} plików JSON do zaimportowania.")
-
-        for file_path in tqdm(json_files, desc="Importowanie quizów"):
+        for file_path in tqdm(json_files_to_import, desc="Importowanie quizów"):
             self.import_quiz_from_file(file_path)
 
         self.stdout.write(self.style.SUCCESS("\nImport zakończony. Rozpoczynanie weryfikacji..."))
-        self.verify_import(json_files)
+        self.verify_import(json_files_to_import)
 
     def import_quiz_from_file(self, file_path: Path):
         try:

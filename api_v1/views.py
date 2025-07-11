@@ -18,6 +18,7 @@ from .models import Test, Question, Answer
 from .serializers import TestMetadataSerializer, QuestionSerializer
 from .tasks import generate_ai_answer
 from celery.result import AsyncResult
+from backend_project import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -173,23 +174,39 @@ class QuestionListView(APIView):
 
 class CheckOpenAnswerView(APIView):
     def post(self, request, *args, **kwargs):
-        question_id = request.data.get('question_id') # Załóżmy, że frontend wysyła ID pytania
-        if not question_id:
-            return Response({"error": "MISSING_QUESTION_ID"}, status=status.HTTP_400_BAD_REQUEST)
+        user_answer = request.data.get('userAnswer')
+        grading_criteria = request.data.get('gradingCriteria')
+        question_text = request.data.get('questionText')
+        max_points = request.data.get('maxPoints')
 
-        task = generate_ai_answer.delay(question_id)
+        if not all([user_answer, grading_criteria, question_text, max_points]):
+            return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
+
+        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points)
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 class GetTaskResultView(APIView):
     def get(self, request, task_id, *args, **kwargs):
-        result = AsyncResult(task_id)
-        if result.ready():
-            return Response({
-                "status": "SUCCESS",
-                "data": result.get()
-            }, status=status.HTTP_200_OK)
+        logger.debug(f"GET_TASK_RESULT: Checking result for task_id: {task_id}")
+        # Directly query the result backend to avoid any state caching issues
+        backend = celery_app.backend
+        meta = backend.get_task_meta(task_id)
+        logger.debug(f"GET_TASK_RESULT: Raw meta from backend: {meta}")
+
+        if meta:
+            response_data = {
+                "status": meta.get('status', 'UNKNOWN'),
+                "task_id": task_id,
+                "data": meta.get('result')
+            }
         else:
-            return Response({
-                "status": "PENDING"
-            }, status=status.HTTP_200_OK)
+            # If there's no metadata, the task is likely still pending or unknown
+            response_data = {
+                "status": "PENDING",
+                "task_id": task_id,
+                "data": None
+            }
+        
+        logger.debug(f"GET_TASK_RESULT: Sending response: {response_data}")
+        return Response(response_data, status=status.HTTP_200_OK)
 

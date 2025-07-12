@@ -12,6 +12,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
     container_name: django_web
     command: gunicorn --bind 0.0.0.0:8000 backend_project.wsgi
     volumes:

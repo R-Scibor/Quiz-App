@@ -15,7 +15,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
-# Collect static files (including the React build)
+# Odbierz argument przekazany z docker-compose.yml
+ARG DATABASE_URL
+# Ustaw go jako zmienną środowiskową dla kolejnych komend
+ENV DATABASE_URL=${DATABASE_URL}
+
+# Collect static files (teraz ta komenda będzie widzieć DATABASE_URL)
 RUN python manage.py collectstatic --no-input
 
 # Run the app. Gunicorn is a production-ready WSGI server.

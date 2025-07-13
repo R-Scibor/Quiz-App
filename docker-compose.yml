@@ -15,6 +15,7 @@ services:
       - .:/app
       - static_volume:/app/staticfiles_collected
       - media_volume:/app/media
+      - frontend_volume:/app/frontend/dist
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
@@ -51,11 +52,13 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - static_volume:/app/staticfiles_collected
-      - media_volume:/app/media
+      - static_volume:/var/www/static/
+      - media_volume:/var/www/media/
+      - frontend_volume:/var/www/frontend/
     depends_on:
       - web
 
 volumes:
   static_volume:
   media_volume:
+  frontend_volume:

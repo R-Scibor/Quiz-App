@@ -1,0 +1,87 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./certs/server.crt:/etc/ssl/certs/server.crt
+      - ./certs/server.key:/etc/ssl/certs/server.key
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    command: >
+      sh -c "chown postgres:postgres /etc/ssl/certs/server.key &&
+             chmod 600 /etc/ssl/certs/server.key &&
+             exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf"
+    environment:
+      - POSTGRES_DB=quiz_db
+      - POSTGRES_USER=quiz_user
+      - POSTGRES_PASSWORD=quiz_password
+    restart: always
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_web
+    restart: always
+    command: gunicorn --bind 0.0.0.0:8000 backend_project.wsgi
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles_collected
+      - ./media:/app/media
+      - frontend_volume:/app/frontend/dist
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: celery_worker
+    restart: always
+    command: celery -A backend_project worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    # DODAJ ZALEŻNOŚĆ OD BAZY DANYCH
+    depends_on:
+      - redis
+      - web
+      - db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/var/www/static/
+      - ./media:/var/www/media/
+      - frontend_volume:/var/www/frontend/
+    depends_on:
+      - web
+
+volumes:
+  # NOWY WOLUMEN DLA BAZY DANYCH
+  postgres_data:
+  static_volume:
+  media_volume:
+  frontend_volume:

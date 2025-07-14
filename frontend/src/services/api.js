@@ -84,3 +84,12 @@ export const getQuestions = (params) => {
 export const checkOpenAnswer = (payload) => {
     return apiClient.post('/check_answer/', payload);
 };
+
+/**
+ * Sprawdza status zadania asynchronicznego.
+ * @param {string} taskId - ID zadania zwrócone przez checkOpenAnswer.
+ * @returns {Promise} Obietnica z odpowiedzią API zawierającą status i ewentualne dane.
+ */
+export const getTaskResult = (taskId) => {
+    return apiClient.get(`/task_result/${taskId}/`);
+};

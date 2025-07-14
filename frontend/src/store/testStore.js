@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi } from '../services/api';
+import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi } from '../services/api';
 
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
@@ -25,9 +25,8 @@ const useTestStore = create((set, get) => ({
     questionStartTime: null, // New state to mark when current question started
     totalTimeSpent: 0, // New state to accumulate time spent on questions
 
-    isCheckingAnswer: false,
-    lastAnswerFeedback: null,
-    openQuestionResults: {},
+    checkingQuestionId: null, // Will hold the ID of the question being graded
+    openQuestionResults: {}, // Will store all feedback permanently
 
     // Actions
     goToSetup: () => set({ view: 'setup' }),
@@ -104,61 +103,75 @@ const useTestStore = create((set, get) => ({
     },
     
     checkOpenAnswer: async (userAnswer) => {
-        const { currentQuestionIndex, currentQuestions, questionStartTime, totalTimeSpent } = get();
+        const { currentQuestionIndex, currentQuestions, questionStartTime } = get();
         const question = currentQuestions[currentQuestionIndex];
-        
-        // Pause timer and accumulate time before checking answer
+
         if (questionStartTime) {
             const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);
             set(state => ({
                 totalTimeSpent: state.totalTimeSpent + timeElapsed,
-                isTimerRunning: false, // Pause timer
+                isTimerRunning: false,
             }));
         }
 
-        set({ isCheckingAnswer: true, lastAnswerFeedback: null, error: null });
+        // Set the specific question ID that is being checked
+        set(state => ({
+            checkingQuestionId: question.id,
+            error: null,
+            // Pre-emptively store the user's answer
+            openQuestionResults: {
+                ...state.openQuestionResults,
+                [question.id]: {
+                    ...(state.openQuestionResults[question.id] || {}),
+                    userAnswer: userAnswer,
+                }
+            }
+        }));
 
-        try {
-            const payload = {
-                // POPRAWKA: Używamy 'questionText' zgodnie z tym, co wysyła backend
-                questionText: question.questionText,
-                userAnswer: userAnswer,
-                gradingCriteria: question.gradingCriteria,
-                maxPoints: question.maxPoints
-            };
-            const response = await checkOpenAnswerApi(payload);
-            
-            // KLUCZOWA POPRAWKA: Odczytujemy 'score' z API i mapujemy na 'points_awarded'
-            const { score, feedback } = response.data;
-            
-            set(state => ({
-                // Aktualizujemy ogólny wynik testu
-                score: state.score + score,
-                openQuestionResults: {
-                    ...state.openQuestionResults,
-                    [question.id]: {
-                        userAnswer: userAnswer,
-                        points_awarded: score,
-                        feedback: feedback,
-                        maxPoints: question.maxPoints
-                    }
-                },
-                // Zapisujemy feedback do wyświetlenia na ekranie
-                lastAnswerFeedback: { 
-                    points_awarded: score, // Zapisujemy pod kluczem, którego oczekuje komponent
-                    feedback: feedback, 
-                    maxPoints: question.maxPoints 
-                },
-                isCheckingAnswer: false,
-            }));
+        const payload = {
+            questionText: question.questionText,
+            userAnswer: userAnswer,
+            gradingCriteria: question.gradingCriteria,
+            maxPoints: question.maxPoints
+        };
+        
+        const response = await checkOpenAnswerApi(payload);
+        return response.data;
+    },
 
-        } catch (error) {
-            console.error("Błąd podczas sprawdzania odpowiedzi:", error);
-            set({
-                error: error,
-                isCheckingAnswer: false,
-            });
-        }
+    getTaskResult: async (taskId) => {
+        const response = await getTaskResultApi(taskId);
+        return response.data; // Zwracamy { status: '...', data: '...' }
+    },
+
+    setLastAnswerFeedback: (feedbackData, questionId) => {
+        const { score, feedback } = feedbackData;
+        const { currentQuestions } = get();
+        const question = currentQuestions.find(q => q.id === questionId);
+
+        if (!question) return;
+
+        set(state => ({
+            score: state.score + score,
+            openQuestionResults: {
+                ...state.openQuestionResults,
+                [questionId]: {
+                    ...state.openQuestionResults[questionId],
+                    points_awarded: score,
+                    feedback: feedback,
+                    maxPoints: question.maxPoints
+                }
+            },
+            // Clear the checking state only if it matches the question that just finished
+            checkingQuestionId: state.checkingQuestionId === questionId
+                ? null
+                : state.checkingQuestionId,
+        }));
+    },
+
+    // Nowa akcja do obsługi błędów
+    setError: (error) => {
+        set({ error: error, checkingQuestionId: null });
     },
 
     nextQuestion: () => set((state) => {
@@ -170,7 +183,7 @@ const useTestStore = create((set, get) => ({
             state.totalTimeSpent += timeElapsed;
         }
 
-        set({ lastAnswerFeedback: null, error: null });
+        set({ error: null });
         if (state.currentQuestionIndex + 1 < state.currentQuestions.length) {
             return {
                 currentQuestionIndex: state.currentQuestionIndex + 1,
@@ -192,8 +205,8 @@ const useTestStore = create((set, get) => ({
         testStartTime: null,
         testEndTime: null,
         error: null,
-        lastAnswerFeedback: null,
         openQuestionResults: {},
+        checkingQuestionId: null,
         isTimerRunning: false, // Reset timer state
         questionStartTime: null, // Reset question start time
         totalTimeSpent: 0, // Reset total time spent

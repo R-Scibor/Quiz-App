@@ -15,32 +15,63 @@ const OpenEndedQuestionUI = () => {
         currentQuestions,
         currentQuestionIndex,
         checkOpenAnswer,
-        isCheckingAnswer,
-        lastAnswerFeedback,
+        checkingQuestionId,
+        openQuestionResults,
         nextQuestion,
         error: apiError
     } = useTestStore();
     const [userAnswer, setUserAnswer] = useState('');
     const question = currentQuestions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
+    const questionResult = openQuestionResults[question.id];
+    const isCurrentlyChecking = checkingQuestionId === question.id;
 
-    const handleSubmit = () => {
-        if (userAnswer.trim()) {
-            checkOpenAnswer(userAnswer);
+    const handleSubmit = async () => {
+        if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
+
+        try {
+            const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
+            const taskId = taskResponse.task_id;
+
+            if (!taskId) {
+                throw new Error("Nie otrzymano ID zadania od serwera.");
+            }
+
+            const intervalId = setInterval(async () => {
+                try {
+                    const resultResponse = await useTestStore.getState().getTaskResult(taskId);
+                    
+                    if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
+                        clearInterval(intervalId);
+                        
+                        if (resultResponse.status === 'SUCCESS') {
+                            useTestStore.getState().setLastAnswerFeedback(resultResponse.data, question.id);
+                        } else {
+                            throw new Error(resultResponse.data || "Wystąpił błąd podczas przetwarzania zadania.");
+                        }
+                    }
+                } catch (error) {
+                    clearInterval(intervalId);
+                    useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
+                }
+            }, 2000);
+
+        } catch (error) {
+             useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć zadania oceny.' });
         }
     };
     
     // Widok po ocenie odpowiedzi przez AI
-    if (lastAnswerFeedback) {
+    if (questionResult?.feedback) {
         return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Wynik oceny</h3>
                 <p className="text-3xl font-bold text-brand-primary mb-4">
-                    {lastAnswerFeedback.points_awarded} / {lastAnswerFeedback.maxPoints} pkt
+                    {questionResult.points_awarded} / {questionResult.maxPoints} pkt
                 </p>
                 <div className="text-left bg-gray-100 dark:bg-option-bg p-4 rounded-lg mb-6">
                     <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Feedback:</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{lastAnswerFeedback.feedback}</p>
+                    <p className="text-gray-600 dark:text-gray-400">{questionResult.feedback}</p>
                 </div>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -56,11 +87,20 @@ const OpenEndedQuestionUI = () => {
     }
     
     // Widok ładowania podczas sprawdzania
-    if (isCheckingAnswer) {
+    if (isCurrentlyChecking) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <LoadingSpinner />
                 <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Możesz przejść do następnego pytania.</p>
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={nextQuestion}
+                    className="btn-primary mt-6 py-2 px-8"
+                >
+                    {isLastQuestion ? "Zakończ test" : "Następne pytanie"}
+                </motion.button>
             </div>
         );
     }

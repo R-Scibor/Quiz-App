@@ -16,6 +16,9 @@ import google.generativeai as genai
 # Importujemy nowe serializery i modele
 from .models import Test, Question, Answer
 from .serializers import TestMetadataSerializer, QuestionSerializer
+from .tasks import generate_ai_answer
+from celery.result import AsyncResult
+from backend_project import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -170,16 +173,7 @@ class QuestionListView(APIView):
         return data
 
 class CheckOpenAnswerView(APIView):
-    """
-    Widok API do sprawdzania odpowiedzi na pytania otwarte.
-    Pozostaje bez zmian, ponieważ jego logika jest niezależna od źródła danych.
-    """
     def post(self, request, *args, **kwargs):
-        GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-        if not GEMINI_API_KEY:
-            logger.critical("Klucz API Gemini (GEMINI_API_KEY) nie jest skonfigurowany na serwerze.")
-            return Response({"error": "API_KEY_MISSING", "message": "Klucz API do usługi AI nie jest skonfigurowany na serwerze."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
         user_answer = request.data.get('userAnswer')
         grading_criteria = request.data.get('gradingCriteria')
         question_text = request.data.get('questionText')
@@ -187,37 +181,32 @@ class CheckOpenAnswerView(APIView):
 
         if not all([user_answer, grading_criteria, question_text, max_points]):
             return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
+
+        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points)
+        return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
+
+class GetTaskResultView(APIView):
+    def get(self, request, task_id, *args, **kwargs):
+        logger.debug(f"GET_TASK_RESULT: Checking result for task_id: {task_id}")
+        # Directly query the result backend to avoid any state caching issues
+        backend = celery_app.backend
+        meta = backend.get_task_meta(task_id)
+        logger.debug(f"GET_TASK_RESULT: Raw meta from backend: {meta}")
+
+        if meta:
+            response_data = {
+                "status": meta.get('status', 'UNKNOWN'),
+                "task_id": task_id,
+                "data": meta.get('result')
+            }
+        else:
+            # If there's no metadata, the task is likely still pending or unknown
+            response_data = {
+                "status": "PENDING",
+                "task_id": task_id,
+                "data": None
+            }
         
-        prompt = f"""
-        Jesteś precyzyjnym i surowym nauczycielem oceniającym odpowiedź na pytanie w quizie. Twoim zadaniem jest ocenić odpowiedź użytkownika, bazując na podanych kryteriach oceniania.
-
-        Oto szczegóły:
-        1. Pytanie: "{question_text}"
-        2. Kryteria Oceniania: "{grading_criteria}"
-        3. Maksymalna liczba punktów do zdobycia za to pytanie: {max_points}
-        4. Odpowiedź Użytkownika: "{user_answer}"
-
-        Twoje zadania:
-        - Oceń, w jakim stopniu odpowiedź użytkownika spełnia kryteria oceniania.
-        - Przyznaj liczbę punktów od 0 do {max_points}. Bądź sprawiedliwy, ale wymagający. Nie przyznawaj punktów, jeśli odpowiedź nie odnosi się do kryteriów. Nie odejmuj punktów za błędy ortograficzne, gramatyczne czy stylistyczne, chyba że są one kluczowe dla zrozumienia odpowiedzi.
-        - Napisz krótkie, jedno- lub dwuzdaniowe uzasadnienie swojej oceny w języku polskim, wyjaśniając, dlaczego przyznałeś tyle punktów (np. co było dobrze, a czego zabrakło).
-
-        Zwróć swoją ocenę jako idealnie sformatowany obiekt JSON. Bez żadnych dodatkowych znaków, komentarzy czy formatowania markdown. JSON musi zawierać DOKŁADNIE dwa klucze: "score" (typu integer) i "feedback" (typu string).
-        """
-
-        try:
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            ai_response = model.generate_content(prompt)
-
-            cleaned_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-            response_json = json.loads(cleaned_text)
-
-            if 'score' not in response_json or 'feedback' not in response_json:
-                 raise ValueError("Odpowiedź AI nie zawiera wymaganych kluczy 'score' i 'feedback'.")
-
-            return Response(response_json, status=status.HTTP_200_OK)
-        except Exception as e:
-            logger.exception("Wystąpił nieoczekiwany błąd podczas komunikacji z AI: %s", e)
-            return Response({"error": "AI_COMMUNICATION_ERROR", "message": "Wystąpił wewnętrzny błąd serwera podczas komunikacji z usługą AI."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.debug(f"GET_TASK_RESULT: Sending response: {response_data}")
+        return Response(response_data, status=status.HTTP_200_OK)
 

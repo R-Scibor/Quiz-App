@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import useTestStore from '../store/testStore';
 import { motion } from 'framer-motion';
+import ReportModal from '../components/ReportModal';
 
 // Warianty animacji dla listy pytań
 const listVariants = {
@@ -93,6 +94,8 @@ const OpenQuestionReview = ({ question, result }) => {
 const ReviewPage = () => {
     // Pobieramy ze stanu wszystkie potrzebne dane, które przygotowaliśmy wcześniej
     const { currentQuestions, userAnswers, openQuestionResults, backToResults } = useTestStore();
+    const [reportingQuestion, setReportingQuestion] = useState(null);
+    const [reportedQuestions, setReportedQuestions] = useState(new Set());
 
     return (
         <motion.div className="main-card bg-white dark:bg-card-bg w-full max-w-4xl mx-auto p-8 md:p-12">
@@ -138,9 +141,30 @@ const ReviewPage = () => {
                                 userAnswer={userAnswers[question.id]}
                             />
                         )}
+                        <div className="mt-4 text-right">
+                            <button
+                                onClick={() => setReportingQuestion(question)}
+                                disabled={reportedQuestions.has(question.id)}
+                                className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {reportedQuestions.has(question.id) ? 'Zgłoszono' : 'Zgłoś problem'}
+                            </button>
+                        </div>
                     </motion.div>
                 ))}
             </motion.div>
+
+            {reportingQuestion && (
+                <ReportModal
+                    question={reportingQuestion}
+                    testId={reportingQuestion.test_id}
+                    aiFeedback={openQuestionResults[reportingQuestion.id]}
+                    onClose={() => setReportingQuestion(null)}
+                    onReportSuccess={() => {
+                        setReportedQuestions(prev => new Set(prev).add(reportingQuestion.id));
+                    }}
+                />
+            )}
         </motion.div>
     );
 };

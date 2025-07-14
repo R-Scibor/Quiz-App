@@ -4,13 +4,14 @@ import ProgressBar from '../components/ProgressBar';
 import Timer from '../components/Timer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReportModal from '../components/ReportModal';
 
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // --- Komponent dla pytań otwartych ---
-const OpenEndedQuestionUI = () => {
+const OpenEndedQuestionUI = ({ onReport }) => {
     const {
         currentQuestions,
         currentQuestionIndex,
@@ -82,6 +83,9 @@ const OpenEndedQuestionUI = () => {
                     <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </motion.button>
+                <button onClick={onReport} className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary mt-4">
+                    Zgłoś problem z oceną
+                </button>
             </motion.div>
         );
     }
@@ -147,6 +151,8 @@ const TestScreenPage = () => {
     
     const [selection, setSelection] = useState([]);
     const [showFeedback, setShowFeedback] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isReported, setIsReported] = useState(false);
     const question = currentQuestions[currentQuestionIndex];
 
     const markdownComponents = {
@@ -184,6 +190,7 @@ const TestScreenPage = () => {
             }
             setShowFeedback(false);
         }
+        setIsReported(false); // Resetuj status zgłoszenia przy zmianie pytania
     }, [question, userAnswers]);
 
     if (!question) {
@@ -241,6 +248,7 @@ const TestScreenPage = () => {
     const isClosedQuestion = question.type === 'single-choice' || question.type === 'multiple-choice';
 
     return (
+        <>
          <motion.div
             key={currentQuestionIndex}
             initial={{ opacity: 0, x: 50 }}
@@ -311,9 +319,16 @@ const TestScreenPage = () => {
                                 </motion.button>
                             )}
                         </div>
+                        {showFeedback && !isReported && (
+                            <div className="text-center mt-4">
+                                <button onClick={() => setIsReportModalOpen(true)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary">
+                                    Zgłoś problem z pytaniem
+                                </button>
+                            </div>
+                        )}
                     </>
                 ) : (
-                    <OpenEndedQuestionUI />
+                    <OpenEndedQuestionUI onReport={() => setIsReportModalOpen(true)} />
                 )}
 
             </div>
@@ -331,6 +346,18 @@ const TestScreenPage = () => {
                 </motion.div>
             )}
         </motion.div>
+        {isReportModalOpen && (
+            <ReportModal
+                question={question}
+                testId={question.test_id}
+                aiFeedback={useTestStore.getState().openQuestionResults[question.id]}
+                onClose={() => setIsReportModalOpen(false)}
+                onReportSuccess={() => {
+                    setIsReported(true);
+                }}
+            />
+        )}
+    </>
     );
 };
 

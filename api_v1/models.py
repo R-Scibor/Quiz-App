@@ -133,3 +133,61 @@ class Answer(models.Model):
     def __str__(self):
         return f"{self.text[:80]}..." if len(self.text) > 80 else self.text
 
+
+
+class ReportedIssue(models.Model):
+    """
+    Model do przechowywania zgłoszeń dotyczących pytań lub ocen AI.
+    """
+    ISSUE_TYPE_CHOICES = [
+        ('QUESTION_ERROR', 'Błąd w pytaniu/odpowiedzi'),
+        ('AI_GRADING_ERROR', 'Niesłuszna ocena AI'),
+    ]
+
+    STATUS_CHOICES = [
+        ('NEW', 'Nowe'),
+        ('IN_PROGRESS', 'W trakcie analizy'),
+        ('RESOLVED', 'Rozwiązane'),
+        ('REJECTED', 'Odrzucone'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reported_issues", help_text="Pytanie, którego dotyczy zgłoszenie.")
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="reported_issues", help_text="Test, w którym wystąpiło zgłoszenie.")
+    
+    issue_type = models.CharField(
+        max_length=20,
+        choices=ISSUE_TYPE_CHOICES,
+        help_text="Typ zgłoszonego problemu."
+    )
+    description = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Opcjonalny opis problemu od użytkownika."
+    )
+    ai_feedback_snapshot = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Zapisana odpowiedź AI w momencie zgłoszenia (dla zgłoszeń typu 'AI_GRADING_ERROR')."
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='NEW',
+        help_text="Aktualny status zgłoszenia."
+    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Data i czas utworzenia zgłoszenia.")
+
+    class Meta:
+        verbose_name = "Zgłoszony Problem"
+        verbose_name_plural = "Zgłoszone Problemy"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['question'], name='reported_issue_question_idx'),
+            models.Index(fields=['test'], name='reported_issue_test_idx'),
+            models.Index(fields=['status'], name='reported_issue_status_idx'),
+        ]
+
+    def __str__(self):
+        return f"Zgłoszenie {self.id} dla pytania {self.question.id}"

@@ -127,49 +127,53 @@ Użytkownik musi wpisać odpowiedź tekstową, która jest oceniana przez AI.
 python manage.py validate_quiz_json media/tests/moj_quiz.json
 ```
 
+**Przykład użycia (wewnątrz kontenera):**
+
+```bash
+docker compose exec web python manage.py validate_quiz_json media/tests/moj_quiz.json
+```
+
 ## 🚀 Jak Załadować Nowe Testy do Bazy Danych
 
-Po stworzeniu nowych plików `.json` z testami, należy zaimportować je do produkcyjnej bazy danych. Proces ten wykonuje się jednorazowo dla każdego nowego zestawu plików, używając specjalnej komendy Django.
+Poniższa instrukcja opisuje proces dodawania nowych plików `.json` z testami do aplikacji działającej w kontenerach Docker na maszynie wirtualnej (VM).
 
-**Wymagania:** Dostęp do **External Database URL** z panelu bazy danych na Render.com.
+### Krok 1: Przygotuj pliki na swoim komputerze (PC)
 
-### Krok 1: Przygotowanie środowiska lokalnego
+1.  **Stwórz nowe pliki z testami**: Przygotuj swoje nowe testy w formacie `.json`.
+2.  **Umieść je w odpowiednim folderze**: Na swoim lokalnym komputerze umieść wszystkie nowe pliki `.json` w folderze `media/tests/` w głównym katalogu projektu.
 
-1.  Umieść swoje nowe pliki `.json` w katalogu `media/tests/` w lokalnej kopii projektu.
-2.  W głównym katalogu projektu (obok `manage.py`) znajdź lub utwórz plik `.env`.
-3.  Otwórz plik `.env` i wklej do niego zewnętrzny adres URL do Twojej bazy na Render:
+### Krok 2: Wyślij pliki na serwer (VM)
 
-    ```env
-    # Plik: .env
-    DATABASE_URL=postgres://USER:PASSWORD@EXTERNAL_HOST:PORT/DATABASE
-    ```
-    *Dzięki temu wszystkie komendy Django będą teraz wykonywane na produkcyjnej bazie danych.*
+Teraz musimy skopiować te nowe pliki z Twojego PC na maszynę wirtualną.
 
-### Krok 2: Uruchomienie skryptu importującego
-
-1.  Otwórz terminal w głównym katalogu projektu na swoim komputerze.
-2.  Upewnij się, że Twoje wirtualne środowisko jest aktywne.
-3.  Uruchom poniższą komendę:
+1.  **Otwórz terminal na swoim PC**: Użyj Command Prompt lub PowerShell.
+2.  **Użyj komendy `scp`**: Wykonaj poniższą komendę, aby skopiować **cały folder `tests`** na serwer. Zastąpi ona istniejące pliki i doda nowe.
 
     ```bash
-    python manage.py import_quizzes media/tests
+    scp -r /sciezka/do/twojego/Quiz-App/media/tests sciborr08@TWOJ_ADRES_IP_VM:~/Quiz-App/media/
+    ```
+    * **Pamiętaj**, aby zastąpić `/sciezka/do/twojego/Quiz-App/media/tests` oraz `TWOJ_ADRES_IP_VM` prawidłowymi wartościami.
+    * Ta komenda użyje Twojego klucza SSH. Nie powinno pytać o hasło.
+
+### Krok 3: Zaimportuj testy do aplikacji (w Dockerze)
+
+Gdy pliki są już na serwerze, musimy powiedzieć Django, żeby je przeczytało i dodało do bazy danych.
+
+1.  **Połącz się z serwerem VM**: Upewnij się, że masz otwarty terminal połączony z Twoją maszyną wirtualną.
+2.  **Uruchom komendę importu**: Wykonaj poniższą komendę. Działa ona wewnątrz kontenera `web` i wskazuje na folder, do którego właśnie wysłałeś pliki.
+
+    ```bash
+    docker compose exec web python manage.py import_quizzes media/tests
     ```
     **Importowanie pojedynczego pliku:**
     Możesz również załadować pojedynczy plik JSON, podając bezpośrednią ścieżkę do niego:
     ```bash
-    python manage.py import_quizzes media/tests/moj_nowy_quiz.json
+    docker compose exec web python manage.py import_quizzes media/tests/moj_nowy_quiz.json
     ```
-    **Uwaga:** Jeśli chcesz całkowicie wyczyścić bazę i zaimportować wszystko od nowa, użyj flagi `--clean` (działa zarówno dla katalogów, jak i pojedynczych plików):
+    **Czyszczenie bazy:**
+    Jeśli chcesz całkowicie wyczyścić bazę i zaimportować wszystko od nowa, użyj flagi `--clean`:
     ```bash
-    python manage.py import_quizzes media/tests --clean
-    ```
-    lub
-    ```bash
-    python manage.py import_quizzes media/tests/moj_nowy_quiz.json --clean
+    docker compose exec web python manage.py import_quizzes media/tests --clean
     ```
 
-4.  Skrypt połączy się z produkcyjną bazą danych i zaimportuje wszystkie pliki `.json` z katalogu `media/tests`. Po zakończeniu zobaczysz raport weryfikacyjny.
-
-### Krok 3: Posprzątanie
-
-Po pomyślnym imporcie, możesz usunąć lub wykomentować linię `DATABASE_URL` w pliku `.env`, aby znów pracować na lokalnej bazie SQLite.
+3.  **Gotowe!** Twoje nowe testy powinny być już widoczne w aplikacji.

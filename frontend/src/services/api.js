@@ -93,3 +93,18 @@ export const checkOpenAnswer = (payload) => {
 export const getTaskResult = (taskId) => {
     return apiClient.get(`/task_result/${taskId}/`);
 };
+
+
+/**
+ * Wysyła zgłoszenie problemu dotyczącego pytania lub oceny.
+ * @param {object} payload - Dane zgłoszenia.
+ * @param {string} payload.question - ID pytania.
+ * @param {string} payload.test - ID testu.
+ * @param {string} payload.issue_type - Typ problemu ('QUESTION_ERROR' lub 'AI_GRADING_ERROR').
+ * @param {string} [payload.description] - Opcjonalny opis od użytkownika.
+ * @param {string} [payload.ai_feedback_snapshot] - Zapisana odpowiedź AI (wymagane dla AI_GRADING_ERROR).
+ * @returns {Promise} Obietnica z odpowiedzią API.
+ */
+export const reportIssue = (payload) => {
+    return apiClient.post('/report_issue/', payload);
+};

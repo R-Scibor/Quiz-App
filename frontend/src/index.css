@@ -4,7 +4,7 @@
 
 body {
   color: theme('colors.brand-text');
-  background-color: hotpink;
+  background-color: #1a1016;
 }
 
 @layer components {

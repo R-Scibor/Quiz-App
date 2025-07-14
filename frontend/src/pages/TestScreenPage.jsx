@@ -155,6 +155,17 @@ const TestScreenPage = () => {
     const [isReported, setIsReported] = useState(false);
     const question = currentQuestions[currentQuestionIndex];
 
+    // --- DEBUG LOG ---
+    useEffect(() => {
+        console.log("TestScreenPage State Update:", {
+            question,
+            showFeedback,
+            isReported,
+            isReportModalOpen,
+            openQuestionResult: useTestStore.getState().openQuestionResults[question?.id],
+        });
+    }, [question, showFeedback, isReported, isReportModalOpen]);
+
     const markdownComponents = {
         code({node, inline, className, children, ...props}) {
             const match = /language-(\w+)/.exec(className || '');

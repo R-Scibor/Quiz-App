@@ -5,13 +5,6 @@
 body {
   color: theme('colors.brand-text');
   background-color: hotpink;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 15px,
-    rgba(255, 255, 255, 0.04) 15px,
-    rgba(255, 255, 255, 0.04) 16px
-  );
 }
 
 @layer components {

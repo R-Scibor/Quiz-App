@@ -4,9 +4,14 @@
 
 body {
   color: theme('colors.brand-text');
-  background-color: theme('colors.brand-background');
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Cpath d='M0 10 L100 90 M20 0 L100 80 M40 0 L100 60 M70 0 L100 30 M0 30 L70 100 M0 60 L40 100 M0 80 L20 100' stroke='%23901E3E' stroke-width='0.5' stroke-opacity='0.2'/%3E%3C/svg%3E");
-  background-size: 150px 150px;
+  background-color: #1a1016;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 15px,
+    rgba(255, 255, 255, 0.04) 15px,
+    rgba(255, 255, 255, 0.04) 16px
+  );
 }
 
 @layer components {

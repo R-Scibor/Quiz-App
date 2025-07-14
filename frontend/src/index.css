@@ -4,7 +4,7 @@
 
 body {
   color: theme('colors.brand-text');
-  background-color: #1a1016;
+  background-color: hotpink;
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Test, Question, Answer, Category, Tag
+from .models import Test, Question, Answer, Category, Tag, ReportedIssue
 
 # -----------------------------------------------------------------------------
 # Konfiguracja Panelu Administracyjnego
@@ -119,3 +119,26 @@ class TestAdmin(admin.ModelAdmin):
     def get_categories(self, obj):
         """Zwraca nazwy kategorii jako string, ładnie sformatowane."""
         return ", ".join([c.name for c in obj.categories.all()])
+
+
+@admin.register(ReportedIssue)
+class ReportedIssueAdmin(admin.ModelAdmin):
+    """Konfiguracja panelu admina dla modelu ReportedIssue."""
+    list_display = ('question', 'issue_type', 'status', 'created_at')
+    list_filter = ('status', 'issue_type')
+    search_fields = ('question__text', 'description')
+    
+    # Pola, które zawsze są tylko do odczytu
+    readonly_fields = ('question', 'test', 'issue_type', 'description', 'ai_feedback_snapshot', 'created_at')
+
+    fieldsets = (
+        ('Informacje o Zgłoszeniu', {
+            'fields': ('question', 'test', 'issue_type', 'created_at')
+        }),
+        ('Treść Zgłoszenia', {
+            'fields': ('description', 'ai_feedback_snapshot')
+        }),
+        ('Zarządzanie Zgłoszeniem', {
+            'fields': ('status',)
+        }),
+    )

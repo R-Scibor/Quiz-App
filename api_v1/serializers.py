@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Test, Question, Answer, Category, Tag
+from .models import Test, Question, Answer, Category, Tag, ReportedIssue
 from django.db.models import Count, Q
 
 # -----------------------------------------------------------------------------
@@ -153,3 +153,38 @@ class TestMetadataSerializer(serializers.ModelSerializer):
         serializer = QuestionCountSerializer(data=counts)
         serializer.is_valid(raise_exception=True)
         return serializer.data
+
+
+class ReportedIssueSerializer(serializers.ModelSerializer):
+    """
+    Serializer do tworzenia nowych zgłoszeń problemów.
+    Waliduje dane przychodzące z frontendu.
+    """
+    class Meta:
+        model = ReportedIssue
+        fields = [
+            'question',
+            'test',
+            'issue_type',
+            'description',
+            'ai_feedback_snapshot'
+        ]
+
+    def validate(self, attrs):
+        """
+        Dodatkowa walidacja logiki biznesowej.
+        """
+        question = attrs.get('question')
+        test = attrs.get('test')
+
+        # Sprawdzamy, czy pytanie faktycznie należy do podanego testu.
+        if question and test and question.test != test:
+            raise serializers.ValidationError({"detail": "To pytanie nie należy do podanego testu."})
+
+        # Jeśli typem zgłoszenia jest błąd oceny AI, pole ai_feedback_snapshot jest wymagane.
+        if attrs.get('issue_type') == 'AI_GRADING_ERROR' and not attrs.get('ai_feedback_snapshot'):
+            raise serializers.ValidationError({
+                'ai_feedback_snapshot': 'Zapis odpowiedzi AI jest wymagany przy zgłaszaniu błędu oceny.'
+            })
+            
+        return attrs

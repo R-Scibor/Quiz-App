@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Test, Question, Answer, Category, Tag
+from .models import Test, Question, Answer, Category, Tag, ReportedIssue
 from django.db.models import Count, Q
 
 # -----------------------------------------------------------------------------
@@ -63,6 +63,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     maxPoints = serializers.IntegerField(source='max_points')
     image = serializers.URLField()
     
+    test_id = serializers.UUIDField(source='test.id')
     # Zagnieżdżony serializer dla tagów, zwracający listę ich nazw
     tags = serializers.StringRelatedField(many=True)
 
@@ -75,7 +76,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         # Lista pól, które mają zostać zwrócone w JSON
         fields = [
-            'id', 'questionText', 'image', 'type', 'tags', 'options', 
+            'id', 'test_id', 'questionText', 'image', 'type', 'tags', 'options',
             'correctAnswers', 'explanation', 'gradingCriteria', 'maxPoints'
         ]
     def get_options(self, obj):
@@ -153,3 +154,68 @@ class TestMetadataSerializer(serializers.ModelSerializer):
         serializer = QuestionCountSerializer(data=counts)
         serializer.is_valid(raise_exception=True)
         return serializer.data
+
+
+class ReportedIssueSerializer(serializers.ModelSerializer):
+    """
+    Serializer do tworzenia nowych zgłoszeń problemów.
+    Waliduje dane przychodzące z frontendu.
+    """
+    # Dodajemy jawne definicje pól, aby zapewnić prawidłową obsługę kluczy obcych (UUID)
+    question = serializers.PrimaryKeyRelatedField(queryset=Question.objects.all())
+    test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all())
+    user_answer_choices = serializers.JSONField(required=False, allow_null=True)
+
+    class Meta:
+        model = ReportedIssue
+        fields = [
+            'question',
+            'test',
+            'issue_type',
+            'description',
+            'ai_feedback_snapshot',
+            'user_answer_open',
+            'user_answer_choices'
+        ]
+
+    def validate(self, attrs):
+        """
+        Dodatkowa walidacja logiki biznesowej.
+        """
+        question = attrs.get('question')
+        test = attrs.get('test')
+        user_answer_open = attrs.get('user_answer_open')
+        user_answer_choices = attrs.get('user_answer_choices')
+
+        # Sprawdzamy, czy pytanie faktycznie należy do podanego testu.
+        if question and test and question.test != test:
+            raise serializers.ValidationError({"detail": "To pytanie nie należy do podanego testu."})
+
+        # Jeśli typem zgłoszenia jest błąd oceny AI, pole ai_feedback_snapshot jest wymagane.
+        if attrs.get('issue_type') == 'AI_GRADING_ERROR' and not attrs.get('ai_feedback_snapshot'):
+            raise serializers.ValidationError({
+                'ai_feedback_snapshot': 'Zapis odpowiedzi AI jest wymagany przy zgłaszaniu błędu oceny.'
+            })
+
+        # Walidacja odpowiedzi użytkownika w zależności od typu pytania
+        if question:
+            if question.question_type == Question.OPEN_ENDED:
+                if not user_answer_open:
+                    raise serializers.ValidationError({'user_answer_open': 'Odpowiedź użytkownika jest wymagana dla pytań otwartych.'})
+                if user_answer_choices:
+                    raise serializers.ValidationError({'user_answer_choices': 'Odpowiedzi w formie opcji nie są dozwolone dla pytań otwartych.'})
+            
+            elif question.question_type in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]:
+                if not user_answer_choices:
+                    raise serializers.ValidationError({'user_answer_choices': 'Odpowiedź użytkownika jest wymagana dla pytań zamkniętych.'})
+                if user_answer_open:
+                    raise serializers.ValidationError({'user_answer_open': 'Odpowiedź tekstowa nie jest dozwolona dla pytań zamkniętych.'})
+
+        return attrs
+
+    def create(self, validated_data):
+        """
+        Tworzy nową instancję ReportedIssue, ręcznie przypisując pola,
+        aby zapewnić poprawne zapisanie danych JSON.
+        """
+        return ReportedIssue.objects.create(**validated_data)

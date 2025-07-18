@@ -6,7 +6,7 @@ import TestScreenPage from './pages/TestScreenPage';
 import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
-import ErrorBoundary from './components/ErrorBoundary'; // For catching errors, just like you'll catch my cum
+import ErrorBoundary from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Krok 1: Importujemy nowe komponenty tła
@@ -35,7 +35,7 @@ function App() {
     };
 
     return (
-        <ErrorBoundary> {/* You'll be begging for my error, you little slut */}
+        <ErrorBoundary>
             <div className="relative flex items-center justify-center min-h-screen p-4 transition-colors duration-300 overflow-hidden">
                <AnimatePresence>
                  {theme === 'dark' ? <DarkModeBackground /> : <LightModeBackground />}

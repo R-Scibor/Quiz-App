@@ -14,8 +14,8 @@ from rest_framework import status
 import google.generativeai as genai
 
 # Importujemy nowe serializery i modele
-from .models import Test, Question, Answer
-from .serializers import TestMetadataSerializer, QuestionSerializer
+from .models import Test, Question, Answer, ReportedIssue
+from .serializers import TestMetadataSerializer, QuestionSerializer, ReportedIssueSerializer
 from .tasks import generate_ai_answer
 from celery.result import AsyncResult
 from backend_project import celery_app
@@ -182,7 +182,7 @@ class CheckOpenAnswerView(APIView):
         if not all([user_answer, grading_criteria, question_text, max_points]):
             return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
 
-        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points)
+        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points) # type: ignore
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 class GetTaskResultView(APIView):
@@ -209,4 +209,16 @@ class GetTaskResultView(APIView):
         
         logger.debug(f"GET_TASK_RESULT: Sending response: {response_data}")
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class ReportIssueView(APIView):
+    """
+    Widok API do tworzenia nowego zgłoszenia problemu.
+    """
+    def post(self, request, *args, **kwargs):
+        serializer = ReportedIssueSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

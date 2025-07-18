@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { reportIssue } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 
-const ReportModal = ({ question, testId, aiFeedback, onClose, onReportSuccess }) => {
+const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onReportSuccess }) => {
     const [issueType, setIssueType] = useState('QUESTION_ERROR');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,6 +26,8 @@ const ReportModal = ({ question, testId, aiFeedback, onClose, onReportSuccess })
             issue_type: issueType,
             description: description,
             ai_feedback_snapshot: issueType === 'AI_GRADING_ERROR' ? JSON.stringify(aiFeedback) : null,
+            user_answer_open: question.type === 'open-ended' ? userAnswer : null,
+            user_answer_choices: question.type !== 'open-ended' ? userAnswer : null,
         };
 
         try {

@@ -358,6 +358,11 @@ const TestScreenPage = () => {
                                     question={question}
                                     testId={question.test_id}
                                     aiFeedback={useTestStore.getState().openQuestionResults[question.id]}
+                                    userAnswer={
+                                        isClosedQuestion
+                                            ? selection.map(index => question.options[index])
+                                            : useTestStore.getState().openQuestionResults[question.id]?.userAnswer
+                                    }
                                     onClose={() => setIsReportModalOpen(false)}
                                     onReportSuccess={() => {
                                         setIsReported(true);

@@ -129,7 +129,7 @@ class ReportedIssueAdmin(admin.ModelAdmin):
     search_fields = ('question__text', 'description')
     
     # Pola, które zawsze są tylko do odczytu
-    readonly_fields = ('question', 'test', 'issue_type', 'description', 'ai_feedback_snapshot', 'created_at')
+    readonly_fields = ('question', 'test', 'issue_type', 'description', 'ai_feedback_snapshot', 'created_at', 'user_answer_open', 'user_answer_choices')
 
     fieldsets = (
         ('Informacje o Zgłoszeniu', {
@@ -137,6 +137,9 @@ class ReportedIssueAdmin(admin.ModelAdmin):
         }),
         ('Treść Zgłoszenia', {
             'fields': ('description', 'ai_feedback_snapshot')
+        }),
+        ('Odpowiedzi Użytkownika', {
+            'fields': ('user_answer_open', 'user_answer_choices')
         }),
         ('Zarządzanie Zgłoszeniem', {
             'fields': ('status',)

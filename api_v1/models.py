@@ -170,6 +170,16 @@ class ReportedIssue(models.Model):
         null=True, 
         help_text="Zapisana odpowiedź AI w momencie zgłoszenia (dla zgłoszeń typu 'AI_GRADING_ERROR')."
     )
+    user_answer_open = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Odpowiedź użytkownika dla pytań otwartych."
+    )
+    user_answer_choices = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Zaznaczone opcje przez użytkownika dla pytań zamkniętych (przechowywane jako lista tekstów)."
+    )
     
     status = models.CharField(
         max_length=20,

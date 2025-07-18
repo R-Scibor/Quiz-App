@@ -251,30 +251,6 @@ const TestScreenPage = () => {
     return (
         <div className="w-full px-4">
             <div className="relative max-w-3xl mx-auto">
-                <AnimatePresence>
-                    {isReportModalOpen && (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
-                            className="w-full lg:absolute lg:top-0 lg:right-full lg:w-96 lg:mr-8 mb-8 lg:mb-0"
-                        >
-                            <ReportModal
-                                question={question}
-                                testId={question.test_id}
-                                aiFeedback={useTestStore.getState().openQuestionResults[question.id]}
-                                onClose={() => setIsReportModalOpen(false)}
-                                onReportSuccess={() => {
-                                    setIsReported(true);
-                                    setTimeout(() => setIsReportModalOpen(false), 2000);
-                                }}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-    
                 <motion.div
                     key={currentQuestionIndex}
                     initial={{ opacity: 0, x: 50 }}
@@ -357,6 +333,30 @@ const TestScreenPage = () => {
                         )}
     
                     </div>
+    
+                    <AnimatePresence>
+                        {isReportModalOpen && (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="w-full lg:absolute lg:top-0 lg:right-full lg:w-96 lg:mr-8 mt-8 lg:mt-0"
+                            >
+                                <ReportModal
+                                    question={question}
+                                    testId={question.test_id}
+                                    aiFeedback={useTestStore.getState().openQuestionResults[question.id]}
+                                    onClose={() => setIsReportModalOpen(false)}
+                                    onReportSuccess={() => {
+                                        setIsReported(true);
+                                        setTimeout(() => setIsReportModalOpen(false), 2000);
+                                    }}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
     
                     {isClosedQuestion && showFeedback && (
                         <motion.div

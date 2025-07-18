@@ -160,6 +160,10 @@ class ReportedIssueSerializer(serializers.ModelSerializer):
     Serializer do tworzenia nowych zgłoszeń problemów.
     Waliduje dane przychodzące z frontendu.
     """
+    # Dodajemy jawne definicje pól, aby zapewnić prawidłową obsługę kluczy obcych (UUID)
+    question = serializers.PrimaryKeyRelatedField(queryset=Question.objects.all())
+    test = serializers.PrimaryKeyRelatedField(queryset=Test.objects.all())
+
     class Meta:
         model = ReportedIssue
         fields = [

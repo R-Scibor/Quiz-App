@@ -4,7 +4,7 @@ import { reportIssue } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 
 const ReportModal = ({ question, testId, aiFeedback, onClose, onReportSuccess }) => {
-    const [issueType, setIssueType] = useState('');
+    const [issueType, setIssueType] = useState('QUESTION_ERROR');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -73,14 +73,39 @@ const ReportModal = ({ question, testId, aiFeedback, onClose, onReportSuccess })
                         <div className="flex-grow">
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Typ problemu:</label>
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <button type="button" onClick={() => setIssueType('QUESTION_ERROR')} className={`report-option-btn ${issueType === 'QUESTION_ERROR' ? 'selected' : ''}`}>
-                                        Błąd w pytaniu / odpowiedzi
-                                    </button>
-                                    <button type="button" onClick={() => setIssueType('AI_GRADING_ERROR')} className={`report-option-btn ${issueType === 'AI_GRADING_ERROR' ? 'selected' : ''}`} disabled={!aiFeedback}>
-                                        Niesłuszna ocena AI
-                                        {!aiFeedback && <span className="text-xs block">(Niedostępne dla tego pytania)</span>}
-                                    </button>
+                                <div className="space-y-3">
+                                    <div className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            id="question_error"
+                                            name="issueType"
+                                            value="QUESTION_ERROR"
+                                            checked={issueType === 'QUESTION_ERROR'}
+                                            onChange={(e) => setIssueType(e.target.value)}
+                                            className="h-4 w-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-option-bg"
+                                        />
+                                        <label htmlFor="question_error" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Błąd w pytaniu / odpowiedzi
+                                        </label>
+                                    </div>
+                                    {question.type === 'open-ended' && (
+                                        <div className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                id="ai_grading_error"
+                                                name="issueType"
+                                                value="AI_GRADING_ERROR"
+                                                checked={issueType === 'AI_GRADING_ERROR'}
+                                                onChange={(e) => setIssueType(e.target.value)}
+                                                disabled={!aiFeedback}
+                                                className="h-4 w-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-option-bg"
+                                            />
+                                            <label htmlFor="ai_grading_error" className={`ml-3 block text-sm font-medium ${!aiFeedback ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                Niesłuszna ocena AI
+                                                {!aiFeedback && <span className="text-xs block">(Niedostępne dla tego pytania)</span>}
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

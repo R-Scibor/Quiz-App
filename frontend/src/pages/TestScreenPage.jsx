@@ -11,7 +11,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // --- Komponent dla pytań otwartych ---
-const OpenEndedQuestionUI = ({ onReport }) => {
+const OpenEndedQuestionUI = () => {
     const {
         currentQuestions,
         currentQuestionIndex,
@@ -83,9 +83,7 @@ const OpenEndedQuestionUI = ({ onReport }) => {
                     <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </motion.button>
-                <button onClick={onReport} className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary mt-4">
-                    Zgłoś problem z oceną
-                </button>
+                {/* Przycisk zgłaszania problemu został przeniesiony do komponentu nadrzędnego */}
             </motion.div>
         );
     }
@@ -259,7 +257,7 @@ const TestScreenPage = () => {
                     transition={{ duration: 0.5 }}
                     className="relative w-full"
                 >
-                    <div className="main-card bg-white dark:bg-card-bg w-full p-8 md:p-12">
+                    <div className="main-card relative bg-white dark:bg-card-bg w-full p-8 md:p-12">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                                 Pytanie {currentQuestionIndex + 1}/{currentQuestions.length}
@@ -320,17 +318,29 @@ const TestScreenPage = () => {
                                         </motion.button>
                                     )}
                                 </div>
-                                {(showFeedback || question.type === 'open-ended') && !isReported && (
-                                    <div className="text-center mt-4">
-                                        <button onClick={() => setIsReportModalOpen(prev => !prev)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary">
-                                            {isReportModalOpen ? 'Ukryj formularz' : 'Zgłoś problem'}
-                                        </button>
-                                    </div>
-                                )}
                             </>
                         ) : (
-                            <OpenEndedQuestionUI onReport={() => setIsReportModalOpen(prev => !prev)} />
+                            <OpenEndedQuestionUI />
                         )}
+
+                        <AnimatePresence>
+                            {(showFeedback || question.type === 'open-ended') && !isReported && (
+                                <motion.button
+                                    onClick={() => setIsReportModalOpen(prev => !prev)}
+                                    className="absolute bottom-4 left-4 bg-yellow-400 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-20"
+                                    whileHover={{ scale: 1.1, rotate: 10 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 20 }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
     
                     </div>
     

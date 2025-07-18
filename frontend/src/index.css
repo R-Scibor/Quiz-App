@@ -88,3 +88,8 @@ body {
 .dark .spinner-circle {
     border-color: rgba(209, 213, 219, 0.3);
     border-top-color: rgb(220, 37, 37);}
+
+/* Custom style for red radio button checkmark */
+input[type="radio"]:checked {
+  accent-color: red;
+}

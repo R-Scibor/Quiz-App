@@ -2,7 +2,19 @@
 
 ![Podgląd aplikacji](./.github/assets/preview.png)
 
-Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. Użytkownicy mogą wybrać test z dostępnej listy, rozwiązać go w określonym czasie, a po zakończeniu zobaczyć swoje wyniki i przejrzeć odpowiedzi.
+To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych quizów i testów. Została zaprojektowana z myślą o dynamicznym i angażującym doświadczeniu użytkownika. Aplikacja pozwala nie tylko na rozwiązywanie testów z limitem czasowym, ale także oferuje natychmiastowy feedback, w tym ocenę pytań otwartych przez AI. Po zakończeniu quizu użytkownik otrzymuje szczegółowe podsumowanie wyników oraz ma możliwość przejrzenia swoich odpowiedzi w celu nauki i analizy.
+
+### Galeria
+
+| Konfiguracja Testu | Pytanie i Wyjaśnienie (Tryb Ciemny) | Pytanie i Wyjaśnienie (Tryb Jasny) |
+| :---: |:---:|:---:|
+| ![Ekran konfiguracji testu](./.github/assets/preview_setup.png) | ![Ekran pytania w trybie ciemnym](./.github/assets/preview_question.png) | ![Ekran pytania w trybie jasnym](./.github/assets/preview_lightmode.png) |
+| *Użytkownik wybiera kategorię, liczbę pytań i limit czasu.* | *Widok pytania z zaznaczoną odpowiedzią i szczegółowym wyjaśnieniem.* | *Ten sam widok, ale w komfortowym dla oczu trybie jasnym.* |
+
+| Ocena AI i Zgłaszanie Błędów | Ekran Wyników | Przegląd Odpowiedzi |
+| :---: |:---:|:---:|
+| ![Ocena AI i zgłaszanie błędów](./.github/assets/preview_llm_and_report.png) | ![Ekran wyników](./.github/assets/preview_results.png) | ![Ekran przeglądu odpowiedzi](./.github/assets/preview_review.png) |
+| *Odpowiedź na pytanie otwarte oceniona przez AI oraz modal do zgłaszania uwag.* | *Czytelne podsumowanie wyników testu z procentowym wskaźnikiem.* | *Możliwość przejrzenia wszystkich pytań i odpowiedzi po zakończeniu testu.* |
 
 ---
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useTestStore from '../store/testStore';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReportModal from '../components/ReportModal';
 
 // Warianty animacji dla listy pytań
@@ -112,13 +112,13 @@ const ReviewPage = () => {
             </div>
 
             <motion.div 
-                className="space-y-10"
+                className="space-y-4"
                 variants={listVariants}
                 initial="hidden"
                 animate="visible"
             >
                 {currentQuestions.map((question, index) => (
-                    <motion.div variants={itemVariants} key={question.id} className="border-t border-gray-300 dark:border-card-border pt-6">
+                    <motion.div variants={itemVariants} key={question.id} className="relative border-t border-gray-300 dark:border-card-border pt-6 pb-10">
                         <p className="text-lg font-semibold text-gray-800 dark:text-white">
                             Pytanie {index + 1}: <span className="font-normal">{question.questionText}</span>
                         </p>
@@ -131,25 +131,42 @@ const ReviewPage = () => {
 
                         {/* --- KLUCZOWA LOGIKA WYBORU KOMPONENTU --- */}
                         {question.type === 'open-ended' ? (
-                            <OpenQuestionReview 
+                            <OpenQuestionReview
                                 question={question}
                                 result={openQuestionResults[question.id]}
                             />
                         ) : (
-                            <ClosedQuestionReview 
+                            <ClosedQuestionReview
                                 question={question}
                                 userAnswer={userAnswers[question.id]}
                             />
                         )}
-                        <div className="mt-4 text-right">
-                            <button
-                                onClick={() => setReportingQuestion(question)}
-                                disabled={reportedQuestions.has(question.id)}
-                                className="text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {reportedQuestions.has(question.id) ? 'Zgłoszono' : 'Zgłoś problem'}
-                            </button>
-                        </div>
+                        
+                        <AnimatePresence>
+                            {!reportedQuestions.has(question.id) && (
+                                <motion.button
+                                    onClick={() => setReportingQuestion(question)}
+                                    className="absolute bottom-0 left-4 bg-yellow-400 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-20"
+                                    whileHover={{ scale: 1.1, rotate: 10 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 20 }}
+                                    title="Zgłoś problem"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
+                        {reportedQuestions.has(question.id) && (
+                            <div className="absolute bottom-2 left-4 text-sm text-green-600 dark:text-green-500 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                Zgłoszono
+                            </div>
+                        )}
                     </motion.div>
                 ))}
             </motion.div>

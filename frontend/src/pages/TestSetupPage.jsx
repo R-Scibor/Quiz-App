@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import useTestStore from '/src/store/testStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedCheckbox from '/src/components/AnimatedCheckbox.jsx';
 
 // --- Komponenty Modalne (bez zmian) ---
 const ConfirmationModal = ({ isOpen, availableCount, requestedCount, onConfirm, onCancel }) => {
@@ -313,16 +314,24 @@ const TestSetupPage = () => {
                                         <div className="overflow-hidden">
                                             <div className="p-5 border-t border-gray-300 dark:border-card-border space-y-4">
                                                 {/* Tutaj też można dodać animacje dla poszczególnych checkboxów */}
-                                                <label className="flex items-center w-full cursor-pointer p-3 rounded-md bg-gray-200 dark:bg-black/20 hover:bg-gray-300 dark:hover:bg-black/40 transition-colors">
-                                                    <input type="checkbox" checked={areAllSelected} onChange={() => handleSelectAll(tests, areAllSelected)} className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" />
-                                                    <span className="ml-3 font-semibold text-gray-700 dark:text-gray-200">Zaznacz całą kategorię</span>
-                                                </label>
+                                                <div className="p-3 rounded-md bg-gray-200 dark:bg-black/20 hover:bg-gray-300 dark:hover:bg-black/40 transition-colors">
+                                                    <AnimatedCheckbox id={`select-all-${category}`} checked={areAllSelected} onChange={() => handleSelectAll(tests, areAllSelected)}>
+                                                        <AnimatedCheckbox.Indicator />
+                                                        <AnimatedCheckbox.Label>
+                                                            <span className="font-semibold">Zaznacz całą kategorię</span>
+                                                        </AnimatedCheckbox.Label>
+                                                    </AnimatedCheckbox>
+                                                </div>
                                                 <div className="space-y-3 pl-3 border-l-2 border-gray-300 dark:border-gray-700/50">
                                                     {tests.map(test => (
-                                                        <label key={test.test_id} className="flex items-center cursor-pointer p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/5 transition-colors">
-                                                            <input type="checkbox" checked={selectedCategories.includes(test.test_id)} onChange={() => toggleCategory(test.test_id)} className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" />
-                                                            <span className="ml-3 text-gray-700 dark:text-gray-200">{test.scope} ({test.version})<span className="text-xs text-gray-500 dark:text-gray-400 ml-2">[Z: {test.question_counts.closed}, O: {test.question_counts.open}]</span></span>
-                                                        </label>
+                                                        <div key={test.test_id} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-white/5 transition-colors">
+                                                            <AnimatedCheckbox id={test.test_id} checked={selectedCategories.includes(test.test_id)} onChange={() => toggleCategory(test.test_id)}>
+                                                                <AnimatedCheckbox.Indicator />
+                                                                <AnimatedCheckbox.Label>
+                                                                    {test.scope} ({test.version})<span className="text-xs text-gray-500 dark:text-gray-400 ml-2">[Z: {test.question_counts.closed}, O: {test.question_counts.open}]</span>
+                                                                </AnimatedCheckbox.Label>
+                                                            </AnimatedCheckbox>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             </div>
@@ -362,8 +371,12 @@ const TestSetupPage = () => {
                             {inputError && <p className="text-red-500 text-xs mt-1">{inputError}</p>}
                         </div>
                         <div className="flex items-center pt-6">
-                            <input id="timer-enabled" type="checkbox" className="h-5 w-5 rounded bg-gray-300 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-brand-primary focus:ring-brand-primary" checked={timerEnabled} onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)} />
-                            <label htmlFor="timer-enabled" className="ml-3 block font-medium text-gray-700 dark:text-gray-300">Włącz licznik</label>
+                            <AnimatedCheckbox id="timer-enabled" checked={timerEnabled} onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)}>
+                                <AnimatedCheckbox.Indicator />
+                                <AnimatedCheckbox.Label>
+                                    <span className="font-medium">Włącz licznik</span>
+                                </AnimatedCheckbox.Label>
+                            </AnimatedCheckbox>
                         </div>
                     </div>
                 </motion.div>

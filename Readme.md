@@ -23,12 +23,16 @@ Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. U�
 ## ✨ Funkcjonalności
 
 - **Wybór testu:** Użytkownik może wybrać jeden z wielu dostępnych testów z różnych kategorii.
-- **Limit czasowy:** Każdy quiz ma zdefiniowany limit czasu na jego ukończenie.
+- **Limit czasowy:** Każdy quiz ma zdefiniowany limit czasu, który zatrzymuje się po udzieleniu odpowiedzi i wznawia przy następnym pytaniu.
+- **Asynchroniczne ocenianie (AI):** Pytania otwarte są oceniane w tle przez AI, co pozwala użytkownikowi kontynuować test bez oczekiwania na wynik.
+- **Zgłaszanie błędów:** Użytkownicy mogą zgłaszać błędy w pytaniach, odpowiedziach lub w ocenie AI.
+- **Formatowanie Markdown:** Pytania i wyjaśnienia obsługują formatowanie tekstu (pogrubienie, kursywa, listy itp.) dla lepszej czytelności.
 - **Pasek postępu:** Wizualna reprezentacja postępu w rozwiązywaniu testu.
 - **Podsumowanie wyników:** Po zakończeniu testu wyświetlana jest strona z wynikiem.
 - **Przegląd odpowiedzi:** Możliwość przejrzenia swoich odpowiedzi i porównania ich z poprawnymi.
 - **Tryb Ciemny/Jasny:** Przełącznik motywu dla komfortu użytkowania.
 - **Responsywność:** Aplikacja jest w pełni responsywna i działa na urządzeniach mobilnych i desktopowych.
+- **Panel Administratora:** Rozbudowany panel do zarządzania quizami, pytaniami i kategoriami bezpośrednio w interfejsie Django admin.
 
 ---
 
@@ -43,26 +47,37 @@ Aplikacja internetowa typu "full-stack" do przeprowadzania quizów i testów. U�
 - **Axios:** Klient HTTP do komunikacji z API.
 - **Framer Motion:** Biblioteka do zaawansowanych animacji.
 - **React Router:** Do obsługi routingu po stronie klienta.
+- **React Markdown:** Do renderowania treści w formacie Markdown.
 
 ### Backend
 
 - **Django:** Framework webowy Pythona do szybkiego tworzenia bezpiecznych i skalowalnych aplikacji.
 - **Django REST Framework:** Potężny zestaw narzędzi do budowy API webowych.
+- **Celery:** System do zarządzania zadaniami asynchronicznymi w tle.
 - **Python:** Język programowania używany po stronie serwera.
 - **PostgreSQL:** Produkcyjna, relacyjna baza danych.
+- **Redis:** Baza danych w pamięci, używana jako broker dla Celery.
+
+### Infrastruktura i Narzędzia
+
+- **Docker & Docker Compose:** Do konteneryzacji i orkiestracji usług.
+- **Nginx:** Serwer proxy do obsługi ruchu i serwowania plików statycznych.
+- **Gunicorn:** Serwer aplikacyjny WSGI dla Django.
 
 ---
 
 ## 🚀 Uruchomienie projektu
 
-Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
+Projekt można uruchomić na dwa sposoby: za pomocą Dockera (zalecane, szczególnie na produkcji) lub lokalnie na maszynie deweloperskiej.
 
-### Wymagania wstępne
+### Metoda 1: Uruchomienie za pomocą Docker (Zalecane)
 
-- **Python** (wersja 3.8 lub nowsza)
-- **Node.js** i **npm** (lub yarn)
+Ta metoda automatycznie konfiguruje i uruchamia wszystkie potrzebne usługi (backend, frontend, baza danych, Redis, Celery) w odizolowanych kontenerach.
 
-### Konfiguracja Backendu (Django)
+**Wymagania wstępne:**
+- **Docker** i **Docker Compose**
+
+**Kroki:**
 
 1.  **Sklonuj repozytorium:**
     ```bash
@@ -70,41 +85,75 @@ Aby uruchomić projekt lokalnie, postępuj zgodnie z poniższymi instrukcjami.
     cd Quiz-App
     ```
 
-2.  **Utwórz i aktywuj wirtualne środowisko:**
-    ```bash
-    # Dla Windows
-    python -m venv env
-    .\env\Scripts\activate
+2.  **Skonfiguruj zmienne środowiskowe:**
+    Utwórz plik `.env` w głównym katalogu projektu, kopiując zawartość z przykładowego szablonu (jeśli istnieje) lub tworząc go od zera. Plik ten jest wymagany przez `docker-compose.yml` do ustawienia kluczowych zmiennych, takich jak `SECRET_KEY` czy `DATABASE_URL`.
+    ```env
+    # Przykład zawartości pliku .env
+    SECRET_KEY='twoj-super-tajny-klucz'
+    DEBUG=1
+    DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+    DATABASE_URL=postgres://quiz_user:quiz_password@db:5432/quiz_db
     ```
 
-3.  **Zainstaluj zależności Pythona:**
+3.  **Zbuduj i uruchom kontenery:**
+    To polecenie zbuduje obrazy (jeśli nie istnieją) i uruchomi wszystkie usługi w tle.
     ```bash
-    pip install -r requirements.txt
+    docker-compose up --build -d
     ```
 
-4.  **Uruchom serwer deweloperski Django:**
-    ```bash
-    python manage.py runserver
-    ```
-    Backend będzie dostępny pod adresem `http://127.0.0.1:8000`.
+4.  **Gotowe!**
+    Aplikacja powinna być dostępna pod adresem `http://localhost`.
 
-### Konfiguracja Frontendu (React)
+### Metoda 2: Uruchomienie lokalne (dla deweloperów Windows)
 
-1.  **Przejdź do katalogu frontendu** (w nowym oknie terminala):
+Ta metoda jest przeznaczona do dewelopmentu i testowania na maszynie lokalnej. Używa bazy danych SQLite i wymaga ręcznej instalacji niektórych zależności.
+
+**Wymagania wstępne:**
+- **Python** (wersja 3.8 lub nowsza)
+- **Node.js** i **npm**
+- **Redis** (wymagany dla Celery) - [Instrukcje instalacji dla Windows](https://redis.io/docs/getting-started/installation/install-redis-on-windows/)
+
+**Kroki:**
+
+1.  **Sklonuj repozytorium:**
     ```bash
-    cd frontend
+    git clone https://github.com/Zyrandool/Quiz-App
+    cd Quiz-App
     ```
 
-2.  **Zainstaluj zależności Node.js:**
-    ```bash
-    npm install
-    ```
+2.  **Skonfiguruj Backend:**
+    - Utwórz i aktywuj wirtualne środowisko:
+      ```bash
+      python -m venv env
+      .\env\Scripts\activate
+      ```
+    - Zainstaluj zależności Pythona:
+      ```bash
+      pip install -r requirements.txt
+      ```
 
-3.  **Uruchom serwer deweloperski Vite:**
+3.  **Skonfiguruj Frontend:**
+    - Przejdź do katalogu `frontend`:
+      ```bash
+      cd frontend
+      ```
+    - Zainstaluj zależności Node.js:
+      ```bash
+      npm install
+      ```
+    - Wróć do głównego katalogu projektu:
+      ```bash
+      cd ..
+      ```
+
+4.  **Uruchom środowisko deweloperskie:**
+    Użyj dostarczonego skryptu, aby uruchomić wszystkie komponenty (Django, Vite, Celery) w jednym oknie Windows Terminal.
     ```bash
-    npm run dev
+    .\start_dev.bat
     ```
-    Frontend będzie dostępny pod adresem `http://localhost:5173` i automatycznie połączy się z backendem.
+    - **Backend (Django)** będzie dostępny pod adresem `http://127.0.0.1:8000`.
+    - **Frontend (Vite)** będzie dostępny pod adresem `http://localhost:5173`.
+    - **Celery Worker** będzie działał w tle, obsługując zadania asynchroniczne.
 
 ---
 
@@ -114,16 +163,23 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ```
 .
-├── api_v1/           # Aplikacja Django z logiką API
-├── backend_project/  # Główny folder konfiguracyjny Django
+├── api_v1/           # Aplikacja Django z logiką API, modelami i widokami
+├── backend_project/  # Główny folder konfiguracyjny projektu Django
+├── certs/            # Certyfikaty SSL dla Nginx/PostgreSQL
 ├── docs/             # Dokumentacja projektu
-│   └── quiz_authoring_guide.md
-├── frontend/         # Kod źródłowy aplikacji React
+├── frontend/         # Kod źródłowy aplikacji React (Vite)
+├── media/            # Pliki multimedialne wgrywane przez użytkowników
+├── nginx/            # Konfiguracja serwera Nginx
+├── postgres/         # Konfiguracja bazy danych PostgreSQL
 ├── .gitignore
-├── build.sh          # Skrypt do budowania aplikacji na produkcję
+├── build.sh          # Skrypt do budowania obrazów Docker na produkcję
+├── docker-compose.yml # Definicja usług i orkiestracja kontenerów Docker
+├── Dockerfile        # Instrukcje budowania obrazu Docker dla aplikacji Django
+├── Dockerfile.celery # Instrukcje budowania obrazu Docker dla workera Celery
 ├── manage.py         # Narzędzie linii komend Django
-├── requirements.txt  # Zależności backendu
-└── README.md         # Ten plik
+├── Readme.md         # Ten plik
+├── requirements.txt  # Zależności backendu (Python)
+└── start_dev.bat     # Skrypt do uruchamiania środowiska deweloperskiego (Windows)
 ```
 
 ---

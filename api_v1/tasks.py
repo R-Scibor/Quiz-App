@@ -3,6 +3,7 @@ import json
 import logging
 from celery import shared_task
 import google.generativeai as genai
+from .models import PromptConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +18,21 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points)
         # In a real app, you might want to handle this more gracefully
         return {"error": "API_KEY_MISSING", "message": "Klucz API do usługi AI nie jest skonfigurowany na serwerze."}
 
-    prompt = f"""
-    Jesteś precyzyjnym i surowym nauczycielem oceniającym odpowiedź na pytanie w quizie. Twoim zadaniem jest ocenić odpowiedź użytkownika, bazując na podanych kryteriach oceniania.
-
-    Oto szczegóły:
-    1. Pytanie: "{question_text}"
-    2. Kryteria Oceniania: "{grading_criteria}"
-    3. Maksymalna liczba punktów do zdobycia za to pytanie: {max_points}
-    4. Odpowiedź Użytkownika: "{user_answer}"
-
-    Twoje zadania:
-    - Oceń, w jakim stopniu odpowiedź użytkownika spełnia kryteria oceniania.
-    - Przyznaj liczbę punktów od 0 do {max_points}. Bądź sprawiedliwy, ale wymagający. Nie przyznawaj punktów, jeśli odpowiedź nie odnosi się do kryteriów. Nie odejmuj punktów za błędy ortograficzne, gramatyczne czy stylistyczne, chyba że są one kluczowe dla zrozumienia odpowiedzi.
-    - Napisz krótkie, jedno- lub dwuzdaniowe uzasadnienie swojej oceny w języku polskim, wyjaśniając, dlaczego przyznałeś tyle punktów (np. co było dobrze, a czego zabrakło).
-
-    Zwróć swoją ocenę jako idealnie sformatowany obiekt JSON. Bez żadnych dodatkowych znaków, komentarzy czy formatowania markdown. JSON musi zawierać DOKŁADNIE dwa klucze: "score" (typu integer) i "feedback" (typu string).
-    """
-
     try:
+        # Pobierz aktywny szablon promptu z bazy danych
+        prompt_config = PromptConfiguration.objects.filter(is_active=True).first()
+        if not prompt_config:
+            logger.error("Brak aktywnego promptu w konfiguracji bazy danych.")
+            return {"error": "NO_ACTIVE_PROMPT", "message": "Brak aktywnego promptu w konfiguracji."}
+
+        # Użyj szablonu z bazy danych i wstaw dynamiczne wartości
+        prompt = prompt_config.prompt_text.format(
+            question_text=question_text,
+            grading_criteria=grading_criteria,
+            max_points=max_points,
+            user_answer=user_answer
+        )
+
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel('gemini-1.5-flash')
         ai_response = model.generate_content(prompt)

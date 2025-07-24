@@ -201,3 +201,16 @@ class ReportedIssue(models.Model):
 
     def __str__(self):
         return f"Zgłoszenie {self.id} dla pytania {self.question.id}"
+
+
+class PromptConfiguration(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="Unikalna nazwa dla promptu, np. 'default_grading_prompt'")
+    prompt_text = models.TextField(help_text="Szablon promptu. Użyj {zmiennych} dla dynamicznych danych.")
+    is_active = models.BooleanField(default=True, help_text="Oznacz, czy ten prompt jest obecnie aktywny.")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Konfiguracja Promptu"
+        verbose_name_plural = "Konfiguracje Promptów"

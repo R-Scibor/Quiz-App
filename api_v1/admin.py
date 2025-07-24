@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Test, Question, Answer, Category, Tag, ReportedIssue
+from .models import Test, Question, Answer, Category, Tag, ReportedIssue, PromptConfiguration
 
 # -----------------------------------------------------------------------------
 # Konfiguracja Panelu Administracyjnego
@@ -143,5 +143,21 @@ class ReportedIssueAdmin(admin.ModelAdmin):
         }),
         ('Zarządzanie Zgłoszeniem', {
             'fields': ('status',)
+        }),
+    )
+
+
+@admin.register(PromptConfiguration)
+class PromptConfigurationAdmin(admin.ModelAdmin):
+    """Konfiguracja panelu admina dla modelu PromptConfiguration."""
+    list_display = ('name', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'prompt_text')
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'is_active')
+        }),
+        ('Treść Promptu', {
+            'fields': ('prompt_text',)
         }),
     )

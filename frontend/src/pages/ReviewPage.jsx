@@ -141,12 +141,34 @@ const ReviewPage = () => {
                                 userAnswer={userAnswers[question.id]}
                             />
                         )}
+
+                        <AnimatePresence>
+                            {reportingQuestion && reportingQuestion.id === question.id && (
+                                <motion.div
+                                    className="w-full lg:absolute lg:top-0 lg:right-full lg:w-96 lg:mr-20 mt-8 lg:mt-0"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <ReportModal
+                                        question={reportingQuestion}
+                                        testId={reportingQuestion.test_id}
+                                        aiFeedback={openQuestionResults[reportingQuestion.id]}
+                                        onClose={() => setReportingQuestion(null)}
+                                        onReportSuccess={() => {
+                                            setReportedQuestions(prev => new Set(prev).add(reportingQuestion.id));
+                                        }}
+                                    />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         
                         <AnimatePresence>
                             {!reportedQuestions.has(question.id) && (
                                 <motion.button
-                                    onClick={() => setReportingQuestion(question)}
-                                    className="absolute bottom-0 left-4 bg-yellow-400 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-20"
+                                    onClick={() => setReportingQuestion(prev => (prev && prev.id === question.id ? null : question))}
+                                    className="absolute bottom-0 left-4 bg-yellow-400 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-10"
                                     whileHover={{ scale: 1.1, rotate: 10 }}
                                     whileTap={{ scale: 0.9 }}
                                     initial={{ opacity: 0, y: 20 }}
@@ -170,18 +192,6 @@ const ReviewPage = () => {
                     </motion.div>
                 ))}
             </motion.div>
-
-            {reportingQuestion && (
-                <ReportModal
-                    question={reportingQuestion}
-                    testId={reportingQuestion.test_id}
-                    aiFeedback={openQuestionResults[reportingQuestion.id]}
-                    onClose={() => setReportingQuestion(null)}
-                    onReportSuccess={() => {
-                        setReportedQuestions(prev => new Set(prev).add(reportingQuestion.id));
-                    }}
-                />
-            )}
         </motion.div>
     );
 };

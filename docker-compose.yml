@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     container_name: django_web
     restart: always
-    command: gunicorn --bind 0.0.0.0:8000 backend_project.wsgi
+    command: gunicorn --bind 0.0.0.0:8000 --forwarded-allow-ips="*" backend_project.wsgi
     volumes:
       - .:/app
       - static_volume:/app/staticfiles_collected

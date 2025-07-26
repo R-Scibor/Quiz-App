@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api_v1.apps.ApiV1Config',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -149,6 +150,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 
 # Logika dla CORS w zależności od środowiska

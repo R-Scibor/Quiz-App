@@ -142,20 +142,7 @@ Poniższa instrukcja opisuje proces dodawania nowych plików `.json` z testami d
 1.  **Stwórz nowe pliki z testami**: Przygotuj swoje nowe testy w formacie `.json`.
 2.  **Umieść je w odpowiednim folderze**: Na swoim lokalnym komputerze umieść wszystkie nowe pliki `.json` w folderze `media/tests/` w głównym katalogu projektu.
 
-### Krok 2: Wyślij pliki na serwer (VM)
-
-Teraz musimy skopiować te nowe pliki z Twojego PC na maszynę wirtualną.
-
-1.  **Otwórz terminal na swoim PC**: Użyj Command Prompt lub PowerShell.
-2.  **Użyj komendy `scp`**: Wykonaj poniższą komendę, aby skopiować **cały folder `tests`** na serwer. Zastąpi ona istniejące pliki i doda nowe.
-
-    ```bash
-    scp -r /sciezka/do/twojego/Quiz-App/media/tests sciborr08@TWOJ_ADRES_IP_VM:~/Quiz-App/media/
-    ```
-    * **Pamiętaj**, aby zastąpić `/sciezka/do/twojego/Quiz-App/media/tests` oraz `TWOJ_ADRES_IP_VM` prawidłowymi wartościami.
-    * Ta komenda użyje Twojego klucza SSH. Nie powinno pytać o hasło.
-
-### Krok 3: Zaimportuj testy do aplikacji (w Dockerze)
+### Krok 2: Zaimportuj testy do aplikacji (w Dockerze)
 
 Gdy pliki są już na serwerze, musimy powiedzieć Django, żeby je przeczytało i dodało do bazy danych.
 

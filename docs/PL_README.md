@@ -15,7 +15,8 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - [🤖 Konfiguracja AI](#-konfiguracja-ai)
 - [📂 Struktura projektu](#-struktura-projektu)
 - [✍️ Tworzenie Treści](#️-tworzenie-treści)
-- [📝 Plany rozwoju](#-plany-rozwoju)
+- [🔌 Dokumentacja API](#-dokumentacja-api)
+- [� Plany rozwoju](#-plany-rozwoju)
 
 ---
 
@@ -133,7 +134,15 @@ Chcesz dodać własne pytania lub całe testy do aplikacji? Przygotowaliśmy szc
 
 ---
 
-## 📝 Plany rozwoju
+## 🔌 Dokumentacja API
+
+Szczegółowy opis dostępnych endpointów API, ich parametrów oraz przykładowych odpowiedzi znajduje się w osobnym dokumencie (w języku angielskim).
+
+➡️ **[Przeczytaj Dokumentację API](./API.md)**
+
+---
+
+##  Plany rozwoju
 
 ### Możliwe rozszerzenia (pomysły na przyszłość)
 

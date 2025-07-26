@@ -21,7 +21,8 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - [🤖 AI Configuration](#-ai-configuration)
 - [📂 Project Structure](#-project-structure)
 - [✍️ Content Creation](#️-content-creation)
-- [📝 Development Plans](#-development-plans)
+- [🔌 API Documentation](#-api-documentation)
+- [ Development Plans](#-development-plans)
 
 ---
 
@@ -136,6 +137,14 @@ The project is divided into two main parts: `frontend` and the rest of the direc
 Want to add your own questions or entire tests to the application? We have prepared a detailed guide that explains step-by-step how to create JSON files with quizzes and import them into the database.
 
 ➡️ **[Read the Guide on Creating and Importing Quizzes](./docs/EN_QUESTIONS.md)**
+
+---
+
+## 🔌 API Documentation
+
+A detailed description of the available API endpoints, their parameters, and example responses can be found in a separate document.
+
+➡️ **[Read the API Documentation](./docs/API.md)**
 
 ---
 

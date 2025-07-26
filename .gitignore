@@ -59,6 +59,8 @@ htmlcov/
 
 # Pliki testów
 media/tests/*
+!media/tests/example_biologia.json
+!media/tests/example_historia.json
 
 
 # ===================================================================

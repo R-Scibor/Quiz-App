@@ -74,6 +74,7 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Python:** The programming language used on the server side.
 - **PostgreSQL:** A production-ready, relational database.
 - **Redis:** An in-memory database used as a broker for Celery.
+- **Google Gemini API:** Used for AI-powered evaluation of open-ended questions.
 
 ### Infrastructure and Tools
 

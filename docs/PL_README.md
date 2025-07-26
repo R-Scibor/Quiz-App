@@ -12,9 +12,6 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - [✨ Funkcjonalności](#-funkcjonalności)
 - [🛠️ Stos technologiczny](#️-stos-technologiczny)
 - [🚀 Uruchomienie projektu](#-uruchomienie-projektu)
-  - [Wymagania wstępne](#wymagania-wstępne)
-  - [Konfiguracja Backendu (Django)](#konfiguracja-backendu-django)
-  - [Konfiguracja Frontendu (React)](#konfiguracja-frontendu-react)
 - [🤖 Konfiguracja AI](#-konfiguracja-ai)
 - [📂 Struktura projektu](#-struktura-projektu)
 - [✍️ Tworzenie Treści](#️-tworzenie-treści)
@@ -71,6 +68,7 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - **Python:** Język programowania używany po stronie serwera.
 - **PostgreSQL:** Produkcyjna, relacyjna baza danych.
 - **Redis:** Baza danych w pamięci, używana jako broker dla Celery.
+- **Google Gemini API:** Wykorzystywane do oceny pytań otwartych przez AI.
 
 ### Infrastruktura i Narzędzia
 

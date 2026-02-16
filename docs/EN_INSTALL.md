@@ -117,18 +117,7 @@ Once all dependencies are ready, you can clone the repository and configure it f
 
 ### **Step 5: Generate SSL Certificates for PostgreSQL**
 
-The PostgreSQL service is configured to use SSL, so you need to generate a self-signed certificate and a private key.
-
-1.  **Create the `certs` directory:**
-    ```bash
-    mkdir -p certs
-    ```
-
-2.  **Generate the certificate and key.** Remember to enter your domain in the `CN` (Common Name) field.
-    ```bash
-    openssl req -new -x509 -days 365 -nodes -out certs/server.crt -newkey rsa:2048 -keyout certs/server.key -subj "/C=XX/ST=State/L=City/O=Organization/OU=Production/CN=your_domain.com"
-    ```
-    *Replace `your_domain.com` with the same value you used in the `.env` file.*
+The project includes an automatic certificate generator. This step is now fully automated and requires no manual action. The `cert-gen` service will check for certificates on startup and generate them if they are missing, saving them to the `./certs` directory in your project root.
 
 ---
 
@@ -151,14 +140,9 @@ With the configuration and certificates in place, you can build the Docker image
 
 ### **Step 7: Prepare Application Data**
 
-After launching the containers, you need to prepare the database and load the quiz content into it.
+After launching the containers, the application automatically runs database migrations. You only need to load the quiz content.
 
-1.  **Run Django migrations.** This command will create all the tables required by the application in the database.
-    ```bash
-    docker compose exec web python manage.py migrate
-    ```
-
-2.  **Import quizzes into the database.** To import quizzes correctly, place the `.json` files in the `media/tests/` folder, as the Docker volume is configured to use this path.
+1.  **Import quizzes into the database.** To import quizzes correctly, place the `.json` files in the `media/tests/` folder, as the Docker volume is configured to use this path.
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests
     ```

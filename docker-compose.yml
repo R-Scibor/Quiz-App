@@ -5,7 +5,7 @@ services:
     image: alpine:latest
     container_name: cert_gen
     volumes:
-      - certs_volume:/certs
+      - ./certs:/certs
     # Check if cert exists; if not, generate it.
     command: >
       sh -c "apk add --no-cache openssl &&
@@ -23,8 +23,8 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Mount the volume where 'cert-gen' put the files
-      - certs_volume:/etc/ssl/certs
+      # Mount the local folder where 'cert-gen' put the files
+      - ./certs:/etc/ssl/certs
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     command: >
       sh -c "chown postgres:postgres /etc/ssl/certs/server.key &&
@@ -109,4 +109,3 @@ volumes:
   static_volume:
   media_volume:
   frontend_volume:
-  certs_volume:

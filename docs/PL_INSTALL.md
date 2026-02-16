@@ -117,18 +117,7 @@ Gdy wszystkie zależności są gotowe, możesz sklonować repozytorium i skonfig
 
 ### **Krok 5: Generowanie Certyfikatów SSL dla PostgreSQL**
 
-Usługa PostgreSQL jest skonfigurowana do używania SSL, więc musisz wygenerować certyfikat samopodpisany i klucz prywatny.
-
-1.  **Utwórz katalog `certs`:**
-    ```bash
-    mkdir -p certs
-    ```
-
-2.  **Wygeneruj certyfikat i klucz.** Pamiętaj, aby w `CN` (Common Name) podać swoją domenę.
-    ```bash
-    openssl req -new -x509 -days 365 -nodes -out certs/server.crt -newkey rsa:2048 -keyout certs/server.key -subj "/C=XX/ST=State/L=City/O=Organization/OU=Production/CN=twoja_domena.com"
-    ```
-    *Zastąp `twoja_domena.com` tą samą wartością, której użyłeś w pliku `.env`.*
+Projekt zawiera automatyczny generator certyfikatów. Ten krok jest teraz w pełni zautomatyzowany i nie wymaga ręcznej akcji. Usługa `cert-gen` sprawdzi obecność certyfikatów przy starcie i wygeneruje je w katalogu `./certs`, jeśli ich brakuje.
 
 ---
 
@@ -151,14 +140,9 @@ Gdy konfiguracja i certyfikaty są na miejscu, możesz zbudować obrazy Docker i
 
 ### **Krok 7: Przygotowanie Danych Aplikacji**
 
-Po uruchomieniu kontenerów, musisz przygotować bazę danych i załadować do niej treść quizów.
+Po uruchomieniu kontenerów, aplikacja automatycznie uruchamia migracje bazy danych. Musisz jedynie załadować treść quizów.
 
-1.  **Uruchom migracje Django.** To polecenie stworzy w bazie danych wszystkie tabele wymagane przez aplikację.
-    ```bash
-    docker compose exec web python manage.py migrate
-    ```
-
-2.  **Zaimportuj quizy do bazy danych.** Aby poprawnie zaimportować quizy, umieść pliki `.json` w folderze `media/tests/`, ponieważ wolumin Dockera jest skonfigurowany do używania tej ścieżki.
+1.  **Zaimportuj quizy do bazy danych.** Aby poprawnie zaimportować quizy, umieść pliki `.json` w folderze `media/tests/`, ponieważ wolumin Dockera jest skonfigurowany do używania tej ścieżki.
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests
     ```

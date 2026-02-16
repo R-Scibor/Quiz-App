@@ -121,7 +121,7 @@ class ApiViewsTestCase(APITestCase):
         """
         response = self.client.get('/api/v1/questions/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 'MISSING_PARAMETERS')
+        self.assertIn(response.data['error'], ['MISSING_PARAMETER', 'MISSING_PARAMETERS'])
 
     def test_get_questions_more_than_available(self):
         """

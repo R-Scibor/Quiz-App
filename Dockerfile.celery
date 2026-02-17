@@ -16,4 +16,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 # Command to start the Celery worker
-CMD ["celery", "-A", "your_project_name", "worker", "-l", "info"]
+CMD ["celery", "-A", "backend_project", "worker", "-l", "info"]

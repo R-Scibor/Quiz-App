@@ -17,7 +17,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+COPY entrypoint.sh /app/entrypoint.sh
 
-RUN python manage.py collectstatic --no-input
+RUN chmod +x /app/entrypoint.sh
+RUN python manage.py collectstatic --noinput
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend_project.wsgi"]

@@ -4,13 +4,15 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./certs/server.crt:/etc/ssl/certs/server.crt
-      - ./certs/server.key:/etc/ssl/certs/server.key
+      - ./certs:/etc/ssl/certs
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     command: >
       sh -c "chown postgres:postgres /etc/ssl/certs/server.key &&
              chmod 600 /etc/ssl/certs/server.key &&
              exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf"
+    depends_on:
+      cert-gen:
+        condition: service_completed_successfully
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -30,10 +32,9 @@ services:
     restart: always
     command: gunicorn --bind 0.0.0.0:8000 --forwarded-allow-ips="*" backend_project.wsgi
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles_collected
       - ./media:/app/media
-      - frontend_volume:/app/frontend/dist
+      - frontend_volume:/app/frontend_static
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
@@ -51,8 +52,6 @@ services:
     container_name: celery_worker
     restart: always
     command: celery -A backend_project worker -l info
-    volumes:
-      - .:/app
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
@@ -78,6 +77,20 @@ services:
       - frontend_volume:/var/www/frontend/
     depends_on:
       - web
+
+  cert-gen:
+    image: alpine:latest
+    container_name: cert_gen
+    volumes:
+      - ./certs:/certs
+    command: >
+      sh -c "apk add --no-cache openssl &&
+             if [ ! -f /certs/server.key ]; then
+               openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+                 -subj '/C=PL/ST=Warsaw/L=Warsaw/O=QuizApp/CN=localhost' \
+                 -keyout /certs/server.key -out /certs/server.crt &&
+               chmod 600 /certs/server.key;
+             fi"
 
 volumes:
   # NOWY WOLUMEN DLA BAZY DANYCH

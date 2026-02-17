@@ -115,26 +115,9 @@ Once all dependencies are ready, you can clone the repository and configure it f
 
 ---
 
-### **Step 5: Generate SSL Certificates for PostgreSQL**
+### **Step 5: Launch the Application**
 
-The PostgreSQL service is configured to use SSL, so you need to generate a self-signed certificate and a private key.
-
-1.  **Create the `certs` directory:**
-    ```bash
-    mkdir -p certs
-    ```
-
-2.  **Generate the certificate and key.** Remember to enter your domain in the `CN` (Common Name) field.
-    ```bash
-    openssl req -new -x509 -days 365 -nodes -out certs/server.crt -newkey rsa:2048 -keyout certs/server.key -subj "/C=XX/ST=State/L=City/O=Organization/OU=Production/CN=your_domain.com"
-    ```
-    *Replace `your_domain.com` with the same value you used in the `.env` file.*
-
----
-
-### **Step 6: Launch the Application**
-
-With the configuration and certificates in place, you can build the Docker images and run all services.
+With the configuration in place, you can build the Docker images and run all services. SSL certificates for the database will be generated automatically.
 
 1.  **Build and run the containers in the background:**
     ```bash
@@ -149,27 +132,22 @@ With the configuration and certificates in place, you can build the Docker image
 
 ---
 
-### **Step 7: Prepare Application Data**
+### **Step 6: Prepare Application Data**
 
-After launching the containers, you need to prepare the database and load the quiz content into it.
+After launching the containers, the database migrations will run automatically. You just need to load the quiz content.
 
-1.  **Run Django migrations.** This command will create all the tables required by the application in the database.
-    ```bash
-    docker compose exec web python manage.py migrate
-    ```
-
-2.  **Import quizzes into the database.** To import quizzes correctly, place the `.json` files in the `media/tests/` folder, as the Docker volume is configured to use this path.
+1.  **Import quizzes into the database.** To import quizzes correctly, place the `.json` files in the `media/tests/` folder, as the Docker volume is configured to use this path.
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests
     ```
 
-3.  **(Recommended) Create a superuser.** This will allow you to log in to the Django admin panel (`/admin`).
+2.  **(Recommended) Create a superuser.** This will allow you to log in to the Django admin panel (`/admin`).
     ```bash
     docker compose exec web python manage.py createsuperuser
     ```
     The program will prompt you to enter a username, email address, and password.
 
-4.  **Done!** Your application is fully configured, running, and ready to use at your domain address.
+3.  **Done!** Your application is fully configured, running, and ready to use at your domain address.
 
 
 ### Method 2: Local Setup (for Windows Developers)

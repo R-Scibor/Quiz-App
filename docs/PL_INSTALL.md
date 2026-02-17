@@ -115,26 +115,9 @@ Gdy wszystkie zależności są gotowe, możesz sklonować repozytorium i skonfig
 
 ---
 
-### **Krok 5: Generowanie Certyfikatów SSL dla PostgreSQL**
+### **Krok 5: Uruchomienie Aplikacji**
 
-Usługa PostgreSQL jest skonfigurowana do używania SSL, więc musisz wygenerować certyfikat samopodpisany i klucz prywatny.
-
-1.  **Utwórz katalog `certs`:**
-    ```bash
-    mkdir -p certs
-    ```
-
-2.  **Wygeneruj certyfikat i klucz.** Pamiętaj, aby w `CN` (Common Name) podać swoją domenę.
-    ```bash
-    openssl req -new -x509 -days 365 -nodes -out certs/server.crt -newkey rsa:2048 -keyout certs/server.key -subj "/C=XX/ST=State/L=City/O=Organization/OU=Production/CN=twoja_domena.com"
-    ```
-    *Zastąp `twoja_domena.com` tą samą wartością, której użyłeś w pliku `.env`.*
-
----
-
-### **Krok 6: Uruchomienie Aplikacji**
-
-Gdy konfiguracja i certyfikaty są na miejscu, możesz zbudować obrazy Docker i uruchomić wszystkie usługi.
+Gdy konfiguracja jest gotowa, możesz zbudować obrazy Docker i uruchomić wszystkie usługi. Certyfikaty SSL dla bazy danych zostaną wygenerowane automatycznie.
 
 1.  **Zbuduj i uruchom kontenery w tle:**
     ```bash
@@ -149,27 +132,22 @@ Gdy konfiguracja i certyfikaty są na miejscu, możesz zbudować obrazy Docker i
 
 ---
 
-### **Krok 7: Przygotowanie Danych Aplikacji**
+### **Krok 6: Przygotowanie Danych Aplikacji**
 
-Po uruchomieniu kontenerów, musisz przygotować bazę danych i załadować do niej treść quizów.
+Po uruchomieniu kontenerów migracje bazy danych zostaną wykonane automatycznie. Musisz jedynie załadować treść quizów.
 
-1.  **Uruchom migracje Django.** To polecenie stworzy w bazie danych wszystkie tabele wymagane przez aplikację.
-    ```bash
-    docker compose exec web python manage.py migrate
-    ```
-
-2.  **Zaimportuj quizy do bazy danych.** Aby poprawnie zaimportować quizy, umieść pliki `.json` w folderze `media/tests/`, ponieważ wolumin Dockera jest skonfigurowany do używania tej ścieżki.
+1.  **Zaimportuj quizy do bazy danych.** Aby poprawnie zaimportować quizy, umieść pliki `.json` w folderze `media/tests/`, ponieważ wolumin Dockera jest skonfigurowany do używania tej ścieżki.
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests
     ```
 
-3.  **(Zalecane) Stwórz superużytkownika.** Umożliwi Ci to logowanie do panelu administratora Django (`/admin`).
+2.  **(Zalecane) Stwórz superużytkownika.** Umożliwi Ci to logowanie do panelu administratora Django (`/admin`).
     ```bash
     docker compose exec web python manage.py createsuperuser
     ```
     Program poprosi Cię o podanie nazwy użytkownika, adresu e-mail i hasła.
 
-4.  **Gotowe!** Twoja aplikacja jest w pełni skonfigurowana, uruchomiona i gotowa do użycia pod adresem Twojej domeny.
+3.  **Gotowe!** Twoja aplikacja jest w pełni skonfigurowana, uruchomiona i gotowa do użycia pod adresem Twojej domeny.
 
 
 ### Metoda 2: Uruchomienie lokalne (dla deweloperów Windows)

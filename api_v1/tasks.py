@@ -34,7 +34,7 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points)
         )
 
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         ai_response = model.generate_content(prompt)
 
         cleaned_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()

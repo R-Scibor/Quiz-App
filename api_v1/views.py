@@ -229,11 +229,12 @@ class CheckOpenAnswerView(APIView):
         question_text = request.data.get('questionText')
         max_points = request.data.get('maxPoints')
         question_type = request.data.get('questionType', 'open-text')
+        force_llm = bool(request.data.get('forceAI', False))
 
         if not all([user_answer, grading_criteria, question_text, max_points]):
             return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
 
-        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points, question_type) # type: ignore
+        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points, question_type, force_llm) # type: ignore
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 class GetTaskResultView(APIView):

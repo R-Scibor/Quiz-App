@@ -72,6 +72,38 @@ const OpenEndedQuestionUI = () => {
         };
     }, []);
 
+    const startPolling = (taskId, questionId) => {
+        let retries = 0;
+        const MAX_RETRIES = 30; // 30 × 2s = 60s timeout
+        pollingRef.current = setInterval(async () => {
+            if (retries >= MAX_RETRIES) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                useTestStore.getState().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
+                return;
+            }
+            retries++;
+            try {
+                const resultResponse = await useTestStore.getState().getTaskResult(taskId);
+
+                if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
+
+                    if (resultResponse.status === 'SUCCESS') {
+                        useTestStore.getState().setLastAnswerFeedback(resultResponse.data, questionId);
+                    } else {
+                        throw new Error(resultResponse.data || "Wystąpił błąd podczas przetwarzania zadania.");
+                    }
+                }
+            } catch (error) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
+            }
+        }, 2000);
+    };
+
     const handleSubmit = async () => {
         if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
         setError(null);
@@ -79,47 +111,47 @@ const OpenEndedQuestionUI = () => {
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
             const taskId = taskResponse.task_id;
-
-            if (!taskId) {
-                throw new Error("Nie otrzymano ID zadania od serwera.");
-            }
-
-            let retries = 0;
-            const MAX_RETRIES = 30; // 30 × 2s = 60s timeout
-            pollingRef.current = setInterval(async () => {
-                if (retries >= MAX_RETRIES) {
-                    clearInterval(pollingRef.current);
-                    pollingRef.current = null;
-                    useTestStore.getState().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
-                    return;
-                }
-                retries++;
-                try {
-                    const resultResponse = await useTestStore.getState().getTaskResult(taskId);
-
-                    if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
-                        clearInterval(pollingRef.current);
-                        pollingRef.current = null;
-
-                        if (resultResponse.status === 'SUCCESS') {
-                            useTestStore.getState().setLastAnswerFeedback(resultResponse.data, question.id);
-                        } else {
-                            throw new Error(resultResponse.data || "Wystąpił błąd podczas przetwarzania zadania.");
-                        }
-                    }
-                } catch (error) {
-                    clearInterval(pollingRef.current);
-                    pollingRef.current = null;
-                    useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
-                }
-            }, 2000);
-
+            if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
+            startPolling(taskId, question.id);
         } catch (error) {
              useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć zadania oceny.' });
         }
     };
-    
-    // Widok po ocenie odpowiedzi przez AI
+
+    const handleRequestAI = async () => {
+        if (isCurrentlyChecking) return;
+        setError(null);
+        const answerToRe = questionResult?.userAnswer || userAnswer;
+        try {
+            const taskResponse = await useTestStore.getState().checkOpenAnswer(answerToRe, true);
+            const taskId = taskResponse.task_id;
+            if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
+            startPolling(taskId, question.id);
+        } catch (error) {
+            useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć oceny AI.' });
+        }
+    };
+
+    // Loading view takes priority (covers re-grading state too)
+    if (isCurrentlyChecking) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+                <LoadingSpinner />
+                <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Możesz przejść do następnego pytania.</p>
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={nextQuestion}
+                    className="btn-primary mt-6 py-2 px-8"
+                >
+                    {isLastQuestion ? "Zakończ test" : "Następne pytanie"}
+                </motion.button>
+            </div>
+        );
+    }
+
+    // Result view (shown after grading, including re-grading)
     if (questionResult?.feedback) {
         const autoGradedMethods = ['regex_pass', 'vector_pass', 'vector_fail', 'exact_pass'];
         const isAutoGraded = autoGradedMethods.includes(questionResult.grading_method);
@@ -130,13 +162,23 @@ const OpenEndedQuestionUI = () => {
                     {questionResult.points_awarded} / {questionResult.maxPoints} pkt
                 </p>
                 {questionResult.grading_method && (
-                    <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-4 ${
-                        isAutoGraded
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    }`}>
-                        {isAutoGraded ? 'Auto-graded' : 'Graded by AI'}
-                    </span>
+                    <div className="flex flex-col items-center gap-2 mb-4">
+                        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+                            isAutoGraded
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                            {isAutoGraded ? 'Auto-graded' : 'Graded by AI'}
+                        </span>
+                        {isAutoGraded && (
+                            <button
+                                onClick={handleRequestAI}
+                                className="text-xs text-gray-500 dark:text-gray-400 hover:text-brand-primary dark:hover:text-brand-primary underline underline-offset-2 transition-colors"
+                            >
+                                Not sure about the result? Request AI grading
+                            </button>
+                        )}
+                    </div>
                 )}
                 <div className="text-left bg-gray-100 dark:bg-option-bg p-4 rounded-lg mb-4">
                     <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Feedback:</h4>
@@ -153,25 +195,6 @@ const OpenEndedQuestionUI = () => {
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </motion.button>
             </motion.div>
-        );
-    }
-    
-    // Widok ładowania podczas sprawdzania
-    if (isCurrentlyChecking) {
-        return (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-                <LoadingSpinner />
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Możesz przejść do następnego pytania.</p>
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={nextQuestion}
-                    className="btn-primary mt-6 py-2 px-8"
-                >
-                    {isLastQuestion ? "Zakończ test" : "Następne pytanie"}
-                </motion.button>
-            </div>
         );
     }
 

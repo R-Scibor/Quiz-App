@@ -129,13 +129,14 @@ const useTestStore = create((set, get) => ({
         }
     },
     
-    checkOpenAnswer: async (userAnswer) => {
+    checkOpenAnswer: async (userAnswer, forceAI = false) => {
         const { currentQuestionIndex, currentQuestions, questionStartTime, checkingQuestionId } = get();
         const question = currentQuestions[currentQuestionIndex];
 
         if (checkingQuestionId) return { task_id: null };
 
-        if (questionStartTime) {
+        // Only record time on the first (non-forced) submission
+        if (!forceAI && questionStartTime) {
             const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);
             set(state => ({
                 totalTimeSpent: state.totalTimeSpent + timeElapsed,
@@ -164,8 +165,9 @@ const useTestStore = create((set, get) => ({
             gradingCriteria: question.gradingCriteria,
             maxPoints: question.maxPoints,
             questionType: question.type,
+            forceAI: forceAI,
         };
-        
+
         const response = await checkOpenAnswerApi(payload);
         return response.data;
     },
@@ -182,8 +184,11 @@ const useTestStore = create((set, get) => ({
 
         if (!question) return;
 
-        set(state => ({
-            score: state.score + score,
+        set(state => {
+            // Subtract any previously awarded points for this question (re-grading support)
+            const oldPoints = state.openQuestionResults[questionId]?.points_awarded ?? 0;
+            return {
+            score: state.score - oldPoints + score,
             openQuestionResults: {
                 ...state.openQuestionResults,
                 [questionId]: {
@@ -198,7 +203,8 @@ const useTestStore = create((set, get) => ({
             checkingQuestionId: state.checkingQuestionId === questionId
                 ? null
                 : state.checkingQuestionId,
-        }));
+            };
+        });
     },
 
     // Nowa akcja do obsługi błędów

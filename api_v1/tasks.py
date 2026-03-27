@@ -128,7 +128,7 @@ def _call_gemini(question_text: str, grading_criteria: str, max_points: int,
 # ---------------------------------------------------------------------------
 
 def grade_open_text(question_text: str, grading_criteria: str, max_points: int,
-                    user_answer: str) -> dict:
+                    user_answer: str, force_llm: bool = False) -> dict:
     """Vector → threshold routing → Gemini fallback."""
     start = time.monotonic()
     student = sanitize_text(user_answer)
@@ -137,7 +137,7 @@ def grade_open_text(question_text: str, grading_criteria: str, max_points: int,
     vector_score = None
     grading_method = "llm"
 
-    if reference:
+    if not force_llm and reference:
         vector_score = call_vector_service(student, reference)
 
     if vector_score is not None:
@@ -175,13 +175,13 @@ def grade_open_text(question_text: str, grading_criteria: str, max_points: int,
 
 
 def grade_open_cli(question_text: str, grading_criteria: str, max_points: int,
-                   user_answer: str) -> dict:
+                   user_answer: str, force_llm: bool = False) -> dict:
     """Exact match → regex match (gradingCriteria) → Gemini fallback."""
     start = time.monotonic()
     normalized = sanitize_cli(user_answer)
 
     # Regex match against gradingCriteria
-    if grading_criteria:
+    if not force_llm and grading_criteria:
         try:
             if re.fullmatch(grading_criteria, normalized, re.IGNORECASE):
                 return {
@@ -251,13 +251,15 @@ def grade_open_code(question_text: str, grading_criteria: str, max_points: int,
 
 @shared_task
 def generate_ai_answer(user_answer, grading_criteria, question_text, max_points,
-                       question_type="open-text"):
+                       question_type="open-text", force_llm=False):
     """
     Route grading based on question_type:
       open-text  → vector similarity → Gemini fallback
       open-cli   → regex → Gemini fallback
       open-code  → Gemini only (code rubric)
       open-ended → treated as open-text (legacy)
+
+    force_llm=True skips local methods (vector/regex) and goes straight to Gemini.
     """
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
@@ -266,15 +268,15 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points,
 
     try:
         if question_type in ("open-text", "open-ended"):
-            return grade_open_text(question_text, grading_criteria, max_points, user_answer)
+            return grade_open_text(question_text, grading_criteria, max_points, user_answer, force_llm=force_llm)
         elif question_type == "open-cli":
-            return grade_open_cli(question_text, grading_criteria, max_points, user_answer)
+            return grade_open_cli(question_text, grading_criteria, max_points, user_answer, force_llm=force_llm)
         elif question_type == "open-code":
             return grade_open_code(question_text, grading_criteria, max_points, user_answer)
         else:
             # Unknown type — fall back to open-text pipeline
             logger.warning("Unknown question_type '%s', defaulting to open-text pipeline.", question_type)
-            return grade_open_text(question_text, grading_criteria, max_points, user_answer)
+            return grade_open_text(question_text, grading_criteria, max_points, user_answer, force_llm=force_llm)
     except Exception as exc:
         logger.exception("Unexpected error during grading: %s", exc)
         raise

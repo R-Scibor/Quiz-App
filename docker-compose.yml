@@ -52,6 +52,24 @@ services:
       - "oversight.link=http://quiz.home"
       - "oversight.icon=https://github.com/R-Scibor/Quiz-App/blob/main/frontend/public/icon.png"
 
+  ai_grader:
+    build:
+      context: ./ai_grader
+      dockerfile: Dockerfile
+    container_name: ai_grader
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
   celery:
     build:
       context: .
@@ -66,11 +84,16 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-    # DODAJ ZALEŻNOŚĆ OD BAZY DANYCH
+      - VECTOR_SERVICE_URL=http://ai_grader:8001
     depends_on:
-      - redis
-      - web
-      - db
+      redis:
+        condition: service_started
+      web:
+        condition: service_started
+      db:
+        condition: service_started
+      ai_grader:
+        condition: service_healthy
 
   nginx:
     image: nginx:latest

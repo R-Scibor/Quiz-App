@@ -3,7 +3,7 @@ from .views import (
     TestListView, QuestionListView, CheckOpenAnswerView, GetTaskResultView,
     ReportIssueView, RegisterView, LoginView, LogoutView,
     SessionStartView, SessionCompleteView, AttemptCreateView, UserStatsView,
-    StudyQueueView,
+    StudyQueueView, StudyStatsView,
 )
 
 app_name = 'api_v1'
@@ -22,4 +22,5 @@ urlpatterns = [
     path('attempts/', AttemptCreateView.as_view(), name='attempt-create'),
     path('stats/', UserStatsView.as_view(), name='user-stats'),
     path('study/queue/', StudyQueueView.as_view(), name='study-queue'),
+    path('study/stats/', StudyStatsView.as_view(), name='study-stats'),
 ]

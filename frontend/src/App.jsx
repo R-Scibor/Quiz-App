@@ -8,6 +8,7 @@ import ReviewPage from './pages/ReviewPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StatsPage from './pages/StatsPage';
+import StudySetupPage from './pages/StudySetupPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import ErrorBoundary from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +40,7 @@ function App() {
             case 'login': return <LoginPage />;
             case 'register': return <RegisterPage />;
             case 'stats': return <StatsPage />;
+            case 'study-setup': return <StudySetupPage />;
             case 'home':
             default: return <HomePage />;
         }

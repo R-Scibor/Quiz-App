@@ -71,6 +71,41 @@ def compute_next_sr(rating, is_correct, prev_ease, prev_interval, prev_reps):
     new_ease = max(1.3, prev_ease + 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
     return new_interval, new_ease, date.today() + timedelta(days=new_interval), new_reps
 
+
+def _build_study_buckets(user):
+    """Returns (latest_map, due_ids, struggling_ids, studied_test_ids).
+    latest_map: {question_id: QuestionAttempt} — most recent attempt per question.
+    """
+    from django.db.models import Max
+    today = date.today()
+    latest_rows = (
+        QuestionAttempt.objects.filter(user=user)
+        .values('question_id')
+        .annotate(latest=Max('answered_at'))
+    )
+    latest_map = {}
+    for row in latest_rows:
+        a = QuestionAttempt.objects.filter(
+            user=user, question_id=row['question_id'], answered_at=row['latest']
+        ).first()
+        if a:
+            latest_map[a.question_id] = a
+
+    due_ids = [
+        qid for qid, a in latest_map.items()
+        if a.sr_next_review and a.sr_next_review <= today
+    ]
+    struggling_ids = [
+        qid for qid, a in latest_map.items()
+        if not a.is_correct and qid not in due_ids
+    ]
+    studied_test_ids = list(
+        QuestionAttempt.objects.filter(user=user)
+        .values_list('test_id', flat=True).distinct()
+    )
+    return latest_map, due_ids, struggling_ids, studied_test_ids
+
+
 # -----------------------------------------------------------------------------
 # Wprowadzenie do Widoków
 # -----------------------------------------------------------------------------
@@ -335,44 +370,33 @@ class StudyQueueView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         limit = min(int(request.query_params.get('limit', 20)), 50)
-        today = date.today()
 
-        # Latest attempt per question for this user
-        from django.db.models import Max
-        latest_rows = (
-            QuestionAttempt.objects.filter(user=user)
-            .values('question_id')
-            .annotate(latest=Max('answered_at'))
-        )
-        latest_map = {}
-        for row in latest_rows:
-            a = QuestionAttempt.objects.filter(
-                user=user, question_id=row['question_id'], answered_at=row['latest']
-            ).first()
-            if a:
-                latest_map[a.question_id] = a
+        # Optional topic filter: comma-separated test UUIDs
+        raw_ids = request.query_params.get('test_ids', '')
+        test_id_filter = {tid.strip() for tid in raw_ids.split(',') if tid.strip()} or None
+
+        latest_map, due_ids, struggling_ids, studied_test_ids = _build_study_buckets(user)
+
+        # Apply topic filter to all buckets
+        if test_id_filter:
+            latest_map = {
+                qid: a for qid, a in latest_map.items()
+                if str(a.test_id) in test_id_filter
+            }
+            due_ids = [
+                qid for qid, a in latest_map.items()
+                if a.sr_next_review and a.sr_next_review <= date.today()
+            ]
+            struggling_ids = [
+                qid for qid, a in latest_map.items()
+                if not a.is_correct and qid not in due_ids
+            ]
+            studied_test_ids = list(test_id_filter)
 
         attempted_ids = set(latest_map.keys())
 
-        # Bucket 1: due for review (sr_next_review <= today)
-        due_ids = [
-            qid for qid, a in latest_map.items()
-            if a.sr_next_review and a.sr_next_review <= today
-        ]
-        # Bucket 2: got wrong recently but not yet scheduled for review
-        struggling_ids = [
-            qid for qid, a in latest_map.items()
-            if not a.is_correct and qid not in due_ids
-        ]
-
         random.shuffle(due_ids)
         random.shuffle(struggling_ids)
-
-        # Tests user has studied — pool for new questions
-        studied_test_ids = list(
-            QuestionAttempt.objects.filter(user=user)
-            .values_list('test_id', flat=True).distinct()
-        )
 
         # Build the queue: all due + up to half-remaining struggling + fill rest with new
         selected_ids = list(due_ids)
@@ -389,7 +413,7 @@ class StudyQueueView(APIView):
             .prefetch_related('answers', 'tags')
         )
 
-        # Fill remainder with unrated (new) questions from previously studied tests
+        # Fill remainder with unrated (new) questions from studied tests
         new_questions = []
         if remaining > 0 and studied_test_ids:
             new_questions = list(
@@ -406,6 +430,38 @@ class StudyQueueView(APIView):
         return Response({
             'count': len(all_questions),
             'questions': shuffle_options(serializer.data),
+        })
+
+
+class StudyStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        latest_map, due_ids, struggling_ids, studied_test_ids = _build_study_buckets(user)
+        attempted_ids = set(latest_map.keys())
+
+        new_count = Question.objects.filter(
+            test__in=studied_test_ids
+        ).exclude(id__in=attempted_ids).count()
+
+        mastered_count = sum(
+            1 for a in latest_map.values()
+            if a.sr_repetitions >= 4 and a.sr_interval >= 21
+        )
+
+        studied_tests = list(
+            Test.objects.filter(id__in=studied_test_ids).values('id', 'title')
+        )
+
+        total = len(due_ids) + len(struggling_ids) + min(new_count, 20)
+        return Response({
+            'due_count': len(due_ids),
+            'struggling_count': len(struggling_ids),
+            'new_count': new_count,
+            'mastered_count': mastered_count,
+            'total_queued': min(total, 50),
+            'studied_tests': studied_tests,
         })
 
 

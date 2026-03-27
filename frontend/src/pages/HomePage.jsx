@@ -3,10 +3,10 @@ import useTestStore from '../store/testStore';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
-    const { goToSetup, goToLogin, goToRegister, logout, user, goToStats, startStudyMode, fetchStudyQueueCount, studyQueueCount } = useTestStore();
+    const { goToSetup, goToLogin, goToRegister, logout, user, goToStats, goToStudySetup, fetchStudyStats, studyQueueCount } = useTestStore();
 
     useEffect(() => {
-        fetchStudyQueueCount();
+        fetchStudyStats();
     }, [user]);
 
     // Warianty animacji dla kontenera i jego dzieci
@@ -93,7 +93,7 @@ const HomePage = () => {
                             <motion.button
                                 whileHover={{ scale: 1.03, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={startStudyMode}
+                                onClick={goToStudySetup}
                                 className="relative btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
                             >
                                 Study Mode

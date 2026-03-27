@@ -134,8 +134,14 @@ export const getUserStats = () => {
     return apiClient.get('/stats/');
 };
 
-export const getStudyQueue = (limit = 20) => {
-    return apiClient.get('/study/queue/', { params: { limit } });
+export const getStudyQueue = (limit = 20, testIds = null) => {
+    const params = { limit };
+    if (testIds && testIds.length > 0) params.test_ids = testIds.join(',');
+    return apiClient.get('/study/queue/', { params });
+};
+
+export const getStudyStats = () => {
+    return apiClient.get('/study/stats/');
 };
 
 export const registerUser = (payload) => {

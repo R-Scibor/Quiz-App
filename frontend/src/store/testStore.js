@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, startSession, completeSession, submitAttempts, getUserStats, getStudyQueue } from '../services/api';
+import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, startSession, completeSession, submitAttempts, getUserStats, getStudyQueue, getStudyStats } from '../services/api';
 
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
@@ -43,6 +43,9 @@ const useTestStore = create((set, get) => ({
     // Spaced repetition state
     difficultyRatings: {},   // { questionId: 'easy' | 'normal' | 'hard' }
     studyQueueCount: null,   // number of due questions for home page badge
+    studySetupData: null,    // { due_count, struggling_count, new_count, mastered_count, total_queued, studied_tests }
+    studyNumQuestions: 20,   // persisted session length preference
+    studySelectedTestIds: null, // null = all; array of UUIDs = filtered
 
     // Actions
     goToSetup: () => set({ view: 'setup' }),
@@ -238,6 +241,7 @@ const useTestStore = create((set, get) => ({
         questionTimes: {},
         currentSessionId: null,
         difficultyRatings: {},
+        studySelectedTestIds: null,
     }),
 
     _finalizeSession: async () => {
@@ -300,20 +304,31 @@ const useTestStore = create((set, get) => ({
         difficultyRatings: { ...state.difficultyRatings, [questionId]: rating },
     })),
 
-    fetchStudyQueueCount: async () => {
+    fetchStudyStats: async () => {
         if (!get().user) return;
         try {
-            const res = await getStudyQueue(20);
-            set({ studyQueueCount: res.data.count });
+            const res = await getStudyStats();
+            set({ studyQueueCount: res.data.total_queued, studySetupData: res.data });
         } catch (e) {
             // Silently ignore — count badge is non-critical
         }
     },
 
+    goToStudySetup: async () => {
+        if (!get().studySetupData) await get().fetchStudyStats();
+        set({ view: 'study-setup' });
+    },
+
+    setStudyConfig: (numQuestions, testIds) => set({
+        studyNumQuestions: numQuestions,
+        studySelectedTestIds: testIds,
+    }),
+
     startStudyMode: async () => {
+        const { studyNumQuestions, studySelectedTestIds } = get();
         set({ isLoading: true, error: null, score: 0, currentQuestionIndex: 0, userAnswers: {}, questionTimes: {}, difficultyRatings: {}, currentSessionId: null });
         try {
-            const res = await getStudyQueue(20);
+            const res = await getStudyQueue(studyNumQuestions, studySelectedTestIds);
             const questions = res.data.questions;
             if (!questions || questions.length === 0) {
                 set({ isLoading: false, error: { message: 'No questions in your study queue right now.', code: 'EMPTY_QUEUE' } });

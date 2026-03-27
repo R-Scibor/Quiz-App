@@ -42,7 +42,8 @@ This is an advanced full-stack application for conducting interactive quizzes an
 
 - **Test Selection:** Users can choose from many available tests in various categories.
 - **Time Limit:** Each quiz has a defined time limit that pauses after an answer is given and resumes with the next question.
-- **Asynchronous Grading (AI):** Open-ended questions are graded in the background by AI, allowing the user to continue the test without waiting for the result.
+- **Cascade Grading System:** Open-ended questions use a tiered grading pipeline — vector similarity and regex matching handle the majority of answers locally (no LLM cost or latency); only ambiguous answers escalate to Gemini. Supports three open-ended types: `open-text`, `open-cli`, and `open-code`.
+- **Asynchronous Grading (AI):** Open-ended questions are graded in the background by Celery, allowing the user to continue the test without waiting for the result.
 - **Error Reporting:** Users can report errors in questions, answers, or AI evaluations.
 - **Markdown Formatting:** Questions and explanations support text formatting (bold, italics, lists, etc.) for better readability.
 - **Progress Bar:** A visual representation of the test-taking progress.
@@ -77,7 +78,8 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Python:** The programming language used on the server side.
 - **PostgreSQL:** A production-ready, relational database.
 - **Redis:** An in-memory database used as a broker for Celery.
-- **Google Gemini API:** Used for AI-powered evaluation of open-ended questions.
+- **Google Gemini API:** Used for AI-powered evaluation of ambiguous and code open-ended questions.
+- **FastAPI + sentence-transformers:** Lightweight vector similarity microservice (`ai_grader`) for local semantic grading of `open-text` questions.
 
 ### Infrastructure and Tools
 
@@ -95,15 +97,25 @@ Detailed instructions for configuring and running the project—both in a produc
 
 ---
 
-## 🤖 AI Configuration
+## 🤖 AI & Grading Configuration
 
-The application uses a default prompt for the AI model that evaluates open-ended questions. You can modify this prompt to better suit your needs directly from the Django admin panel.
+Quiz App uses a **cascade grading system** — most answers are graded locally using vector similarity (for `open-text`) or regex matching (for `open-cli`) with no LLM call. Only ambiguous answers and `open-code` questions reach Gemini.
 
-1.  **Log in to the admin panel:** Go to the `/admin` address of your application and log in with your superuser account.
-2.  **Navigate to Prompt Configurations:** In the `API_V1` section, find and click on "Prompt configurations".
-3.  **Edit the default prompt:** You will see a default prompt named `default_prompt`. Click on it to open the edit view.
-4.  **Modify the prompt:** In the "System prompt" field, you can change the content of the prompt. The prompt uses placeholders like `{grading_criteria}` and `{user_answer}` which are dynamically replaced with the question's criteria and the user's answer during evaluation. Make sure to keep these placeholders if you want the AI to use this data.
-5.  **Save the changes:** Click the "Save" button. The new prompt will be used for all subsequent AI evaluations.
+➡️ **[Read the Grading System Documentation](./docs/GRADING.md)**
+
+### Customising the Gemini prompt
+
+The Gemini prompt for `open-text` questions is configurable from the Django admin panel without redeployment.
+
+1.  **Log in to the admin panel:** Go to the `/admin` address and log in with your superuser account.
+2.  **Navigate to Prompt Configurations:** In the `API_V1` section, click "Prompt configurations".
+3.  **Edit the default prompt:** Click `default_prompt` to open the edit view.
+4.  **Modify the prompt:** The template supports these placeholders — keep them in your edited version:
+    - `{question_text}` — the question being asked
+    - `{grading_criteria}` — the criteria from the JSON file
+    - `{max_points}` — the maximum points for the question
+    - `{user_answer}` — what the student typed
+5.  **Save.** The new prompt is used for all subsequent LLM-graded answers.
 
 ---
 
@@ -113,6 +125,7 @@ The project is divided into two main parts: `frontend` and the rest of the direc
 
 ```
 .
+├── ai_grader/        # Vector similarity microservice (FastAPI + sentence-transformers)
 ├── api_v1/           # Django application with API logic, models, and views
 ├── backend_project/  # Main Django project configuration folder
 ├── certs/            # SSL certificates for Nginx/PostgreSQL
@@ -120,6 +133,7 @@ The project is divided into two main parts: `frontend` and the rest of the direc
 ├── frontend/         # React application source code (Vite)
 ├── media/            # Media files uploaded by users
 ├── nginx/            # Nginx server configuration
+├── plans/            # Feature planning documents
 ├── postgres/         # PostgreSQL database configuration
 ├── .gitignore
 ├── build.sh          # Script for building Docker images for production
@@ -140,6 +154,8 @@ Want to add your own questions or entire tests to the application? We have prepa
 
 ➡️ **[Read the Guide on Creating and Importing Quizzes](./docs/EN_QUESTIONS.md)**
 
+➡️ **[Read the Grading System Documentation](./docs/GRADING.md)**
+
 ---
 
 ## 🔌 API Documentation
@@ -157,9 +173,13 @@ A detailed description of the available API endpoints, their parameters, and exa
 - [ ] **OAuth / Social Login:** Google or GitHub sign-in as an alternative to username/password.
 - [ ] **Statistics Charts:** Visual graphs for accuracy trends and study activity over time.
 - [ ] **Leaderboards:** Compare scores with other users across categories.
+- [ ] **Sandboxed Code Execution:** Run submitted code against test cases for reliable `open-code` grading (v0.3).
+- [ ] **Per-Question Vector Thresholds:** Override the global 0.85/0.30 thresholds on a per-question basis for better accuracy.
+- [ ] **Grading Cost Tracking:** Django model to log per-question LLM usage and cost for budget monitoring.
 
 ### Completed
 
+- [x] **Cascade Grading System:** Three open-ended question types (`open-text`, `open-cli`, `open-code`) each use the fastest applicable grading method — vector similarity, regex, or Gemini — minimising LLM cost and latency. Results show an "Auto-graded" or "Graded by AI" badge. Retry button on timeout.
 - [x] **Spaced Repetition (Study Mode):** SM-2 algorithm with Easy/Normal/Hard ratings per question; Study Mode draws due and struggling questions, filling remaining slots with new ones.
 - [x] **Per-User Statistics:** Sessions, accuracy, daily streaks, average time per question, and recent session history — all tracked per logged-in user.
 - [x] **Authentication System:** Username + password registration and login using DRF token authentication. Anonymous users retain full quiz access.

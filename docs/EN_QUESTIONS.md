@@ -10,7 +10,10 @@ This document provides a complete guide to creating new tests in JSON format and
 - [Question Object Structure](#-question-object-structure)
   - [Single-Choice Question](#single-choice-question)
   - [Multiple-Choice Question](#multiple-choice-question)
-  - [Open-Ended Question](#open-ended-question)
+  - [Open-Ended Questions](#open-ended-questions)
+    - [open-text — Natural language](#open-text--natural-language)
+    - [open-cli — Terminal commands](#open-cli--terminal-commands)
+    - [open-code — Programming](#open-code--programming)
 - [Markdown & Code Blocks in Question Text](#-markdown--code-blocks-in-question-text)
 - [How to Load New Tests into the Database](#-how-to-load-new-tests-into-the-database)
 
@@ -97,26 +100,87 @@ The user can select several correct answers.
 -   `type` (string): Must be `"multiple-choice"`.
 -   `correctAnswers` (array of integers): An array containing the **indices of all correct answers**.
 
-### Open-Ended Question
+### Open-Ended Questions
 
-The user must type a text answer, which is evaluated by an AI.
+The user types a free-text answer. Quiz App supports three open-ended types that use different grading pipelines — see **[GRADING.md](./GRADING.md)** for a full description of how each pipeline works.
+
+> **Deprecated:** The `"open-ended"` type is still accepted for backwards compatibility and is treated as `"open-text"`, but will print a deprecation warning during import. Use `"open-text"` in new files.
+
+All open-ended types share these fields and omit `options` / `correctAnswers`:
+
+| Field | Required | Description |
+|---|---|---|
+| `gradingCriteria` | Yes | Grading rules — content depends on the type (see below) |
+| `maxPoints` | Yes | Integer 1–100. Points awarded can be a fraction of this. |
+
+---
+
+#### `open-text` — Natural language
+
+Use for explanations, definitions, and descriptive answers. Graded by vector similarity first; ambiguous answers escalate to Gemini.
+
+**`gradingCriteria`:** A natural language description of what a correct answer must contain. This text is used as the semantic comparison baseline.
 
 ```json
 {
   "id": 104,
   "questionText": "List and briefly describe at least three consequences of the Congress of Gniezno in 1000.",
   "image": "",
-  "type": "open-ended",
+  "type": "open-text",
   "tags": ["congress of gniezno", "diplomacy"],
-  "gradingCriteria": "The answer must include at least three of the following consequences, with a brief explanation: 1. Establishment of an independent Polish church province. 2. Strengthening of Poland's international position. 3. Symbolic recognition of the state's sovereignty by the Empire.",
+  "gradingCriteria": "The answer must include at least three of the following: establishment of an independent Polish church province, strengthening of Poland's international position, symbolic recognition of the state's sovereignty by the Empire.",
   "maxPoints": 6
 }
 ```
 
--   `type` (string): Must be `"open-ended"`.
--   `gradingCriteria` (string): **A key field.** A detailed description based on which the AI will evaluate the user's answer. It should be precise and clearly state what is required.
--   `maxPoints` (integer): The maximum number of points that can be awarded for this question.
--   The `options` and `correctAnswers` fields **must be omitted**.
+---
+
+#### `open-cli` — Terminal commands
+
+Use for questions that expect a shell command (`kubectl`, `git`, `docker`, `bash`, etc.). Graded by regex match; unmatched answers escalate to Gemini with a prompt that rejects destructive flags.
+
+**`gradingCriteria`:** A Python-compatible regex pattern matched against the full answer. Backslashes must be doubled in JSON (`\\s+` → `\s+` at runtime). The regex is validated at import time.
+
+```json
+{
+  "id": 105,
+  "questionText": "Write a command to list all pods in the kube-system namespace.",
+  "image": "",
+  "type": "open-cli",
+  "tags": ["kubernetes", "cli"],
+  "gradingCriteria": "kubectl\\s+get\\s+(pods|po)(\\s+(-n\\s+|--namespace(=|\\s+))kube-system|\\s+(--all-namespaces|-A))?",
+  "maxPoints": 1
+}
+```
+
+**Regex tips:**
+- `re.fullmatch` is used — the pattern must match the entire answer, not just a substring. No need for `^` / `$`.
+- `re.IGNORECASE` is applied automatically.
+- Use `(a|b)` for alternatives, `\\s+` for whitespace.
+- Keep patterns readable — Gemini handles edge cases the regex misses.
+- The import command rejects patterns with catastrophic backtracking heuristics (nested quantifiers like `(a+)+`).
+
+---
+
+#### `open-code` — Programming
+
+Use for questions that expect code (functions, algorithms, scripts). Always graded by Gemini with a code-specific rubric — partial credit is awarded for partially correct logic.
+
+**`gradingCriteria`:** Must start with a language identifier followed by a colon, then a description of what the code must do.
+
+```json
+{
+  "id": 210,
+  "questionText": "Write a Python function called `add` that takes two numbers and returns their sum.",
+  "image": "",
+  "type": "open-code",
+  "tags": ["python", "functions"],
+  "gradingCriteria": "python: function named 'add' that accepts two numeric arguments and returns their sum; must handle integers and floats",
+  "maxPoints": 3
+}
+```
+
+Supported language identifiers: `python`, `javascript`, `go`, `bash`, `java`, `sql`, `typescript`, `rust`, `c`, `cpp`, or any language Gemini recognizes.
 
 ---
 

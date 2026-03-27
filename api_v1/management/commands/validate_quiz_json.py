@@ -74,7 +74,8 @@ class Command(BaseCommand):
 
         if 'type' in question:
             q_type = question['type']
-            if q_type not in ['single-choice', 'multiple-choice', 'open-ended']:
+            open_types = ('open-text', 'open-cli', 'open-code', 'open-ended', 'open')
+            if q_type not in ['single-choice', 'multiple-choice'] + list(open_types):
                 self._add_error(f"{error_prefix}Nieprawidłowy typ pytania ('{q_type}').")
 
             if q_type in ['single-choice', 'multiple-choice']:
@@ -94,7 +95,7 @@ class Command(BaseCommand):
                                 if not isinstance(correct_index, int) or not 0 <= correct_index < len(question['options']):
                                     self._add_error(f"{error_prefix}Nieprawidłowy indeks prawidłowej odpowiedzi: {correct_index}.")
 
-            elif q_type == 'open-ended':
+            elif q_type in open_types:
                 self._validate_required_fields(question, ['gradingCriteria', 'maxPoints'], error_prefix.strip())
 
         # Validate optional fields

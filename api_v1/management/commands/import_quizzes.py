@@ -1,4 +1,6 @@
 import json
+import re
+import signal
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -103,8 +105,33 @@ class Command(BaseCommand):
                     if not q_text: continue
                     
                     q_type = q_data.get('type', 'single-choice')
-                    if q_type not in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE, Question.OPEN_ENDED]:
+                    # Normalise legacy open / open-ended → open-text
+                    if q_type in ('open', 'open-ended'):
+                        self.stdout.write(self.style.WARNING(
+                            f"  DEPRECATION: type '{q_type}' in question '{q_text[:40]}...' — treated as 'open-text'."
+                        ))
+                        q_type = Question.OPEN_TEXT
+                    valid_types = [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE,
+                                   Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
+                    if q_type not in valid_types:
+                        self.stdout.write(self.style.WARNING(
+                            f"  Unknown type '{q_type}' — defaulting to single-choice."
+                        ))
                         q_type = Question.SINGLE_CHOICE
+
+                    grading_criteria = q_data.get('gradingCriteria')
+                    if q_type == Question.OPEN_CLI and grading_criteria:
+                        error = self._validate_regex(grading_criteria)
+                        if error:
+                            raise ValueError(
+                                f"Invalid gradingCriteria regex for open-cli question '{q_text[:40]}': {error}"
+                            )
+                    if q_type == Question.OPEN_CODE and grading_criteria:
+                        if ':' not in grading_criteria:
+                            raise ValueError(
+                                f"open-code gradingCriteria must start with a language prefix "
+                                f"(e.g. 'python: ...') for question '{q_text[:40]}'."
+                            )
 
                     question_obj = Question.objects.create(
                         test=test_obj,
@@ -112,7 +139,7 @@ class Command(BaseCommand):
                         image=q_data.get('image'), # <-- TUTAJ ZMIANA: Dodajemy import obrazka
                         explanation=q_data.get('explanation', ''),
                         question_type=q_type,
-                        grading_criteria=q_data.get('gradingCriteria'),
+                        grading_criteria=grading_criteria,
                         max_points=q_data.get('maxPoints')
                     )
 
@@ -143,6 +170,28 @@ class Command(BaseCommand):
         except json.JSONDecodeError as e:
             raise CommandError(f"Błąd dekodowania JSON w pliku '{file_path}': {e}")
 
+    def _validate_regex(self, pattern: str) -> str | None:
+        """Returns an error string if pattern is invalid or looks catastrophic, else None."""
+        # Heuristic: reject nested quantifiers that cause catastrophic backtracking
+        catastrophic_patterns = [r'\(.*\+.*\)\+', r'\(.*\*.*\)\*', r'\(.*\|.*\)\+', r'\(.*\|.*\)\*']
+        for cp in catastrophic_patterns:
+            if re.search(cp, pattern):
+                return f"Pattern looks catastrophically backtracking: {pattern!r}"
+        try:
+            def _timeout(signum, frame):
+                raise TimeoutError
+            signal.signal(signal.SIGALRM, _timeout)
+            signal.alarm(1)
+            try:
+                re.compile(pattern)
+            finally:
+                signal.alarm(0)
+        except TimeoutError:
+            return f"Regex compilation timed out: {pattern!r}"
+        except re.error as e:
+            return f"Invalid regex: {e}"
+        return None
+
     def verify_import(self, imported_files: list, total_files: int):
         self.stdout.write("=" * 70)
         self.stdout.write("RAPORT WERYFIKACJI IMPORTU")
@@ -160,7 +209,8 @@ class Command(BaseCommand):
                 test_title = data.get('scope', file_path.stem)
                 questions_data = data.get('questions', [])
                 q_in_json = len(questions_data)
-                a_in_json = sum(len(q.get('options', [])) for q in questions_data if q.get('type') != 'open-ended')
+                open_types = ('open', 'open-ended', 'open-text', 'open-cli', 'open-code')
+                a_in_json = sum(len(q.get('options', [])) for q in questions_data if q.get('type') not in open_types)
 
                 total_q_json += q_in_json
                 total_a_json += a_in_json

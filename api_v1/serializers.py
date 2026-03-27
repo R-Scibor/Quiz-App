@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Test, Question, Answer, Category, Tag, ReportedIssue
+from .models import Test, Question, Answer, Category, Tag, ReportedIssue, QuizSession, QuestionAttempt
 from django.db.models import Count, Q
+from django.contrib.auth.models import User
 
 # -----------------------------------------------------------------------------
 # Wprowadzenie do Serializerów
@@ -219,3 +220,34 @@ class ReportedIssueSerializer(serializers.ModelSerializer):
         aby zapewnić poprawne zapisanie danych JSON.
         """
         return ReportedIssue.objects.create(**validated_data)
+
+
+class QuizSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSession
+        fields = ['id', 'started_at', 'completed_at', 'total_questions', 'correct_count',
+                  'score_achieved', 'score_possible', 'is_study_mode']
+        read_only_fields = ['id', 'started_at']
+
+
+class QuestionAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionAttempt
+        fields = ['question', 'test', 'session', 'is_correct', 'points_awarded',
+                  'time_spent_secs', 'difficulty_rating']
+
+
+class RegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(min_length=6, write_only=True)
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already taken.")
+        return value
+
+    def create(self, validated_data):
+        return User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password'],
+        )

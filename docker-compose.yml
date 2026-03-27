@@ -45,6 +45,12 @@ services:
     depends_on:
       - redis
       - db
+    labels:
+      - "oversight.visible=true"
+      - "oversight.name=Quiz App"
+      - "oversight.domain=quiz.home"
+      - "oversight.link=http://quiz.home"
+      - "oversight.icon=https://github.com/R-Scibor/Quiz-App/blob/main/frontend/public/icon.png"
 
   celery:
     build:
@@ -71,7 +77,7 @@ services:
     container_name: nginx
     restart: always
     ports:
-      - "80:80"
+      - "8050:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - static_volume:/var/www/static/

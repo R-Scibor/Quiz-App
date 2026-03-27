@@ -5,30 +5,40 @@ import TestSetupPage from './pages/TestSetupPage';
 import TestScreenPage from './pages/TestScreenPage';
 import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import StatsPage from './pages/StatsPage';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import ErrorBoundary from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Krok 1: Importujemy nowe komponenty tła
 import DarkModeBackground from './components/DarkModeBackground';
 import LightModeBackground from './components/LightModeBackground';
 
 function App() {
     const view = useTestStore((state) => state.view);
     const theme = useTestStore((state) => state.theme);
+    const initAuth = useTestStore((state) => state.initAuth);
 
     useEffect(() => {
         const root = window.document.documentElement;
         root.classList.remove('light', 'dark');
         root.classList.add(theme);
     }, [theme]);
-    
+
+    useEffect(() => {
+        initAuth();
+    }, []);
+
     const renderView = () => {
         switch (view) {
             case 'setup': return <TestSetupPage />;
             case 'test': return <TestScreenPage />;
             case 'results': return <ResultsPage />;
             case 'review': return <ReviewPage />;
+            case 'login': return <LoginPage />;
+            case 'register': return <RegisterPage />;
+            case 'stats': return <StatsPage />;
             case 'home':
             default: return <HomePage />;
         }

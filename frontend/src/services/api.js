@@ -8,6 +8,15 @@ const apiClient = axios.create({
     }
 });
 
+// Inject auth token from localStorage into every request.
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Token ${token}`;
+    }
+    return config;
+});
+
 // Interceptor pozwala na globalne przechwytywanie i obsługę odpowiedzi
 // zanim zostaną one przekazane do bloku .then() lub .catch() w miejscu wywołania.
 
@@ -107,4 +116,36 @@ export const getTaskResult = (taskId) => {
  */
 export const reportIssue = (payload) => {
     return apiClient.post('/report_issue/', payload);
+};
+
+export const startSession = (payload = {}) => {
+    return apiClient.post('/sessions/start/', payload);
+};
+
+export const completeSession = (sessionId, payload) => {
+    return apiClient.post(`/sessions/${sessionId}/complete/`, payload);
+};
+
+export const submitAttempts = (attempts) => {
+    return apiClient.post('/attempts/', attempts);
+};
+
+export const getUserStats = () => {
+    return apiClient.get('/stats/');
+};
+
+export const getStudyQueue = (limit = 20) => {
+    return apiClient.get('/study/queue/', { params: { limit } });
+};
+
+export const registerUser = (payload) => {
+    return apiClient.post('/auth/register/', payload);
+};
+
+export const loginUser = (payload) => {
+    return apiClient.post('/auth/login/', payload);
+};
+
+export const logoutUser = () => {
+    return apiClient.post('/auth/logout/');
 };

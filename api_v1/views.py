@@ -7,20 +7,69 @@ from django.conf import settings
 from django.shortcuts import render
 from django.views.generic import View
 from django.db.models import Count, Q
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authtoken.models import Token
 
+import random
+from datetime import date, timedelta
 import google.generativeai as genai
 
 # Importujemy nowe serializery i modele
-from .models import Test, Question, Answer, ReportedIssue
-from .serializers import TestMetadataSerializer, QuestionSerializer, ReportedIssueSerializer
+from .models import Test, Question, Answer, ReportedIssue, QuizSession, QuestionAttempt
+from .serializers import (
+    TestMetadataSerializer, QuestionSerializer, ReportedIssueSerializer,
+    RegisterSerializer, QuizSessionSerializer, QuestionAttemptSerializer,
+)
 from .tasks import generate_ai_answer
 from celery.result import AsyncResult
 from backend_project import celery_app
 
 logger = logging.getLogger(__name__)
+
+
+def shuffle_options(data):
+    """Shuffle answer options and remap correctAnswers indices. Works on serialized question data."""
+    for question in data:
+        if question.get('type') in ['single-choice', 'multiple-choice']:
+            options = question.get('options', [])
+            correct = question.get('correctAnswers', [])
+            if not options:
+                continue
+            indexed = list(enumerate(options))
+            random.shuffle(indexed)
+            new_indices_map, shuffled_options = zip(*indexed)
+            old_to_new = {old: new for new, old in enumerate(new_indices_map)}
+            question['options'] = list(shuffled_options)
+            question['correctAnswers'] = sorted([old_to_new[i] for i in correct])
+    return data
+
+
+def compute_next_sr(rating, is_correct, prev_ease, prev_interval, prev_reps):
+    """SM-2 algorithm. Returns (interval_days, ease_factor, next_review_date, repetitions)."""
+    q = {'easy': 5, 'normal': 3, 'hard': 1}.get(rating, 3)
+    if not is_correct:
+        q = min(q, 1)
+
+    if q < 3:
+        new_reps = 0
+        new_interval = 1
+    else:
+        if prev_reps == 0:
+            new_interval = 1
+        elif prev_reps == 1:
+            new_interval = 6
+        else:
+            new_interval = round(prev_interval * prev_ease)
+        new_reps = prev_reps + 1
+
+    new_ease = max(1.3, prev_ease + 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+    return new_interval, new_ease, date.today() + timedelta(days=new_interval), new_reps
 
 # -----------------------------------------------------------------------------
 # Wprowadzenie do Widoków
@@ -134,43 +183,8 @@ class QuestionListView(APIView):
         if not final_questions:
              return Response({"error": "NO_QUESTIONS_FOUND", "message": f"Nie znaleziono pytań dla wybranych kategorii w trybie '{mode}'."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Serializer zajmie się resztą, włącznie z tasowaniem odpowiedzi wewnątrz pytania
         serializer = QuestionSerializer(final_questions, many=True)
-        
-        # Opcjonalne: Ręczne tasowanie opcji, aby idealnie naśladować starą logikę.
-        # To zapewnia 100% kompatybilność z frontendem bez żadnych zmian po jego stronie.
-        shuffled_data = self.shuffle_options_in_serialized_data(serializer.data)
-
-        return Response(shuffled_data, status=status.HTTP_200_OK)
-
-    def shuffle_options_in_serialized_data(self, data):
-        """
-        Tasuje opcje wewnątrz każdego pytania i aktualizuje indeksy
-        poprawnych odpowiedzi. Działa na danych już po serializacji.
-        """
-        for question in data:
-            if question.get('type') in ['single-choice', 'multiple-choice']:
-                options = question.get('options', [])
-                correct_answers_indices = question.get('correctAnswers', [])
-
-                if not options:
-                    continue
-
-                # Tworzymy listę par (stary_indeks, tekst_opcji)
-                indexed_options = list(enumerate(options))
-                random.shuffle(indexed_options)
-
-                # Rozpakowujemy potasowane pary
-                new_indices_map, shuffled_options = zip(*indexed_options)
-                
-                # Tworzymy mapowanie stary_indeks -> nowy_indeks
-                old_to_new_index_map = {old_idx: new_idx for new_idx, old_idx in enumerate(new_indices_map)}
-
-                # Aktualizujemy dane pytania
-                question['options'] = list(shuffled_options)
-                question['correctAnswers'] = sorted([old_to_new_index_map[old_idx] for old_idx in correct_answers_indices])
-
-        return data
+        return Response(shuffle_options(serializer.data), status=status.HTTP_200_OK)
 
 class CheckOpenAnswerView(APIView):
     def post(self, request, *args, **kwargs):
@@ -221,4 +235,250 @@ class ReportIssueView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RegisterView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key, 'username': user.username}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        if not username or not password:
+            return Response({'error': 'MISSING_CREDENTIALS', 'message': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            return Response({'error': 'INVALID_CREDENTIALS', 'message': 'Invalid username or password.'}, status=status.HTTP_401_UNAUTHORIZED)
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key, 'username': user.username}, status=status.HTTP_200_OK)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SessionStartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        is_study_mode = request.data.get('is_study_mode', False)
+        session = QuizSession.objects.create(user=request.user, is_study_mode=is_study_mode)
+        return Response({'session_id': str(session.id)}, status=status.HTTP_201_CREATED)
+
+
+class SessionCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            session = QuizSession.objects.get(pk=pk, user=request.user)
+        except QuizSession.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        session.completed_at = timezone.now()
+        session.total_questions = request.data.get('total_questions', 0)
+        session.correct_count = request.data.get('correct_count', 0)
+        session.score_achieved = request.data.get('score_achieved', 0)
+        session.score_possible = request.data.get('score_possible', 0)
+        session.save()
+        return Response(status=status.HTTP_200_OK)
+
+
+class AttemptCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        attempts_data = request.data if isinstance(request.data, list) else [request.data]
+        serializer = QuestionAttemptSerializer(data=attempts_data, many=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.db.models import Max
+        for data in serializer.validated_data:
+            attempt = QuestionAttempt(user=request.user, **data)
+            if attempt.difficulty_rating:
+                prev = (
+                    QuestionAttempt.objects
+                    .filter(user=request.user, question=attempt.question)
+                    .order_by('-answered_at')
+                    .first()
+                )
+                prev_ease = prev.sr_ease_factor if prev else 2.5
+                prev_interval = prev.sr_interval if prev else 1
+                prev_reps = prev.sr_repetitions if prev else 0
+                interval, ease, next_review, reps = compute_next_sr(
+                    attempt.difficulty_rating, attempt.is_correct,
+                    prev_ease, prev_interval, prev_reps
+                )
+                attempt.sr_interval = interval
+                attempt.sr_ease_factor = ease
+                attempt.sr_next_review = next_review
+                attempt.sr_repetitions = reps
+            attempt.save()
+
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class StudyQueueView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        limit = min(int(request.query_params.get('limit', 20)), 50)
+        today = date.today()
+
+        # Latest attempt per question for this user
+        from django.db.models import Max
+        latest_rows = (
+            QuestionAttempt.objects.filter(user=user)
+            .values('question_id')
+            .annotate(latest=Max('answered_at'))
+        )
+        latest_map = {}
+        for row in latest_rows:
+            a = QuestionAttempt.objects.filter(
+                user=user, question_id=row['question_id'], answered_at=row['latest']
+            ).first()
+            if a:
+                latest_map[a.question_id] = a
+
+        attempted_ids = set(latest_map.keys())
+
+        # Bucket 1: due for review (sr_next_review <= today)
+        due_ids = [
+            qid for qid, a in latest_map.items()
+            if a.sr_next_review and a.sr_next_review <= today
+        ]
+        # Bucket 2: got wrong recently but not yet scheduled for review
+        struggling_ids = [
+            qid for qid, a in latest_map.items()
+            if not a.is_correct and qid not in due_ids
+        ]
+
+        random.shuffle(due_ids)
+        random.shuffle(struggling_ids)
+
+        # Tests user has studied — pool for new questions
+        studied_test_ids = list(
+            QuestionAttempt.objects.filter(user=user)
+            .values_list('test_id', flat=True).distinct()
+        )
+
+        # Build the queue: all due + up to half-remaining struggling + fill rest with new
+        selected_ids = list(due_ids)
+        remaining = limit - len(selected_ids)
+
+        if remaining > 0:
+            take_struggling = min(len(struggling_ids), max(1, remaining // 2))
+            selected_ids += struggling_ids[:take_struggling]
+            remaining = limit - len(selected_ids)
+
+        # Fetch rated question objects
+        rated_questions = list(
+            Question.objects.filter(id__in=selected_ids)
+            .prefetch_related('answers', 'tags')
+        )
+
+        # Fill remainder with unrated (new) questions from previously studied tests
+        new_questions = []
+        if remaining > 0 and studied_test_ids:
+            new_questions = list(
+                Question.objects.filter(test__in=studied_test_ids)
+                .exclude(id__in=attempted_ids)
+                .prefetch_related('answers', 'tags')
+                .order_by('?')[:remaining]
+            )
+
+        all_questions = rated_questions + new_questions
+        random.shuffle(all_questions)
+
+        serializer = QuestionSerializer(all_questions, many=True)
+        return Response({
+            'count': len(all_questions),
+            'questions': shuffle_options(serializer.data),
+        })
+
+
+class UserStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        sessions = QuizSession.objects.filter(user=user, completed_at__isnull=False)
+
+        total_sessions = sessions.count()
+        total_questions = sum(s.total_questions for s in sessions)
+        total_correct = sum(s.correct_count for s in sessions)
+        overall_accuracy = round((total_correct / total_questions * 100), 1) if total_questions > 0 else 0
+
+        # Streak: count consecutive days with at least one completed session ending today
+        from datetime import date, timedelta
+        completed_dates = sorted(set(
+            s.completed_at.date() for s in sessions
+        ), reverse=True)
+
+        current_streak = 0
+        longest_streak = 0
+        if completed_dates:
+            # Current streak
+            check = date.today()
+            for d in completed_dates:
+                if d == check or d == check - timedelta(days=1):
+                    if d == check - timedelta(days=1) and current_streak == 0:
+                        # Allow yesterday to start a streak (not broken yet today)
+                        pass
+                    current_streak += 1
+                    check = d - timedelta(days=1)
+                elif d < check:
+                    break
+
+            # Longest streak
+            streak = 1
+            for i in range(1, len(completed_dates)):
+                if completed_dates[i - 1] - completed_dates[i] == timedelta(days=1):
+                    streak += 1
+                    longest_streak = max(longest_streak, streak)
+                else:
+                    streak = 1
+            longest_streak = max(longest_streak, streak)
+
+        # Average time per question (from individual attempts)
+        attempts = QuestionAttempt.objects.filter(user=user)
+        total_time = sum(a.time_spent_secs for a in attempts)
+        attempt_count = attempts.count()
+        avg_time = round(total_time / attempt_count) if attempt_count > 0 else 0
+
+        recent = sessions.order_by('-started_at')[:10]
+        recent_sessions = [
+            {
+                'id': str(s.id),
+                'date': s.completed_at.strftime('%Y-%m-%d'),
+                'total_questions': s.total_questions,
+                'correct_count': s.correct_count,
+                'score_achieved': s.score_achieved,
+                'score_possible': s.score_possible,
+                'accuracy': round(s.correct_count / s.total_questions * 100) if s.total_questions > 0 else 0,
+            }
+            for s in recent
+        ]
+
+        return Response({
+            'total_sessions': total_sessions,
+            'total_questions_answered': total_questions,
+            'overall_accuracy': overall_accuracy,
+            'current_streak_days': current_streak,
+            'longest_streak_days': longest_streak,
+            'avg_time_per_question': avg_time,
+            'recent_sessions': recent_sessions,
+        })
 

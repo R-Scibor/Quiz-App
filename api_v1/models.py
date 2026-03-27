@@ -29,6 +29,7 @@ from django.db import models
 
 import uuid
 from django.db import models
+from django.conf import settings
 
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla kategorii.")
@@ -214,3 +215,62 @@ class PromptConfiguration(models.Model):
     class Meta:
         verbose_name = "Konfiguracja Promptu"
         verbose_name_plural = "Konfiguracje Promptów"
+
+
+class QuizSession(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='quiz_sessions')
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    total_questions = models.PositiveIntegerField(default=0)
+    correct_count = models.PositiveIntegerField(default=0)
+    score_achieved = models.FloatField(default=0)
+    score_possible = models.FloatField(default=0)
+    is_study_mode = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=['user', 'started_at'])]
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"Session {self.id} by {self.user}"
+
+
+class QuestionAttempt(models.Model):
+    DIFFICULTY_EASY = 'easy'
+    DIFFICULTY_NORMAL = 'normal'
+    DIFFICULTY_HARD = 'hard'
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('normal', 'Normal'),
+        ('hard', 'Hard'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='question_attempts')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='attempts')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='attempts')
+    session = models.ForeignKey(QuizSession, on_delete=models.CASCADE, related_name='attempts')
+
+    is_correct = models.BooleanField()
+    points_awarded = models.FloatField(default=0)
+    time_spent_secs = models.PositiveIntegerField(default=0)
+    answered_at = models.DateTimeField(auto_now_add=True)
+
+    # Spaced repetition fields (populated when user rates difficulty)
+    difficulty_rating = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, null=True, blank=True)
+    sr_interval = models.PositiveIntegerField(default=1)
+    sr_ease_factor = models.FloatField(default=2.5)
+    sr_next_review = models.DateField(null=True, blank=True)
+    sr_repetitions = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'question']),
+            models.Index(fields=['user', 'sr_next_review']),
+            models.Index(fields=['session']),
+            models.Index(fields=['answered_at']),
+        ]
+
+    def __str__(self):
+        return f"Attempt by {self.user} on question {self.question_id}"

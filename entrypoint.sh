@@ -35,6 +35,9 @@ echo "Copying frontend files to shared volume..."
 mkdir -p /app/frontend_static
 cp -r /app/frontend/dist/* /app/frontend_static/
 
+echo "Collecting static files..."
+python manage.py collectstatic --noinput --clear
+
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 

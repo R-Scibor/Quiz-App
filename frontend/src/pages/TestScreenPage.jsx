@@ -10,6 +10,36 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+// --- Komponent oceny trudności (spaced repetition) ---
+const DifficultyRater = ({ questionId }) => {
+    const { rateDifficulty, difficultyRatings, user } = useTestStore();
+    if (!user) return null;
+    const current = difficultyRatings[questionId];
+    const ratings = [
+        { key: 'easy',   label: 'Easy',   active: 'border-green-500 text-green-500 bg-green-500/10', hover: 'hover:border-green-500 hover:text-green-500' },
+        { key: 'normal', label: 'Normal', active: 'border-yellow-500 text-yellow-500 bg-yellow-500/10', hover: 'hover:border-yellow-500 hover:text-yellow-500' },
+        { key: 'hard',   label: 'Hard',   active: 'border-red-500 text-red-500 bg-red-500/10', hover: 'hover:border-red-500 hover:text-red-500' },
+    ];
+    return (
+        <div className="flex items-center justify-center gap-2 mt-4">
+            <span className="text-xs text-gray-400 dark:text-gray-500 mr-1">How was it?</span>
+            {ratings.map(r => (
+                <button
+                    key={r.key}
+                    onClick={() => rateDifficulty(questionId, r.key)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                        current === r.key
+                            ? r.active + ' font-semibold'
+                            : 'border-gray-300 dark:border-gray-600 text-gray-400 ' + r.hover
+                    }`}
+                >
+                    {r.label}
+                </button>
+            ))}
+        </div>
+    );
+};
+
 // --- Komponent dla pytań otwartych ---
 const OpenEndedQuestionUI = () => {
     const {
@@ -70,20 +100,20 @@ const OpenEndedQuestionUI = () => {
                 <p className="text-3xl font-bold text-brand-primary mb-4">
                     {questionResult.points_awarded} / {questionResult.maxPoints} pkt
                 </p>
-                <div className="text-left bg-gray-100 dark:bg-option-bg p-4 rounded-lg mb-6">
+                <div className="text-left bg-gray-100 dark:bg-option-bg p-4 rounded-lg mb-4">
                     <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Feedback:</h4>
                     <p className="text-gray-600 dark:text-gray-400">{questionResult.feedback}</p>
                 </div>
+                <DifficultyRater questionId={question.id} />
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={nextQuestion}
-                    className="btn-primary py-2 px-8 flex items-center justify-center mx-auto"
+                    className="btn-primary mt-4 py-2 px-8 flex items-center justify-center mx-auto"
                 >
                     <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </motion.button>
-                {/* Przycisk zgłaszania problemu został przeniesiony do komponentu nadrzędnego */}
             </motion.div>
         );
     }
@@ -307,15 +337,18 @@ const TestScreenPage = () => {
                                             Zatwierdź
                                         </motion.button>
                                     ) : (
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={handleNext}
-                                            className="btn-primary py-2 px-8 flex items-center justify-center mx-auto"
-                                        >
-                                            <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                                        </motion.button>
+                                        <>
+                                            <DifficultyRater questionId={question.id} />
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={handleNext}
+                                                className="btn-primary mt-3 py-2 px-8 flex items-center justify-center mx-auto"
+                                            >
+                                                <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                                            </motion.button>
+                                        </>
                                     )}
                                 </div>
                             </>

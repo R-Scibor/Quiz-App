@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import useTestStore from '../store/testStore';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
-    const goToSetup = useTestStore((state) => state.goToSetup);
+    const { goToSetup, goToLogin, goToRegister, logout, user, goToStats, startStudyMode, fetchStudyQueueCount, studyQueueCount } = useTestStore();
+
+    useEffect(() => {
+        fetchStudyQueueCount();
+    }, [user]);
 
     // Warianty animacji dla kontenera i jego dzieci
     const containerVariants = {
@@ -66,18 +70,73 @@ const HomePage = () => {
                         Kliknij przycisk poniżej, aby skonfigurować i rozpocząć swój personalizowany test.
                     </motion.p>
                     
-                    <motion.div variants={itemVariants}>
+                    <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
                         <motion.button
                             whileHover={{ scale: 1.03, y: -2 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={goToSetup}
-                            className="btn-primary w-full sm:w-auto font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
+                            className="btn-primary font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
                         >
                             Rozpocznij Quiz
                         </motion.button>
+                        {user && (
+                            <motion.button
+                                whileHover={{ scale: 1.03, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={goToStats}
+                                className="btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
+                            >
+                                My Stats
+                            </motion.button>
+                        )}
+                        {user && studyQueueCount > 0 && (
+                            <motion.button
+                                whileHover={{ scale: 1.03, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={startStudyMode}
+                                className="relative btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
+                            >
+                                Study Mode
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                                    {studyQueueCount > 9 ? '9+' : studyQueueCount}
+                                </span>
+                            </motion.button>
+                        )}
                     </motion.div>
-                    
-                    <motion.div variants={itemVariants} className="mt-12 pt-6 border-t border-gray-200 dark:border-card-border">
+
+                    <motion.div variants={itemVariants} className="mt-6">
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-gray-600 dark:text-gray-300 text-sm">
+                                    Logged in as <span className="font-semibold text-gray-800 dark:text-white">{user.username}</span>
+                                </span>
+                                <button
+                                    onClick={logout}
+                                    className="text-sm text-gray-400 hover:text-red-400 transition-colors"
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={goToLogin}
+                                    className="text-sm font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
+                                >
+                                    Sign in
+                                </button>
+                                <span className="text-gray-300 dark:text-gray-600">·</span>
+                                <button
+                                    onClick={goToRegister}
+                                    className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    Register
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} className="mt-8 pt-6 border-t border-gray-200 dark:border-card-border">
                         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-400 mb-2">O Projekcie</h3>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
                             Aplikacja stworzona przy użyciu React, Zustand, Framer Motion, Tailwind CSS oraz Django REST Framework.

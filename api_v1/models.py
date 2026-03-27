@@ -76,12 +76,17 @@ class Test(models.Model):
 class Question(models.Model):
     SINGLE_CHOICE = 'single-choice'
     MULTIPLE_CHOICE = 'multiple-choice'
-    OPEN_ENDED = 'open-ended'
-    
+    OPEN_ENDED = 'open-ended'   # legacy alias — migrated to open-text
+    OPEN_TEXT = 'open-text'
+    OPEN_CLI = 'open-cli'
+    OPEN_CODE = 'open-code'
+
     QUESTION_TYPE_CHOICES = [
         (SINGLE_CHOICE, 'Jednokrotnego wyboru'),
         (MULTIPLE_CHOICE, 'Wielokrotnego wyboru'),
-        (OPEN_ENDED, 'Otwarte'),
+        (OPEN_TEXT, 'Otwarte (tekst)'),
+        (OPEN_CLI, 'Otwarte (polecenie CLI)'),
+        (OPEN_CODE, 'Otwarte (kod)'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla pytania.")

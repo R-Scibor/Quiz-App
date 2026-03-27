@@ -147,7 +147,7 @@ class TestMetadataSerializer(serializers.ModelSerializer):
         else: # Fallback, jeśli adnotacje nie są dostępne (mniej wydajne)
              all_questions = obj.questions.all()
              counts = {
-                 'open': all_questions.filter(question_type=Question.OPEN_ENDED).count(),
+                 'open': all_questions.filter(question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]).count(),
                  'closed': all_questions.filter(question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]).count(),
                  'total': all_questions.count()
              }
@@ -200,7 +200,7 @@ class ReportedIssueSerializer(serializers.ModelSerializer):
 
         # Walidacja odpowiedzi użytkownika w zależności od typu pytania
         if question:
-            if question.question_type == Question.OPEN_ENDED:
+            if question.question_type in [Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]:
                 if not user_answer_open:
                     raise serializers.ValidationError({'user_answer_open': 'Odpowiedź użytkownika jest wymagana dla pytań otwartych.'})
                 if user_answer_choices:

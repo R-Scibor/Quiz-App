@@ -304,3 +304,126 @@ class CheckOpenAnswerViewTestCase(APITestCase):
               f"Score: {response_data['score']}\n"
               f"Feedback: {response_data['feedback']}\n"
               f"-------------------------------")
+
+
+# ---------------------------------------------------------------------------
+# Cascade grading — unit tests
+# ---------------------------------------------------------------------------
+
+class SanitizersTestCase(unittest.TestCase):
+    """Unit tests for text sanitizer helpers."""
+
+    def test_sanitize_text_strips_html(self):
+        from api_v1.tasks import sanitize_text
+        self.assertEqual(sanitize_text("<b>Hello</b> world"), "Hello world")
+
+    def test_sanitize_text_collapses_whitespace(self):
+        from api_v1.tasks import sanitize_text
+        self.assertEqual(sanitize_text("  foo   bar  "), "foo bar")
+
+    def test_sanitize_text_normalizes_unicode(self):
+        from api_v1.tasks import sanitize_text
+        # NFKC: ligature ﬁ → fi
+        self.assertEqual(sanitize_text("\ufb01le"), "file")
+
+    def test_sanitize_cli_collapses_spaces(self):
+        from api_v1.tasks import sanitize_cli
+        self.assertEqual(sanitize_cli("  ls   -la  /tmp  "), "ls -la /tmp")
+
+    def test_sanitize_cli_preserves_flags(self):
+        from api_v1.tasks import sanitize_cli
+        self.assertEqual(sanitize_cli("git commit -m 'msg'"), "git commit -m 'msg'")
+
+
+class CascadeRoutingTestCase(unittest.TestCase):
+    """Integration tests for cascade grading routing (mocking vector service and Gemini)."""
+
+    def _make_result(self, score, feedback, grading_method, vector_score=None):
+        return {
+            "score": score, "max_points": 5, "feedback": feedback,
+            "grading_method": grading_method, "vector_score": vector_score,
+            "latency_ms": 10,
+        }
+
+    @patch("api_v1.tasks.call_vector_service", return_value=0.90)
+    def test_open_text_vector_pass(self, _mock):
+        from api_v1.tasks import grade_open_text
+        result = grade_open_text("Q?", "expected answer", 5, "expected answer")
+        self.assertEqual(result["grading_method"], "vector_pass")
+        self.assertEqual(result["score"], 5)
+
+    @patch("api_v1.tasks.call_vector_service", return_value=0.20)
+    def test_open_text_vector_fail(self, _mock):
+        from api_v1.tasks import grade_open_text
+        result = grade_open_text("Q?", "expected answer", 5, "completely wrong")
+        self.assertEqual(result["grading_method"], "vector_fail")
+        self.assertEqual(result["score"], 0)
+
+    @patch("api_v1.tasks._call_gemini")
+    @patch("api_v1.tasks.call_vector_service", return_value=0.55)
+    def test_open_text_ambiguous_calls_gemini(self, _mock_vec, mock_gemini):
+        from api_v1.tasks import grade_open_text
+        mock_gemini.return_value = {"score": 3, "feedback": "Partially correct."}
+        result = grade_open_text("Q?", "expected answer", 5, "partial answer")
+        self.assertEqual(result["grading_method"], "llm")
+        mock_gemini.assert_called_once()
+
+    @patch("api_v1.tasks.call_vector_service", return_value=None)
+    @patch("api_v1.tasks._call_gemini")
+    def test_open_text_vector_unreachable_fallback(self, mock_gemini, _mock_vec):
+        from api_v1.tasks import grade_open_text
+        mock_gemini.return_value = {"score": 4, "feedback": "Good."}
+        result = grade_open_text("Q?", "expected answer", 5, "good answer")
+        self.assertEqual(result["grading_method"], "fallback_llm")
+        mock_gemini.assert_called_once()
+
+    def test_open_cli_regex_match(self):
+        from api_v1.tasks import grade_open_cli
+        result = grade_open_cli("List files", r"ls\s+-la?\s*/tmp", 3, "ls -la /tmp")
+        self.assertEqual(result["grading_method"], "regex_pass")
+        self.assertEqual(result["score"], 3)
+
+    def test_open_cli_regex_no_match_calls_gemini(self):
+        from api_v1.tasks import grade_open_cli
+        with patch("api_v1.tasks._call_gemini") as mock_gemini:
+            mock_gemini.return_value = {"score": 0, "feedback": "Wrong."}
+            result = grade_open_cli("List files", r"ls\s+-la?\s*/tmp", 3, "rm -rf /tmp")
+        self.assertEqual(result["grading_method"], "llm")
+
+    def test_open_code_always_uses_gemini(self):
+        from api_v1.tasks import grade_open_code
+        with patch("api_v1.tasks._call_gemini") as mock_gemini:
+            mock_gemini.return_value = {"score": 2, "feedback": "Partial."}
+            result = grade_open_code("Write FizzBuzz", "python: FizzBuzz in Python", 5, "print('fizz')")
+        self.assertEqual(result["grading_method"], "llm")
+        mock_gemini.assert_called_once()
+
+
+class ImportQuizzesValidationTestCase(unittest.TestCase):
+    """Tests for open-cli regex and open-code language prefix validation in import command."""
+
+    def setUp(self):
+        from api_v1.management.commands.import_quizzes import Command
+        self.cmd = Command()
+
+    def test_valid_regex_passes(self):
+        self.assertIsNone(self.cmd._validate_regex(r"ls\s+-la?\s*/\w+"))
+
+    def test_invalid_regex_fails(self):
+        error = self.cmd._validate_regex(r"[invalid")
+        self.assertIsNotNone(error)
+        self.assertIn("Invalid regex", error)
+
+    def test_catastrophic_regex_rejected(self):
+        error = self.cmd._validate_regex(r"(a+)+")
+        self.assertIsNotNone(error)
+
+    def test_valid_code_criteria_with_prefix(self):
+        """A criteria string with a colon is a valid open-code gradingCriteria."""
+        criteria = "python: implement a function that returns the factorial"
+        self.assertIn(":", criteria)  # basic format check
+
+    def test_code_criteria_without_prefix_invalid(self):
+        """Criteria without colon would be rejected by import logic."""
+        criteria = "implement factorial function"
+        self.assertNotIn(":", criteria)

@@ -157,7 +157,7 @@ class TestListView(APIView):
             # dla każdego testu. Jest to bardzo wydajne.
             tests_with_counts = Test.objects.annotate(
                 total_questions_count=Count('questions'),
-                open_questions_count=Count('questions', filter=Q(questions__question_type=Question.OPEN_ENDED)),
+                open_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE])),
                 closed_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]))
             ).prefetch_related('categories')
 
@@ -201,7 +201,9 @@ class QuestionListView(APIView):
 
         # Filtrujemy pytania zgodnie z wybranym trybem ('mode')
         if mode == 'open':
-            questions_queryset = questions_queryset.filter(question_type=Question.OPEN_ENDED)
+            questions_queryset = questions_queryset.filter(
+                question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
+            )
         elif mode == 'closed':
             questions_queryset = questions_queryset.filter(question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE])
 
@@ -226,11 +228,12 @@ class CheckOpenAnswerView(APIView):
         grading_criteria = request.data.get('gradingCriteria')
         question_text = request.data.get('questionText')
         max_points = request.data.get('maxPoints')
+        question_type = request.data.get('questionType', 'open-text')
 
         if not all([user_answer, grading_criteria, question_text, max_points]):
             return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
 
-        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points) # type: ignore
+        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points, question_type) # type: ignore
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 class GetTaskResultView(APIView):

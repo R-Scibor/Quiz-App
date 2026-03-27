@@ -50,6 +50,7 @@ const OpenEndedQuestionUI = () => {
         checkingQuestionId,
         openQuestionResults,
         nextQuestion,
+        setError,
         error: apiError
     } = useTestStore();
     const [userAnswer, setUserAnswer] = useState('');
@@ -57,6 +58,11 @@ const OpenEndedQuestionUI = () => {
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
     const questionResult = openQuestionResults[question.id];
     const isCurrentlyChecking = checkingQuestionId === question.id;
+    const isCli = question.type === 'open-cli';
+    const isCode = question.type === 'open-code';
+    const codeLanguage = isCode && question.gradingCriteria?.includes(':')
+        ? question.gradingCriteria.split(':')[0].trim()
+        : null;
 
     const pollingRef = useRef(null);
 
@@ -68,6 +74,7 @@ const OpenEndedQuestionUI = () => {
 
     const handleSubmit = async () => {
         if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
+        setError(null);
 
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
@@ -114,12 +121,23 @@ const OpenEndedQuestionUI = () => {
     
     // Widok po ocenie odpowiedzi przez AI
     if (questionResult?.feedback) {
+        const autoGradedMethods = ['regex_pass', 'vector_pass', 'vector_fail', 'exact_pass'];
+        const isAutoGraded = autoGradedMethods.includes(questionResult.grading_method);
         return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Wynik oceny</h3>
-                <p className="text-3xl font-bold text-brand-primary mb-4">
+                <p className="text-3xl font-bold text-brand-primary mb-2">
                     {questionResult.points_awarded} / {questionResult.maxPoints} pkt
                 </p>
+                {questionResult.grading_method && (
+                    <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-4 ${
+                        isAutoGraded
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    }`}>
+                        {isAutoGraded ? 'Auto-graded' : 'Graded by AI'}
+                    </span>
+                )}
                 <div className="text-left bg-gray-100 dark:bg-option-bg p-4 rounded-lg mb-4">
                     <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Feedback:</h4>
                     <p className="text-gray-600 dark:text-gray-400">{questionResult.feedback}</p>
@@ -158,29 +176,54 @@ const OpenEndedQuestionUI = () => {
     }
 
     // Domyślny widok do wpisania odpowiedzi
+    const baseTextareaClass = "w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white";
     return (
          <div className="w-full">
+            {isCode && codeLanguage && (
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                        {codeLanguage}
+                    </span>
+                </div>
+            )}
             <textarea
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder="Wpisz swoją odpowiedź tutaj..."
-                className="w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white"
+                placeholder={isCli ? "Enter command..." : isCode ? "Write your code here..." : "Wpisz swoją odpowiedź tutaj..."}
+                className={`${baseTextareaClass}${(isCli || isCode) ? ' font-mono' : ''}`}
+                style={(isCli || isCode) ? { fontFamily: 'monospace' } : undefined}
+                spellCheck={isCli || isCode ? false : undefined}
+                autoCorrect={isCli || isCode ? "off" : undefined}
+                autoCapitalize={isCli || isCode ? "off" : undefined}
                 aria-label="Pole odpowiedzi"
             />
-             {/* --- ZMIANA W WYŚWIETLANIU BŁĘDU --- */}
-            {/* Odwołujemy się do właściwości `message` obiektu błędu. */}
-            {apiError && <p className="text-red-500 text-sm mt-2 text-center">{apiError.message}</p>}
-            <div className="mt-8 text-center min-h-[52px]">
-                 <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleSubmit}
-                    disabled={!userAnswer.trim()}
-                    className="btn-primary py-2 px-8"
-                >
-                    Sprawdź odpowiedź
-                </motion.button>
-            </div>
+            {apiError && (
+                <div className="mt-2 text-center">
+                    <p className="text-red-500 text-sm">{apiError.message}</p>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSubmit}
+                        disabled={!userAnswer.trim()}
+                        className="btn-primary mt-2 py-1.5 px-6 text-sm"
+                    >
+                        Try again
+                    </motion.button>
+                </div>
+            )}
+            {!apiError && (
+                <div className="mt-8 text-center min-h-[52px]">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSubmit}
+                        disabled={!userAnswer.trim()}
+                        className="btn-primary py-2 px-8"
+                    >
+                        Sprawdź odpowiedź
+                    </motion.button>
+                </div>
+            )}
         </div>
     );
 };
@@ -385,7 +428,7 @@ const TestScreenPage = () => {
                         )}
 
                         <AnimatePresence>
-                            {(showFeedback || question.type === 'open-ended') && !isReported && (
+                            {(showFeedback || !isClosedQuestion) && !isReported && (
                                 <motion.button
                                     onClick={() => setIsReportModalOpen(prev => !prev)}
                                     className="absolute bottom-4 left-4 bg-yellow-400 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-20"

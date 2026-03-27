@@ -162,7 +162,8 @@ const useTestStore = create((set, get) => ({
             questionText: question.questionText,
             userAnswer: userAnswer,
             gradingCriteria: question.gradingCriteria,
-            maxPoints: question.maxPoints
+            maxPoints: question.maxPoints,
+            questionType: question.type,
         };
         
         const response = await checkOpenAnswerApi(payload);
@@ -175,7 +176,7 @@ const useTestStore = create((set, get) => ({
     },
 
     setLastAnswerFeedback: (feedbackData, questionId) => {
-        const { score, feedback } = feedbackData;
+        const { score, feedback, grading_method } = feedbackData;
         const { currentQuestions } = get();
         const question = currentQuestions.find(q => q.id === questionId);
 
@@ -189,7 +190,8 @@ const useTestStore = create((set, get) => ({
                     ...state.openQuestionResults[questionId],
                     points_awarded: score,
                     feedback: feedback,
-                    maxPoints: question.maxPoints
+                    maxPoints: question.maxPoints,
+                    grading_method: grading_method ?? null,
                 }
             },
             // Clear the checking state only if it matches the question that just finished

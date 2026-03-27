@@ -57,6 +57,14 @@ const OpenEndedQuestionUI = () => {
     const questionResult = openQuestionResults[question.id];
     const isCurrentlyChecking = checkingQuestionId === question.id;
 
+    const pollingRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+        };
+    }, []);
+
     const handleSubmit = async () => {
         if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
 
@@ -68,13 +76,23 @@ const OpenEndedQuestionUI = () => {
                 throw new Error("Nie otrzymano ID zadania od serwera.");
             }
 
-            const intervalId = setInterval(async () => {
+            let retries = 0;
+            const MAX_RETRIES = 30; // 30 × 2s = 60s timeout
+            pollingRef.current = setInterval(async () => {
+                if (retries >= MAX_RETRIES) {
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
+                    useTestStore.getState().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
+                    return;
+                }
+                retries++;
                 try {
                     const resultResponse = await useTestStore.getState().getTaskResult(taskId);
-                    
+
                     if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
-                        clearInterval(intervalId);
-                        
+                        clearInterval(pollingRef.current);
+                        pollingRef.current = null;
+
                         if (resultResponse.status === 'SUCCESS') {
                             useTestStore.getState().setLastAnswerFeedback(resultResponse.data, question.id);
                         } else {
@@ -82,7 +100,8 @@ const OpenEndedQuestionUI = () => {
                         }
                     }
                 } catch (error) {
-                    clearInterval(intervalId);
+                    clearInterval(pollingRef.current);
+                    pollingRef.current = null;
                     useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
                 }
             }, 2000);

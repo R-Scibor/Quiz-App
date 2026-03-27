@@ -130,8 +130,10 @@ const useTestStore = create((set, get) => ({
     },
     
     checkOpenAnswer: async (userAnswer) => {
-        const { currentQuestionIndex, currentQuestions, questionStartTime } = get();
+        const { currentQuestionIndex, currentQuestions, questionStartTime, checkingQuestionId } = get();
         const question = currentQuestions[currentQuestionIndex];
+
+        if (checkingQuestionId) return { task_id: null };
 
         if (questionStartTime) {
             const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);

@@ -23,6 +23,8 @@ body {
 .option-btn {
     @apply bg-option-bg border border-card-border;
     transition: all 0.2s ease;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 .option-btn:not(.disabled):hover {
     @apply bg-card-border border-brand-primary -translate-y-0.5;

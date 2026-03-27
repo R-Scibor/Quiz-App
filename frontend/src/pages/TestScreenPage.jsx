@@ -209,7 +209,7 @@ const TestScreenPage = () => {
         // the block container independently of whether a language is specified.
         pre({children, ...props}) {
             return (
-                <pre {...props} style={{ whiteSpace: 'pre', overflowX: 'auto', margin: '0.75rem 0' }}>
+                <pre {...props} style={{ whiteSpace: 'pre', overflowX: 'auto', maxWidth: '100%', margin: '0.75rem 0' }}>
                     {children}
                 </pre>
             );
@@ -326,7 +326,7 @@ const TestScreenPage = () => {
                         <ProgressBar />
     
                         <div className="my-8 min-h-[96px] flex items-center">
-                            <div className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full">
+                            <div className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full min-w-0 overflow-x-hidden">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.questionText}</ReactMarkdown>
                             </div>
                         </div>

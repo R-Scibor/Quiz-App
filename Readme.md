@@ -51,6 +51,9 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Dark/Light Mode:** A theme switcher for user comfort.
 - **Responsiveness:** The application is fully responsive and works on mobile and desktop devices.
 - **Admin Panel:** An extensive panel for managing quizzes, questions, and categories directly in the Django admin interface.
+- **User Accounts:** Register and log in with a username and password. Anonymous users keep the full quiz experience; statistics and study mode are additive for logged-in users.
+- **Per-User Statistics:** Track questions answered, overall accuracy, current and longest daily streaks, average time per question, and a history of recent sessions.
+- **Spaced Repetition (Study Mode):** After each answer, rate difficulty as Easy / Normal / Hard (optional). The SM-2 algorithm schedules reviews. Study Mode prioritizes due and recently-wrong questions while mixing in new ones.
 
 ---
 
@@ -64,7 +67,6 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Tailwind CSS:** A CSS framework for rapid styling.
 - **Axios:** An HTTP client for communicating with the API.
 - **Framer Motion:** A library for advanced animations.
-- **React Router:** For client-side routing.
 - **React Markdown:** For rendering content in Markdown format.
 
 ### Backend
@@ -152,12 +154,15 @@ A detailed description of the available API endpoints, their parameters, and exa
 
 ### Possible Extensions (Future Ideas)
 
-- [ ] **Authentication System:** Add user login and registration.
-- [ ] **Results History:** Save test results for logged-in users.
-- [ ] **Advanced Statistics:** Charts and more detailed analysis of results.
+- [ ] **OAuth / Social Login:** Google or GitHub sign-in as an alternative to username/password.
+- [ ] **Statistics Charts:** Visual graphs for accuracy trends and study activity over time.
+- [ ] **Leaderboards:** Compare scores with other users across categories.
 
 ### Completed
 
+- [x] **Spaced Repetition (Study Mode):** SM-2 algorithm with Easy/Normal/Hard ratings per question; Study Mode draws due and struggling questions, filling remaining slots with new ones.
+- [x] **Per-User Statistics:** Sessions, accuracy, daily streaks, average time per question, and recent session history — all tracked per logged-in user.
+- [x] **Authentication System:** Username + password registration and login using DRF token authentication. Anonymous users retain full quiz access.
 - [x] **Reporting Questions/Answers:** Allows the user to report an error in a question/answer or in the AI evaluation.
 - [x] **Asynchronous Grading (Celery & Redis):** Introduced background tasks for AI evaluation of open-ended questions, so the user does not have to wait for the result and can continue the test.
 - [x] **Admin Panel:** Expanded the admin panel to allow for convenient creation and editing of quizzes from the graphical interface.

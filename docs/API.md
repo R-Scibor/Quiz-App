@@ -194,3 +194,217 @@ All API endpoints are prefixed with `/api/v1/`.
         "description": ["This field may not be blank."],
         "ai_feedback_snapshot": ["AI feedback snapshot is required when reporting a grading error."]
     }
+    ```
+
+---
+
+### 6. Register a New User
+
+-   **Method:** `POST`
+-   **Endpoint:** `/auth/register/`
+-   **Authentication:** None required.
+-   **Description:** Creates a new user account and returns an authentication token.
+-   **Request Body:**
+    ```json
+    {
+        "username": "john_doe",
+        "password": "securepassword123"
+    }
+    ```
+-   **Success Response (201 Created):**
+    ```json
+    {
+        "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+        "username": "john_doe"
+    }
+    ```
+-   **Error Response (400 Bad Request):**
+    ```json
+    {
+        "error": "USERNAME_TAKEN",
+        "message": "A user with that username already exists."
+    }
+    ```
+
+---
+
+### 7. Log In
+
+-   **Method:** `POST`
+-   **Endpoint:** `/auth/login/`
+-   **Authentication:** None required.
+-   **Description:** Authenticates a user and returns their token.
+-   **Request Body:**
+    ```json
+    {
+        "username": "john_doe",
+        "password": "securepassword123"
+    }
+    ```
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+        "username": "john_doe"
+    }
+    ```
+-   **Error Response (401 Unauthorized):**
+    ```json
+    {
+        "error": "INVALID_CREDENTIALS",
+        "message": "Invalid username or password."
+    }
+    ```
+
+---
+
+### 8. Log Out
+
+-   **Method:** `POST`
+-   **Endpoint:** `/auth/logout/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Deletes the user's authentication token, invalidating the session.
+-   **Request Body:** None.
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "message": "Successfully logged out."
+    }
+    ```
+
+---
+
+### 9. Start a Quiz Session
+
+-   **Method:** `POST`
+-   **Endpoint:** `/sessions/start/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Creates a new `QuizSession` record for the logged-in user. Called at the start of each quiz.
+-   **Request Body:**
+    ```json
+    {
+        "is_study_mode": false
+    }
+    ```
+    *(All fields optional; defaults to `false` for `is_study_mode`.)*
+-   **Success Response (201 Created):**
+    ```json
+    {
+        "session_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+    ```
+
+---
+
+### 10. Complete a Quiz Session
+
+-   **Method:** `POST`
+-   **Endpoint:** `/sessions/<session_uuid>/complete/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Marks a session as completed and records the final totals. The user must own the session.
+-   **Request Body:**
+    ```json
+    {
+        "total_questions": 10,
+        "correct_count": 7,
+        "score_achieved": 8.5,
+        "score_possible": 10
+    }
+    ```
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "status": "completed"
+    }
+    ```
+
+---
+
+### 11. Submit Question Attempts
+
+-   **Method:** `POST`
+-   **Endpoint:** `/attempts/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Bulk-creates `QuestionAttempt` records for a completed session. If a `difficulty_rating` is provided, the SM-2 algorithm computes the next review schedule for the question.
+-   **Request Body (array):**
+    ```json
+    [
+        {
+            "question": 101,
+            "test": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "session": "550e8400-e29b-41d4-a716-446655440000",
+            "is_correct": true,
+            "points_awarded": 1,
+            "time_spent_secs": 32,
+            "difficulty_rating": "normal"
+        }
+    ]
+    ```
+    *(`difficulty_rating` is optional; valid values: `"easy"`, `"normal"`, `"hard"`.)*
+-   **Success Response (201 Created):**
+    ```json
+    {
+        "created": 10
+    }
+    ```
+
+---
+
+### 12. Get User Statistics
+
+-   **Method:** `GET`
+-   **Endpoint:** `/stats/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Returns aggregated statistics for the authenticated user.
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "total_sessions": 12,
+        "total_questions_answered": 156,
+        "overall_accuracy": 73.4,
+        "current_streak_days": 3,
+        "longest_streak_days": 7,
+        "avg_time_per_question": 28,
+        "recent_sessions": [
+            {
+                "session_id": "550e8400-e29b-41d4-a716-446655440000",
+                "started_at": "2026-03-27T14:00:00Z",
+                "total_questions": 10,
+                "correct_count": 7,
+                "score_achieved": 7,
+                "score_possible": 10,
+                "is_study_mode": false
+            }
+        ]
+    }
+    ```
+
+---
+
+### 13. Get Study Queue
+
+-   **Method:** `GET`
+-   **Endpoint:** `/study/queue/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Returns a mixed list of questions for the Study Mode session. Priority order: (1) questions whose SM-2 review date is today or earlier, (2) recently-wrong questions not yet scheduled, (3) never-attempted questions from tests the user has studied before.
+-   **Query Parameters:**
+    -   `limit` (integer, optional): Maximum total questions to return (default: `20`).
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "count": 15,
+        "questions": [
+            {
+                "id": 101,
+                "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "questionText": "...",
+                "type": "single-choice",
+                "options": ["A", "B", "C", "D"],
+                "correctAnswers": [2],
+                "explanation": "...",
+                "gradingCriteria": null,
+                "maxPoints": null
+            }
+        ]
+    }
+    ```

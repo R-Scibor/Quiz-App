@@ -45,6 +45,9 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - **Tryb Ciemny/Jasny:** Przełącznik motywu dla komfortu użytkowania.
 - **Responsywność:** Aplikacja jest w pełni responsywna i działa na urządzeniach mobilnych i desktopowych.
 - **Panel Administratora:** Rozbudowany panel do zarządzania quizami, pytaniami i kategoriami bezpośrednio w interfejsie Django admin.
+- **Konta użytkowników:** Rejestracja i logowanie za pomocą nazwy użytkownika i hasła. Niezalogowani użytkownicy zachowują pełną funkcjonalność quizu; statystyki i tryb nauki są dostępne dodatkowo dla zalogowanych.
+- **Statystyki użytkownika:** Śledzenie liczby odpowiedzi, ogólnej trafności, aktualnej i najdłuższej serii dziennej, średniego czasu na pytanie oraz historii ostatnich sesji.
+- **Powtarzanie z odstępami (Tryb Nauki):** Po każdej odpowiedzi oceń trudność jako Łatwe / Normalne / Trudne (opcjonalnie). Algorytm SM-2 planuje powtórki. Tryb Nauki priorytetyzuje zaległe i ostatnio błędnie odpowiedziane pytania, mieszając je z nowymi.
 
 ---
 
@@ -58,7 +61,6 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - **Tailwind CSS:** Framework CSS do szybkiego stylowania.
 - **Axios:** Klient HTTP do komunikacji z API.
 - **Framer Motion:** Biblioteka do zaawansowanych animacji.
-- **React Router:** Do obsługi routingu po stronie klienta.
 - **React Markdown:** Do renderowania treści w formacie Markdown.
 
 ### Backend
@@ -146,12 +148,15 @@ Szczegółowy opis dostępnych endpointów API, ich parametrów oraz przykładow
 
 ### Możliwe rozszerzenia (pomysły na przyszłość)
 
-- [ ] **System uwierzytelniania:** Dodanie logowania i rejestracji użytkowników.
-- [ ] **Historia wyników:** Zapisywanie wyników testów dla zalogowanych użytkowników.
-- [ ] **Rozbudowane statystyki:** Wykresy i bardziej szczegółowe analizy wyników.
+- [ ] **OAuth / Logowanie Społecznościowe:** Logowanie przez Google lub GitHub jako alternatywa dla nazwy użytkownika i hasła.
+- [ ] **Wykresy Statystyk:** Graficzne wizualizacje trendów trafności i aktywności nauki w czasie.
+- [ ] **Rankingi:** Porównywanie wyników z innymi użytkownikami w różnych kategoriach.
 
 ### Ukończone
 
+- [x] **Powtarzanie z Odstępami (Tryb Nauki):** Algorytm SM-2 z ocenami Łatwe/Normalne/Trudne po każdym pytaniu; Tryb Nauki wybiera zaległe i problematyczne pytania, uzupełniając pozostałe miejsca nowymi.
+- [x] **Statystyki użytkownika:** Sesje, trafność, serie dzienne, średni czas na pytanie i historia ostatnich sesji — wszystko śledzone dla zalogowanego użytkownika.
+- [x] **System uwierzytelniania:** Rejestracja i logowanie za pomocą nazwy użytkownika i hasła przy użyciu tokenów DRF. Niezalogowani użytkownicy zachowują pełny dostęp do quizów.
 - [x] **Zgłaszanie pytań/odpowiedzi** Umożliwienie użytkownikowi zgłoszenia błędu w pytaniu/odpowiedzi lub w ocenie AI
 - [x] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
 - [x] **Panel administratora:** Rozbudowa panelu admina o możliwość wygodnego tworzenia i edycji quizów z poziomu interfejsu graficznego.

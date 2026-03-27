@@ -38,7 +38,11 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points)
         ai_response = model.generate_content(prompt)
 
         cleaned_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        response_json = json.loads(cleaned_text)
+        try:
+            response_json = json.loads(cleaned_text)
+        except json.JSONDecodeError as e:
+            logger.error("AI returned invalid JSON: %s. Raw response (first 500 chars): %s", e, cleaned_text[:500])
+            raise ValueError(f"AI returned invalid JSON: {e}") from e
 
         if 'score' not in response_json or 'feedback' not in response_json:
              raise ValueError("Odpowiedź AI nie zawiera wymaganych kluczy 'score' i 'feedback'.")

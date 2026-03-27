@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.authtoken.models import Token
 
 import random
@@ -75,20 +76,15 @@ def compute_next_sr(rating, is_correct, prev_ease, prev_interval, prev_reps):
 def _build_study_buckets(user):
     """Returns (latest_map, due_ids, struggling_ids, studied_test_ids).
     latest_map: {question_id: QuestionAttempt} — most recent attempt per question.
+    Single query: fetches all attempts ordered by answered_at desc, keeps first per question.
     """
-    from django.db.models import Max
     today = date.today()
-    latest_rows = (
-        QuestionAttempt.objects.filter(user=user)
-        .values('question_id')
-        .annotate(latest=Max('answered_at'))
+    all_attempts = list(
+        QuestionAttempt.objects.filter(user=user).order_by('-answered_at')
     )
     latest_map = {}
-    for row in latest_rows:
-        a = QuestionAttempt.objects.filter(
-            user=user, question_id=row['question_id'], answered_at=row['latest']
-        ).first()
-        if a:
+    for a in all_attempts:
+        if a.question_id not in latest_map:
             latest_map[a.question_id] = a
 
     due_ids = [
@@ -99,10 +95,7 @@ def _build_study_buckets(user):
         qid for qid, a in latest_map.items()
         if not a.is_correct and qid not in due_ids
     ]
-    studied_test_ids = list(
-        QuestionAttempt.objects.filter(user=user)
-        .values_list('test_id', flat=True).distinct()
-    )
+    studied_test_ids = list({a.test_id for a in all_attempts})
     return latest_map, due_ids, struggling_ids, studied_test_ids
 
 
@@ -200,6 +193,9 @@ class QuestionListView(APIView):
         except (ValueError, TypeError):
             return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "Nieprawidłowy format parametrów."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if not 1 <= num_questions <= 200:
+            return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "num_questions must be between 1 and 200."}, status=status.HTTP_400_BAD_REQUEST)
+
         # Budujemy queryset pytań na podstawie wybranych testów (ich ID)
         questions_queryset = Question.objects.filter(test__id__in=test_ids)
 
@@ -222,6 +218,9 @@ class QuestionListView(APIView):
         return Response(shuffle_options(serializer.data), status=status.HTTP_200_OK)
 
 class CheckOpenAnswerView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai_grading'
+
     def post(self, request, *args, **kwargs):
         user_answer = request.data.get('userAnswer')
         grading_criteria = request.data.get('gradingCriteria')
@@ -273,6 +272,9 @@ class ReportIssueView(APIView):
 
 
 class RegisterView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
     def post(self, request, *args, **kwargs):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -283,6 +285,9 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
         password = request.data.get('password')

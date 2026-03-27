@@ -158,6 +158,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'auth': '10/minute',
+        'ai_grading': '30/hour',
+    },
 }
 
 

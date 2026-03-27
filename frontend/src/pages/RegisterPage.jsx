@@ -43,7 +43,8 @@ const RegisterPage = () => {
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoFocus
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            disabled={isAuthLoading}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
                         />
                     </div>
                     <div>
@@ -56,7 +57,8 @@ const RegisterPage = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             minLength={6}
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            disabled={isAuthLoading}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
                         />
                     </div>
                     <div>
@@ -68,7 +70,8 @@ const RegisterPage = () => {
                             value={confirm}
                             onChange={(e) => setConfirm(e.target.value)}
                             required
-                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            disabled={isAuthLoading}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-card-border bg-white dark:bg-black/20 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition disabled:opacity-60"
                         />
                     </div>
 

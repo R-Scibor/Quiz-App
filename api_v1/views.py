@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.shortcuts import render
 from django.views.generic import View
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -477,15 +477,20 @@ class UserStatsView(APIView):
         user = request.user
         sessions = QuizSession.objects.filter(user=user, completed_at__isnull=False)
 
-        total_sessions = sessions.count()
-        total_questions = sum(s.total_questions for s in sessions)
-        total_correct = sum(s.correct_count for s in sessions)
+        agg = sessions.aggregate(
+            total_sessions=Count('id'),
+            total_questions=Sum('total_questions'),
+            total_correct=Sum('correct_count'),
+        )
+        total_sessions = agg['total_sessions'] or 0
+        total_questions = agg['total_questions'] or 0
+        total_correct = agg['total_correct'] or 0
         overall_accuracy = round((total_correct / total_questions * 100), 1) if total_questions > 0 else 0
 
         # Streak: count consecutive days with at least one completed session ending today
         from datetime import date, timedelta
         completed_dates = sorted(set(
-            s.completed_at.date() for s in sessions
+            sessions.values_list('completed_at__date', flat=True)
         ), reverse=True)
 
         current_streak = 0
@@ -514,9 +519,12 @@ class UserStatsView(APIView):
             longest_streak = max(longest_streak, streak)
 
         # Average time per question (from individual attempts)
-        attempts = QuestionAttempt.objects.filter(user=user)
-        total_time = sum(a.time_spent_secs for a in attempts)
-        attempt_count = attempts.count()
+        attempt_agg = QuestionAttempt.objects.filter(user=user).aggregate(
+            total_time=Sum('time_spent_secs'),
+            count=Count('id'),
+        )
+        total_time = attempt_agg['total_time'] or 0
+        attempt_count = attempt_agg['count'] or 0
         avg_time = round(total_time / attempt_count) if attempt_count > 0 else 0
 
         recent = sessions.order_by('-started_at')[:10]

@@ -30,6 +30,7 @@ from django.db import models
 import uuid
 from django.db import models
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla kategorii.")
@@ -103,7 +104,8 @@ class Question(models.Model):
     )
     max_points = models.PositiveIntegerField(
         blank=True, null=True,
-        help_text="Maksymalna liczba punktów dla pytań otwartych."
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text="Maksymalna liczba punktów dla pytań otwartych (1–100)."
     )
 
     tags = models.ManyToManyField(Tag, related_name="questions", blank=True, help_text="Tagi powiązane z pytaniem.")

@@ -16,5 +16,10 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY main.py .
 
+# Prevent sentence-transformers / huggingface_hub from hitting the network at runtime.
+# The model is already baked into the image via the RUN step above.
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 EXPOSE 8001
 CMD ["python", "main.py"]

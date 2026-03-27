@@ -160,6 +160,8 @@ The vector similarity service runs as a separate Docker container to avoid loadi
 
 **Model:** `all-MiniLM-L6-v2` (sentence-transformers, CPU). Pre-downloaded at image build time. LRU cache (128 entries) avoids re-embedding identical texts.
 
+**Offline mode:** The Dockerfile sets `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` so the container never contacts HuggingFace at runtime. All model files are baked into the image — no network access is required after the initial `docker compose build`.
+
 **Resource limits:** 1 CPU, 512 MB RAM (set in `docker-compose.yml`).
 
 **Startup:** The Celery worker depends on the `ai_grader` healthcheck passing before it starts, so no grading requests are sent while the model is still loading (~15–30s on first start after a cold pull).

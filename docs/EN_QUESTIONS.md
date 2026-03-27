@@ -11,6 +11,7 @@ This document provides a complete guide to creating new tests in JSON format and
   - [Single-Choice Question](#single-choice-question)
   - [Multiple-Choice Question](#multiple-choice-question)
   - [Open-Ended Question](#open-ended-question)
+- [Markdown & Code Blocks in Question Text](#-markdown--code-blocks-in-question-text)
 - [How to Load New Tests into the Database](#-how-to-load-new-tests-into-the-database)
 
 ---
@@ -116,6 +117,61 @@ The user must type a text answer, which is evaluated by an AI.
 -   `gradingCriteria` (string): **A key field.** A detailed description based on which the AI will evaluate the user's answer. It should be precise and clearly state what is required.
 -   `maxPoints` (integer): The maximum number of points that can be awarded for this question.
 -   The `options` and `correctAnswers` fields **must be omitted**.
+
+---
+
+## 📝 Markdown & Code Blocks in Question Text
+
+The `questionText` and `explanation` fields support **Markdown**, including syntax-highlighted code blocks. However, because JSON strings cannot contain literal newlines, every line break must be written as `\n` (a backslash followed by `n`).
+
+### The golden rule
+
+> Write your Markdown as a single JSON string, replacing every line break with `\n`.
+
+### Syntax-highlighted code block
+
+To get syntax highlighting, specify the language after the opening triple-backtick fence.
+
+```json
+"questionText": "What does the following YAML configure?\n\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-app\nspec:\n  replicas: 3\n```"
+```
+
+**Supported language identifiers** (Prism): `yaml`, `bash`, `python`, `javascript`, `json`, `sql`, `dockerfile`, `go`, `java`, `css`, `html`, `nginx`, `toml`, and [many more](https://prismjs.com/#supported-languages).
+
+### Code block without syntax highlighting
+
+Omit the language identifier for a plain monospace block:
+
+```json
+"questionText": "What does this output?\n\n```\nHello, World!\n```"
+```
+
+### Inline code
+
+Use single backticks for short inline code snippets:
+
+```json
+"questionText": "What flag does `kubectl get pods` use to filter by namespace?"
+```
+
+### Escaping backslashes
+
+Inside a JSON string, a literal backslash must be written as `\\`. This matters for regex patterns, Windows paths, and escape sequences in code examples:
+
+```json
+"questionText": "What does `\\n` represent in Python strings?"
+```
+
+The rendered text will show `\n`.
+
+### Common mistakes to avoid
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| Literal newline inside the JSON string | Invalid JSON — file fails to import | Replace each newline with `\n` |
+| Opening fence and first code line on the same line (` ```yaml key: value `) | First line is treated as the info string, not code | Put the first code line on its own `\n` after the fence |
+| Missing closing fence (` ``` `) | Block is unclosed; everything after renders as code | Always close with ` ``` ` on its own line via `\n` |
+| No language after fence for YAML/CLI questions | Renders as plain text without highlighting | Add the language: ` ```yaml `, ` ```bash `, etc. |
 
 ---
 

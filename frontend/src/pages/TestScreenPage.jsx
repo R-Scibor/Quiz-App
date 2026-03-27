@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReportModal from '../components/ReportModal';
 
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -204,30 +205,38 @@ const TestScreenPage = () => {
 
 
     const markdownComponents = {
-        code({node, inline, className, children, ...props}) {
+        // 'pre' wraps every fenced code block. Overriding it lets us control
+        // the block container independently of whether a language is specified.
+        pre({children, ...props}) {
+            return (
+                <pre {...props} style={{ whiteSpace: 'pre', overflowX: 'auto', margin: '0.75rem 0' }}>
+                    {children}
+                </pre>
+            );
+        },
+        // 'code' is called for both inline (`code`) and fenced blocks.
+        // In react-markdown v9+, the 'inline' prop was removed. We detect block
+        // code by the presence of a language class; no-language fenced blocks
+        // are handled by the 'pre' override above (which preserves whitespace).
+        code({node, className, children, ...props}) {
             const match = /language-(\w+)/.exec(className || '');
-            
-            // Styl jest teraz stosowany bezwarunkowo do wszystkich bloków kodu
-            const blockStyle = {
-                fontSize: '1.1rem',
-                lineHeight: '1.4',
-            };
-
-            return !inline && match ? (
-                <SyntaxHighlighter
-                    children={String(children).replace(/\n$/, '')}
-                    style={coldarkDark}
-                    language={match[1]}
-                    PreTag="div"
-                    customStyle={blockStyle} // Zastosuj jednolity styl do wszystkich bloków
-                    {...props}
-                />
-            ) : (
-                // Kod wewnątrz linii (np. `let x = 1;`) pozostaje bez zmian
+            if (match) {
+                return (
+                    <SyntaxHighlighter
+                        style={coldarkDark}
+                        language={match[1]}
+                        PreTag="div"
+                        customStyle={{ fontSize: '1rem', lineHeight: '1.5', margin: 0 }}
+                    >
+                        {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                );
+            }
+            return (
                 <code className={className} {...props}>
                     {children}
                 </code>
-            )
+            );
         }
     };
 
@@ -318,7 +327,7 @@ const TestScreenPage = () => {
     
                         <div className="my-8 min-h-[96px] flex items-center">
                             <div className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full">
-                                <ReactMarkdown children={question.questionText} components={markdownComponents} />
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.questionText}</ReactMarkdown>
                             </div>
                         </div>
                         
@@ -433,7 +442,7 @@ const TestScreenPage = () => {
                         >
                             <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
                             <div className="prose prose-sm dark:prose-invert mt-2 text-gray-600 dark:text-gray-300">
-                                <ReactMarkdown children={question.explanation} components={markdownComponents} />
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.explanation}</ReactMarkdown>
                             </div>
                         </motion.div>
                     )}

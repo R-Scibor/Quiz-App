@@ -90,3 +90,6 @@ yarn-error.log*
 
 #Certs
 /certs
+
+# Local planning documents
+/plans/

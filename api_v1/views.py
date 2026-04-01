@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.shortcuts import render
 from django.views.generic import View
-from django.db.models import Count, Q, Sum
+from django.db.models import Avg, Case, Count, IntegerField, Q, Sum, When
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -526,12 +526,25 @@ class UserStatsView(APIView):
         attempt_agg = QuestionAttempt.objects.filter(user=user).aggregate(
             total_time=Sum('time_spent_secs'),
             count=Count('id'),
+            open_count=Count(Case(
+                When(question__question_type__startswith='open', then=1),
+                output_field=IntegerField(),
+            )),
+            closed_count=Count(Case(
+                When(question__question_type__in=['single-choice', 'multiple-choice'], then=1),
+                output_field=IntegerField(),
+            )),
         )
         total_time = attempt_agg['total_time'] or 0
         attempt_count = attempt_agg['count'] or 0
         avg_time = round(total_time / attempt_count) if attempt_count > 0 else 0
+        open_count = attempt_agg['open_count'] or 0
+        closed_count = attempt_agg['closed_count'] or 0
 
-        recent = sessions.order_by('-started_at')[:10]
+        study_sessions = sessions.filter(is_study_mode=True).count()
+        regular_sessions = sessions.filter(is_study_mode=False).count()
+
+        recent = sessions.order_by('-started_at')[:20]
         recent_sessions = [
             {
                 'id': str(s.id),
@@ -553,5 +566,37 @@ class UserStatsView(APIView):
             'longest_streak_days': longest_streak,
             'avg_time_per_question': avg_time,
             'recent_sessions': recent_sessions,
+            'questions_by_type': {'closed': closed_count, 'open': open_count},
+            'study_sessions': study_sessions,
+            'regular_sessions': regular_sessions,
         })
 
+
+class StatsTestBreakdownView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        breakdown = (
+            QuestionAttempt.objects
+            .filter(user=user)
+            .values('test__id', 'test__title')
+            .annotate(
+                total_attempts=Count('id'),
+                correct=Count(Case(When(is_correct=True, then=1), output_field=IntegerField())),
+                avg_time_secs=Avg('time_spent_secs'),
+            )
+            .order_by('-total_attempts')[:20]
+        )
+        data = [
+            {
+                'test_id': str(row['test__id']),
+                'title': row['test__title'],
+                'total_attempts': row['total_attempts'],
+                'correct': row['correct'],
+                'accuracy': round(row['correct'] / row['total_attempts'] * 100, 1) if row['total_attempts'] > 0 else 0,
+                'avg_time_secs': round(row['avg_time_secs']) if row['avg_time_secs'] else 0,
+            }
+            for row in breakdown
+        ]
+        return Response(data)

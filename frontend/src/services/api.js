@@ -144,6 +144,10 @@ export const getStudyStats = () => {
     return apiClient.get('/study/stats/');
 };
 
+export const getTestStats = () => {
+    return apiClient.get('/stats/tests/');
+};
+
 export const registerUser = (payload) => {
     return apiClient.post('/auth/register/', payload);
 };

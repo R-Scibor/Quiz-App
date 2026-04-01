@@ -3,7 +3,7 @@ import useTestStore from '../store/testStore';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
-    const { goToSetup, goToLogin, goToRegister, logout, user, goToStats, goToStudySetup, fetchStudyStats, studyQueueCount } = useTestStore();
+    const { goToSetup, user, goToStats, goToStudySetup, fetchStudyStats, studyQueueCount } = useTestStore();
 
     useEffect(() => {
         fetchStudyStats();
@@ -101,38 +101,6 @@ const HomePage = () => {
                                     {studyQueueCount > 9 ? '9+' : studyQueueCount}
                                 </span>
                             </motion.button>
-                        )}
-                    </motion.div>
-
-                    <motion.div variants={itemVariants} className="mt-6">
-                        {user ? (
-                            <div className="flex items-center gap-4">
-                                <span className="text-gray-600 dark:text-gray-300 text-sm">
-                                    Logged in as <span className="font-semibold text-gray-800 dark:text-white">{user.username}</span>
-                                </span>
-                                <button
-                                    onClick={logout}
-                                    className="text-sm text-gray-400 hover:text-red-400 transition-colors"
-                                >
-                                    Sign out
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={goToLogin}
-                                    className="text-sm font-medium text-indigo-500 hover:text-indigo-400 transition-colors"
-                                >
-                                    Sign in
-                                </button>
-                                <span className="text-gray-300 dark:text-gray-600">·</span>
-                                <button
-                                    onClick={goToRegister}
-                                    className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                                >
-                                    Register
-                                </button>
-                            </div>
                         )}
                     </motion.div>
 

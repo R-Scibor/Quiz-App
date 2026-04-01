@@ -253,18 +253,6 @@ const TestSetupPage = () => {
                 transition={{ duration: 0.5 }}
                 className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center"
             >
-                <div className="w-full flex justify-start mb-6">
-                    <motion.button 
-                        onClick={resetTest}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                        Wróć do strony głównej
-                    </motion.button>
-                </div>
-                
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Wybierz Kategorię</h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Sprawdź swoją wiedzę w różnych dziedzinach.</p>
                 

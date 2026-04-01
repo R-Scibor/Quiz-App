@@ -45,6 +45,12 @@ services:
     depends_on:
       - redis
       - db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost', 8000)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     labels:
       - "oversight.visible=true"
       - "oversight.name=Quiz App"
@@ -107,7 +113,8 @@ services:
       - ./media:/var/www/media/
       - frontend_volume:/var/www/frontend/
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
   cert-gen:
     image: alpine:latest

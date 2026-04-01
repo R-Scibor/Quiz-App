@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir torch==2.3.1+cpu --index-url https://download.pyt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-download model at build time so the container starts ready faster
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2', device='cpu')"
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2', device='cpu', model_kwargs={'low_cpu_mem_usage': False})"
 
 COPY main.py .
 

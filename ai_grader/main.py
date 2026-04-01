@@ -17,7 +17,7 @@ _model_ready = threading.Event()
 
 def _load_model():
     global _model
-    _model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+    _model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu", model_kwargs={"low_cpu_mem_usage": False})
     _model_ready.set()
 
 

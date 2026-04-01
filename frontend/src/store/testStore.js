@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, startSession, completeSession, submitAttempts, getUserStats, getStudyQueue, getStudyStats } from '../services/api';
+import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, startSession, completeSession, submitAttempts, getUserStats, getTestStats, getStudyQueue, getStudyStats } from '../services/api';
 
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
@@ -38,6 +38,7 @@ const useTestStore = create((set, get) => ({
     // Session / stats state
     currentSessionId: null,
     userStats: null,
+    testStats: null,
     statsLoading: false,
 
     // Spaced repetition state
@@ -263,7 +264,7 @@ const useTestStore = create((set, get) => ({
             if (q.type === 'open-ended') {
                 const result = openQuestionResults[q.id];
                 points_awarded = result?.points_awarded ?? 0;
-                is_correct = points_awarded > 0;
+                is_correct = points_awarded >= question.maxPoints * 0.66;
             } else {
                 const userSel = userAnswers[q.id] || [];
                 is_correct = JSON.stringify([...userSel].sort()) === JSON.stringify([...q.correctAnswers].sort());
@@ -299,14 +300,15 @@ const useTestStore = create((set, get) => ({
     fetchStats: async () => {
         set({ statsLoading: true });
         try {
-            const response = await getUserStats();
-            set({ userStats: response.data, statsLoading: false });
+            const [statsRes, testStatsRes] = await Promise.all([getUserStats(), getTestStats()]);
+            set({ userStats: statsRes.data, testStats: testStatsRes.data, statsLoading: false });
         } catch (e) {
             console.error('Failed to fetch stats:', e);
             set({ statsLoading: false });
         }
     },
 
+    goToHome: () => set({ view: 'home' }),
     goToStats: () => set({ view: 'stats' }),
 
     // Spaced repetition actions

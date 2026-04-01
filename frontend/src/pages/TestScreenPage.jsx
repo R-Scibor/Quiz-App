@@ -74,7 +74,7 @@ const OpenEndedQuestionUI = () => {
 
     const startPolling = (taskId, questionId) => {
         let retries = 0;
-        const MAX_RETRIES = 30; // 30 × 2s = 60s timeout
+        const MAX_RETRIES = 60; // 60 × 2s = 120s timeout
         pollingRef.current = setInterval(async () => {
             if (retries >= MAX_RETRIES) {
                 clearInterval(pollingRef.current);

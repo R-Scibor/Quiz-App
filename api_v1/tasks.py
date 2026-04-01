@@ -108,12 +108,7 @@ def _call_gemini(question_text: str, grading_criteria: str, max_points: int,
 
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-2.5-flash")
-    ai_response = model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(
-            thinking_config={"thinking_budget": 0},
-        ),
-    )
+    ai_response = model.generate_content(prompt)
 
     cleaned = ai_response.text.strip().replace("```json", "").replace("```", "").strip()
     try:

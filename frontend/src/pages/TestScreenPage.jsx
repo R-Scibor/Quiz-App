@@ -220,6 +220,9 @@ const OpenEndedQuestionUI = () => {
                 autoCapitalize={isCli || isCode ? "off" : undefined}
                 aria-label="Pole odpowiedzi"
             />
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
+                {userAnswer.length} {userAnswer.length === 1 ? 'character' : 'characters'}
+            </p>
             {apiError && (
                 <div className="mt-2 text-center">
                     <p className="text-red-500 text-sm">{apiError.message}</p>

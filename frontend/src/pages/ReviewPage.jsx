@@ -130,7 +130,7 @@ const ReviewPage = () => {
                         )}
 
                         {/* --- KLUCZOWA LOGIKA WYBORU KOMPONENTU --- */}
-                        {question.type === 'open-ended' ? (
+                        {question.type === 'open' ? (
                             <OpenQuestionReview
                                 question={question}
                                 result={openQuestionResults[question.id]}

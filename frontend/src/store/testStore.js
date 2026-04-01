@@ -261,7 +261,7 @@ const useTestStore = create((set, get) => ({
 
         const attempts = currentQuestions.map(q => {
             let is_correct, points_awarded;
-            if (q.type === 'open-ended') {
+            if (q.type.startsWith('open-')) {
                 const result = openQuestionResults[q.id];
                 points_awarded = result?.points_awarded ?? 0;
                 is_correct = points_awarded >= question.maxPoints * 0.66;

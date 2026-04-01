@@ -26,8 +26,8 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
             issue_type: issueType,
             description: description,
             ai_feedback_snapshot: issueType === 'AI_GRADING_ERROR' ? JSON.stringify(aiFeedback) : null,
-            user_answer_open: question.type === 'open-ended' ? userAnswer : null,
-            user_answer_choices: question.type !== 'open-ended' ? userAnswer : null,
+            user_answer_open: question.type.startsWith('open-') ? userAnswer : null,
+            user_answer_choices: !question.type.startsWith('open-') ? userAnswer : null,
         };
 
         try {
@@ -90,7 +90,7 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
                                             Błąd w pytaniu / odpowiedzi
                                         </label>
                                     </div>
-                                    {question.type === 'open-ended' && (
+                                    {question.type.startsWith('open-') && (
                                         <div className="flex items-center">
                                             <input
                                                 type="radio"

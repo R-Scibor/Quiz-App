@@ -1,34 +1,5 @@
 import uuid
 from django.db import models
-
-# -----------------------------------------------------------------------------
-# Poniższe modele definiują strukturę bazy danych dla aplikacji Quiz App.
-# Zgodnie z planem migracji, implementacja uwzględnia najlepsze praktyki:
-#
-# 1.  **UUID jako klucze główne**: Każdy model używa `UUIDField` jako klucza
-#     głównego (`id`). Zapewnia to globalną unikalność identyfikatorów,
-#     utrudnia odgadywanie adresów URL i ułatwia przyszłą replikację
-#     lub integrację z innymi systemami.
-#
-# 2.  **Jawne Indeksy**: W klasie `Meta` każdego modelu, który posiada
-#     klucz obcy, zdefiniowano indeksy (`models.Index`). Przyspiesza to
-#     znacząco operacje filtrowania i łączenia tabel (JOIN), co jest
-#     kluczowe dla wydajności aplikacji przy dużej ilości danych.
-#
-# 3.  **Ograniczenia Integralności (Constraints)**: Używamy `Meta.constraints`,
-#     aby zapewnić spójność danych na poziomie bazy danych. Jest to bardziej
-#     niezawodne niż walidacja na poziomie aplikacji, ponieważ działa
-#     niezależnie od sposobu zapisu danych.
-#
-# 4.  **Czytelne `related_name`**: W relacjach `ForeignKey` i `ManyToManyField`
-#     stosujemy `related_name`, aby ułatwić odpytywanie bazy danych
-#     w "odwrotnym" kierunku (np. od Testu do jego Pytań).
-#
-# -----------------------------------------------------------------------------
-
-
-import uuid
-from django.db import models
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 
@@ -144,9 +115,7 @@ class Answer(models.Model):
 
 
 class ReportedIssue(models.Model):
-    """
-    Model do przechowywania zgłoszeń dotyczących pytań lub ocen AI.
-    """
+    """Stores user-submitted reports for question errors or incorrect AI grading."""
     ISSUE_TYPE_CHOICES = [
         ('QUESTION_ERROR', 'Błąd w pytaniu/odpowiedzi'),
         ('AI_GRADING_ERROR', 'Niesłuszna ocena AI'),

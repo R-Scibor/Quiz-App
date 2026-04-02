@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Konfiguracja instancji axios do komunikacji z API backendu.
+// Axios instance for all backend API calls.
 const apiClient = axios.create({
-    baseURL: '/api/v1', // Używamy relatywnej ścieżki, aby Vite proxy mogło działać
+    baseURL: '/api/v1', // Relative base URL so the Vite proxy works in development.
     headers: {
         'Content-Type': 'application/json',
     }
@@ -17,14 +17,14 @@ apiClient.interceptors.request.use((config) => {
     return config;
 });
 
-// Interceptor pozwala na globalne przechwytywanie i obsługę odpowiedzi
-// zanim zostaną one przekazane do bloku .then() lub .catch() w miejscu wywołania.
+// Normalise all error responses into a consistent shape before
+// they reach the calling .catch() blocks.
 
 apiClient.interceptors.response.use(
-    // Funkcja dla pomyślnych odpowiedzi (status 2xx) - po prostu je zwracamy.
+    // Pass successful responses through unchanged.
     (response) => response,
 
-    // Funkcja dla odpowiedzi z błędem (status inny niż 2xx).
+    // Normalise error responses.
     (error) => {
         let structuredError = {
             message: 'Wystąpił nieoczekiwany błąd. Proszę spróbować ponownie.',
@@ -32,49 +32,48 @@ apiClient.interceptors.response.use(
             code: 'UNKNOWN_ERROR'
         };
 
-        // Sprawdzamy, czy błąd pochodzi z odpowiedzi serwera (ma status code)
+        // Server responded with a non-2xx status code.
         if (error.response) {
             const backendError = error.response.data;
-            // Sprawdzamy, czy odpowiedź serwera ma oczekiwany format { error, message }
+            // Backend returned the expected { error, message } shape.
             if (backendError && backendError.message) {
                 structuredError.message = backendError.message;
                 structuredError.code = backendError.error || `HTTP_${error.response.status}`;
             } else {
-                // Jeśli format jest inny, używamy generycznej wiadomości dla danego kodu HTTP
+                // Fallback for responses that don't match the expected shape.
                 structuredError.message = `Błąd serwera: Otrzymano status ${error.response.status}.`;
                 structuredError.code = `HTTP_${error.response.status}`;
             }
             structuredError.details = backendError;
         } else if (error.request) {
-            // Błąd sieciowy - zapytanie zostało wysłane, ale nie otrzymano odpowiedzi
+            // Request was sent but no response was received (network error).
             structuredError.message = 'Błąd połączenia z serwerem. Sprawdź swoje połączenie internetowe.';
             structuredError.code = 'NETWORK_ERROR';
         } else {
-            // Inny, nieprzewidziany błąd (np. błąd w konfiguracji zapytania)
+            // Unexpected error (e.g. misconfigured request).
             structuredError.message = error.message;
         }
 
-        // Zwracamy Promise.reject z naszym nowym, ustrukturyzowanym obiektem błędu.
-        // Dzięki temu w bloku .catch() w store otrzymamy ten właśnie obiekt.
+        // Reject with the structured error so store .catch() blocks receive a consistent shape.
         return Promise.reject(structuredError);
     }
 );
 
 /**
- * Pobiera listę wszystkich dostępnych testów i ich metadanych.
- * @returns {Promise} Obietnica z odpowiedzią API.
+ * Fetches all available tests and their metadata.
+ * @returns {Promise} API response.
  */
 export const getAvailableTests = () => {
     return apiClient.get('/tests/');
 };
 
 /**
- * Pobiera określoną liczbę pytań z wybranych kategorii.
- * @param {object} params - Parametry zapytania.
- * @param {string} params.categories - ID kategorii oddzielone przecinkami.
- * @param {number} params.num_questions - Żądana liczba pytań.
- * @param {string} params.mode - Tryb pytań ('closed', 'open', 'mixed').
- * @returns {Promise} Obietnica z odpowiedzią API zawierającą pytania.
+ * Fetches a randomised set of questions from the selected categories.
+ * @param {object} params - Query parameters.
+ * @param {string} params.categories - Comma-separated test IDs.
+ * @param {number} params.num_questions - Number of questions to return.
+ * @param {string} params.mode - Question type filter ('closed', 'open', 'mixed').
+ * @returns {Promise} API response containing the question list.
  */
 export const getQuestions = (params) => {
     return apiClient.get('/questions/', { params });
@@ -82,22 +81,22 @@ export const getQuestions = (params) => {
 
 
 /**
- * Wysyła odpowiedź na pytanie otwarte do oceny przez AI.
- * @param {object} payload - Dane do wysłania.
- * @param {string} payload.questionText - Treść pytania.
- * @param {string} payload.userAnswer - Odpowiedź udzielona przez użytkownika.
- * @param {string} payload.gradingCriteria - Kryteria oceny zdefiniowane dla pytania.
- * @param {number} payload.maxPoints - Maksymalna liczba punktów za pytanie.
- * @returns {Promise} Obietnica z odpowiedzią API zawierającą ocenę.
+ * Submits an open-ended answer for AI grading.
+ * @param {object} payload - Request payload.
+ * @param {string} payload.questionText - The question text.
+ * @param {string} payload.userAnswer - The user's answer.
+ * @param {string} payload.gradingCriteria - Grading criteria for the question.
+ * @param {number} payload.maxPoints - Maximum points for the question.
+ * @returns {Promise} API response containing the grading result.
  */
 export const checkOpenAnswer = (payload) => {
     return apiClient.post('/check_answer/', payload);
 };
 
 /**
- * Sprawdza status zadania asynchronicznego.
- * @param {string} taskId - ID zadania zwrócone przez checkOpenAnswer.
- * @returns {Promise} Obietnica z odpowiedzią API zawierającą status i ewentualne dane.
+ * Polls the status of an async grading task.
+ * @param {string} taskId - Task ID returned by checkOpenAnswer.
+ * @returns {Promise} API response containing the task status and result.
  */
 export const getTaskResult = (taskId) => {
     return apiClient.get(`/task_result/${taskId}/`);
@@ -105,14 +104,14 @@ export const getTaskResult = (taskId) => {
 
 
 /**
- * Wysyła zgłoszenie problemu dotyczącego pytania lub oceny.
- * @param {object} payload - Dane zgłoszenia.
- * @param {string} payload.question - ID pytania.
- * @param {string} payload.test - ID testu.
- * @param {string} payload.issue_type - Typ problemu ('QUESTION_ERROR' lub 'AI_GRADING_ERROR').
- * @param {string} [payload.description] - Opcjonalny opis od użytkownika.
- * @param {string} [payload.ai_feedback_snapshot] - Zapisana odpowiedź AI (wymagane dla AI_GRADING_ERROR).
- * @returns {Promise} Obietnica z odpowiedzią API.
+ * Submits a reported issue for a question or AI grading result.
+ * @param {object} payload - Issue payload.
+ * @param {string} payload.question - Question ID.
+ * @param {string} payload.test - Test ID.
+ * @param {string} payload.issue_type - Issue type ('QUESTION_ERROR' or 'AI_GRADING_ERROR').
+ * @param {string} [payload.description] - Optional user description.
+ * @param {string} [payload.ai_feedback_snapshot] - Saved AI response (required for AI_GRADING_ERROR).
+ * @returns {Promise} API response.
  */
 export const reportIssue = (payload) => {
     return apiClient.post('/report_issue/', payload);

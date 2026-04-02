@@ -58,7 +58,7 @@ const useTestStore = create((set, get) => ({
             const tests = response.data.map(test => ({ ...test, question_counts: test.question_counts || { closed: 0, open: 0, total: 0 } }));
             set({ availableTests: tests, isLoading: false });
         } catch (error) {
-            console.error("Błąd podczas pobierania testów:", error);
+            console.error("Failed to fetch tests:", error);
             set({ error: error, isLoading: false });
         }
     },
@@ -103,7 +103,7 @@ const useTestStore = create((set, get) => ({
                 }
             }
         } catch (error) {
-            console.error("Błąd podczas pobierania pytań:", error);
+            console.error("Failed to fetch questions:", error);
             set({ error: error, isLoading: false, view: 'setup' });
         }
     },
@@ -175,7 +175,7 @@ const useTestStore = create((set, get) => ({
 
     getTaskResult: async (taskId) => {
         const response = await getTaskResultApi(taskId);
-        return response.data; // Zwracamy { status: '...', data: '...' }
+        return response.data; // Returns { status, data }
     },
 
     setLastAnswerFeedback: (feedbackData, questionId) => {
@@ -208,7 +208,6 @@ const useTestStore = create((set, get) => ({
         });
     },
 
-    // Nowa akcja do obsługi błędów
     setError: (error) => {
         set({ error: error, checkingQuestionId: null });
     },
@@ -255,6 +254,27 @@ const useTestStore = create((set, get) => ({
         studySelectedTestIds: null,
     }),
 
+    retryTest: () => set({
+        view: 'setup',
+        currentQuestions: [],
+        currentQuestionIndex: 0,
+        userAnswers: {},
+        score: 0,
+        testStartTime: null,
+        testEndTime: null,
+        error: null,
+        openQuestionResults: {},
+        checkingQuestionId: null,
+        isTimerRunning: false,
+        questionStartTime: null,
+        totalTimeSpent: 0,
+        questionTimes: {},
+        currentSessionId: null,
+        difficultyRatings: {},
+        studySelectedTestIds: null,
+        // selectedCategories, numQuestionsConfig, timerEnabled, questionMode are preserved
+    }),
+
     _finalizeSession: async () => {
         const { currentSessionId, user, currentQuestions, userAnswers, openQuestionResults, score, questionTimes, difficultyRatings } = get();
         if (!currentSessionId || !user) return;
@@ -264,7 +284,7 @@ const useTestStore = create((set, get) => ({
             if (q.type.startsWith('open-')) {
                 const result = openQuestionResults[q.id];
                 points_awarded = result?.points_awarded ?? 0;
-                is_correct = points_awarded >= question.maxPoints * 0.66;
+                is_correct = points_awarded >= q.maxPoints * 0.66;
             } else {
                 const userSel = userAnswers[q.id] || [];
                 is_correct = JSON.stringify([...userSel].sort()) === JSON.stringify([...q.correctAnswers].sort());

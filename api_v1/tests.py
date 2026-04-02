@@ -10,46 +10,41 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-# Utworzenie tymczasowego katalogu media na potrzeby testów
-# Będzie on używany przez dekorator @override_settings
+# Temporary media directory used by @override_settings in ApiViewsTestCase.
 TEST_MEDIA_DIR = Path(tempfile.gettempdir()) / 'django_test_media'
 
 
 @override_settings(
     MEDIA_ROOT=TEST_MEDIA_DIR,
-    SECRET_KEY='a-test-secret-key-for-development' # Dodany klucz, aby uniknąć błędów
+    SECRET_KEY='a-test-secret-key-for-development'
 )
 class ApiViewsTestCase(APITestCase):
     """
-    Zestaw testów dla widoków API: TestListView i QuestionListView.
+    Tests for TestListView and QuestionListView.
+
+    NOTE: These tests were written for the original file-based backend and are
+    now stale — the views query PostgreSQL via ORM, so the JSON files created
+    here have no effect on the responses. They are kept as a placeholder until
+    the test suite is rewritten with ORM fixtures.
     """
 
     @classmethod
     def setUpClass(cls):
-        """
-        Uruchamiane raz przed wszystkimi testami w tej klasie.
-        Tworzy tymczasowy katalog na pliki testowe.
-        """
+        """Create the temporary media directory once before all tests in this class."""
         super().setUpClass()
         os.makedirs(TEST_MEDIA_DIR / 'tests', exist_ok=True)
 
     @classmethod
     def tearDownClass(cls):
-        """
-        Uruchamiane raz po wszystkich testach w tej klasie.
-        Usuwa tymczasowy katalog.
-        """
+        """Remove the temporary media directory after all tests in this class."""
         super().tearDownClass()
         shutil.rmtree(TEST_MEDIA_DIR, ignore_errors=True)
 
     def setUp(self):
-        """
-        Uruchamiane przed każdym pojedynczym testem.
-        Tworzy fałszywe pliki JSON z danymi testowymi, zgodne z serializerem.
-        """
+        """Create stub JSON fixtures that mirror the old file-based API format."""
         self.tests_dir = TEST_MEDIA_DIR / 'tests'
-        
-        # Dane dla testu 1 (historia) - z pytaniami zamkniętymi i otwartym
+
+        # Test 1 (historia) — mixed closed and open questions
         self.historia_data = {
             "category": "Historia", "scope": "Polska", "version": "1.0",
             "questions": [
@@ -61,7 +56,7 @@ class ApiViewsTestCase(APITestCase):
         with open(self.tests_dir / 'historia.json', 'w', encoding='utf-8') as f:
             json.dump(self.historia_data, f)
             
-        # Dane dla testu 2 (biologia) - tylko pytania zamknięte
+        # Test 2 (biologia) — closed questions only
         self.biologia_data = {
             "category": "Biologia", "scope": "Komórka", "version": "1.1",
             "questions": [
@@ -73,20 +68,14 @@ class ApiViewsTestCase(APITestCase):
             json.dump(self.biologia_data, f)
 
     def tearDown(self):
-        """
-        Uruchamiane po każdym pojedynczym teście.
-        Czyści katalog z testowymi plikami JSON.
-        """
+        """Remove JSON fixture files created during the test."""
         for f in self.tests_dir.glob('*.json'):
             os.remove(f)
 
-    # --- Testy dla TestListView ---
+    # --- TestListView ---
 
     def test_list_available_tests_success(self):
-        """
-        Sprawdza, czy endpoint /tests/ poprawnie zwraca listę metadanych testów
-        wraz ze szczegółowym licznikiem pytań.
-        """
+        """GET /tests/ returns test metadata with question counts."""
         response = self.client.get('/api/v1/tests/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
@@ -105,37 +94,28 @@ class ApiViewsTestCase(APITestCase):
         self.assertEqual(response_data[1]['question_counts']['open'], 1)
     
     def test_list_available_tests_empty(self):
-        """
-        Sprawdza, czy endpoint /tests/ zwraca pustą listę, gdy nie ma plików.
-        """
+        """GET /tests/ returns an empty list when no tests exist."""
         self.tearDown() 
         response = self.client.get('/api/v1/tests/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), [])
 
-    # --- Testy dla QuestionListView ---
+    # --- QuestionListView ---
 
     def test_get_questions_missing_params(self):
-        """
-        Sprawdza, czy brakujące parametry zwracają błąd 400.
-        """
+        """Missing required params return HTTP 400."""
         response = self.client.get('/api/v1/questions/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'MISSING_PARAMETERS')
 
     def test_get_questions_more_than_available(self):
-        """
-        Sprawdza, czy żądanie większej liczby pytań niż dostępna zwraca wszystkie dostępne.
-        """
+        """Requesting more questions than available returns all available."""
         response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 10})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
         
     def test_question_shuffling_logic(self):
-        """
-        Kluczowy test: Sprawdza, czy po przelosowaniu opcji,
-        indeksy 'correctAnswers' nadal wskazują na poprawne odpowiedzi tekstowe.
-        """
+        """After shuffling, correctAnswers indices still point to the correct option texts."""
         original_question = self.biologia_data['questions'][1]
         original_options = original_question['options']
         original_correct_indices = original_question['correctAnswers']
@@ -154,10 +134,8 @@ class ApiViewsTestCase(APITestCase):
             shuffled_correct_answers_text = {shuffled_options[i] for i in shuffled_correct_indices}
             self.assertEqual(original_correct_answers_text, shuffled_correct_answers_text)
 
-    # --- NOWE TESTY: Filtrowanie pytań według trybu ---
-
     def test_get_questions_mode_closed_only(self):
-        """Sprawdza, czy `mode=closed` zwraca tylko pytania zamknięte."""
+        """`mode=closed` returns only closed questions."""
         response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 2, 'mode': 'closed'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
@@ -167,7 +145,7 @@ class ApiViewsTestCase(APITestCase):
             self.assertIn('options', q) # Sprawdza poprawność serializera
 
     def test_get_questions_mode_open_only(self):
-        """Sprawdza, czy `mode=open` zwraca tylko pytania otwarte."""
+        """`mode=open` returns only open-ended questions."""
         response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'open'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
@@ -177,7 +155,7 @@ class ApiViewsTestCase(APITestCase):
         self.assertNotIn('options', questions[0]) # Sprawdza poprawność serializera
 
     def test_get_questions_mode_mixed_default(self):
-        """Sprawdza, czy domyślny tryb (mieszany) zwraca oba typy pytań."""
+        """Default mode (mixed) returns both open and closed questions."""
         response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 3})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
@@ -187,14 +165,14 @@ class ApiViewsTestCase(APITestCase):
         self.assertIn('single-choice', types)
 
     def test_get_questions_invalid_mode(self):
-        """Sprawdza, czy błędna wartość `mode` zwraca błąd 400."""
+        """An invalid `mode` value returns HTTP 400."""
         response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'wrong_mode'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'INVALID_MODE_PARAMETER')
     
     def test_get_questions_no_questions_for_mode(self):
-        """Sprawdza, czy API zwraca 404, gdy brak pytań dla danego trybu."""
-        # Biologia nie ma pytań otwartych
+        """Returns HTTP 404 when no questions match the requested mode."""
+        # biologia has no open questions
         response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 1, 'mode': 'open'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['error'], 'NO_QUESTIONS_FOUND')
@@ -204,14 +182,15 @@ class ApiViewsTestCase(APITestCase):
 @override_settings(SECRET_KEY='a-test-secret-key-for-development')
 class CheckOpenAnswerViewTestCase(APITestCase):
     """
-    Zestaw testów dla widoku CheckOpenAnswerView.
-    Testy te używają mockowania, aby uniknąć rzeczywistych zapytań do API Gemini.
-    WAŻNE: Te testy zadziałają poprawnie tylko wtedy, gdy w pliku api_v1/views.py
-    zostanie dodany import: `import google.generativeai as genai`
+    Tests for CheckOpenAnswerView.
+
+    NOTE: These tests mock `api_v1.views.genai.GenerativeModel`, but the view
+    now delegates to `generate_ai_answer.delay()` (Celery). The mocks patch a
+    symbol that is no longer called in views.py, so most tests here are stale.
+    They are kept as documentation until the suite is rewritten.
     """
 
     def setUp(self):
-        """Przygotowanie danych do testów."""
         self.url = '/api/v1/check_answer/'
         self.payload = {
             'userAnswer': 'Unia była spowodowana zagrożeniem ze strony Moskwy i brakiem potomka u króla.',
@@ -223,8 +202,8 @@ class CheckOpenAnswerViewTestCase(APITestCase):
     @patch('api_v1.views.genai.GenerativeModel')
     @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
     def test_check_answer_success(self, mock_generative_model):
-        """Sprawdza poprawne działanie endpointu przy udanej odpowiedzi od AI."""
-        # Konfiguracja mocka
+        """Endpoint returns score and feedback on a successful AI response."""
+        # Configure the mock
         mock_ai_response = MagicMock()
         mock_ai_response.text = json.dumps({"score": 4, "feedback": "Dobra odpowiedź."})
         
@@ -232,25 +211,22 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         mock_model_instance.generate_content.return_value = mock_ai_response
         mock_generative_model.return_value = mock_model_instance
 
-        # Wykonanie zapytania
         response = self.client.post(self.url, self.payload, format='json')
-
-        # Asercje
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['score'], 4)
         self.assertEqual(response.data['feedback'], "Dobra odpowiedź.")
         mock_model_instance.generate_content.assert_called_once()
 
-    @patch.dict(os.environ, clear=True) # Symulacja braku klucza API
+    @patch.dict(os.environ, clear=True)
     def test_check_answer_no_api_key(self):
-        """Sprawdza, czy serwer zwraca błąd 500, gdy brakuje klucza API."""
+        """Returns HTTP 500 when the Gemini API key is not configured."""
         response = self.client.post(self.url, self.payload, format='json')
         self.assertEqual(response.data['error'], 'API_KEY_MISSING')
         self.assertIn('Klucz API do usługi AI nie jest skonfigurowany', response.data['message'])
 
-    @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'}) # FIX: Dodano mock klucza API
+    @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
     def test_check_answer_missing_payload(self):
-        """Sprawdza, czy serwer zwraca błąd 400 przy niekompletnych danych."""
+        """Incomplete payload returns HTTP 400."""
         incomplete_payload = self.payload.copy()
         del incomplete_payload['userAnswer']
         response = self.client.post(self.url, incomplete_payload, format='json')
@@ -260,9 +236,9 @@ class CheckOpenAnswerViewTestCase(APITestCase):
     @patch('api_v1.views.genai.GenerativeModel')
     @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
     def test_check_answer_ai_invalid_json(self, mock_generative_model):
-        """Sprawdza obsługę błędu, gdy AI zwróci niepoprawny JSON."""
+        """Returns HTTP 500 when the AI response is not valid JSON."""
         mock_ai_response = MagicMock()
-        mock_ai_response.text = "Przepraszam, wystąpił błąd." # Nie-JSON
+        mock_ai_response.text = "Sorry, an error occurred."  # non-JSON
         
         mock_model_instance = MagicMock()
         mock_model_instance.generate_content.return_value = mock_ai_response
@@ -276,11 +252,7 @@ class CheckOpenAnswerViewTestCase(APITestCase):
 
     @unittest.skipUnless(os.environ.get('GEMINI_API_KEY'), "GEMINI_API_KEY is not set, skipping integration test.")
     def test_integration_check_answer_real_api_call(self):
-        """
-        Test integracyjny wykonujący prawdziwe zapytanie do API Gemini.
-        Ten test zostanie uruchomiony tylko, jeśli zmienna środowiskowa
-        GEMINI_API_KEY jest ustawiona.
-        """
+        """Integration test that makes a real Gemini API call. Skipped unless GEMINI_API_KEY is set."""
         payload = {
             'userAnswer': 'Słońce jest gwiazdą.',
             'gradingCriteria': 'Odpowiedź musi stwierdzać, że Słońce jest gwiazdą.',
@@ -290,10 +262,9 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         
         response = self.client.post(self.url, payload, format='json')
         
-        # Sprawdzamy, czy zapytanie się powiodło
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        # Sprawdzamy, czy odpowiedź ma poprawną strukturę
+
+        # Verify the response shape
         response_data = response.json()
         self.assertIn('score', response_data)
         self.assertIn('feedback', response_data)

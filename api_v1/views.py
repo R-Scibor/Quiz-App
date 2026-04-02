@@ -17,11 +17,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.authtoken.models import Token
 
-import random
 from datetime import date, timedelta
-import google.generativeai as genai
 
-# Importujemy nowe serializery i modele
+# Import serializers and models
 from .models import Test, Question, Answer, ReportedIssue, QuizSession, QuestionAttempt
 from .serializers import (
     TestMetadataSerializer, QuestionSerializer, ReportedIssueSerializer,
@@ -100,41 +98,32 @@ def _build_study_buckets(user):
 
 
 # -----------------------------------------------------------------------------
-# Wprowadzenie do Widoków
+# Views Overview
 # -----------------------------------------------------------------------------
 #
-# Widoki zostały przepisane, aby w pełni korzystać z bazy danych, co
-# radykalnie zwiększa wydajność i elastyczność w porównaniu do operacji
-# na plikach.
+# All views use the Django ORM against PostgreSQL, replacing the previous
+# file-based backend.
 #
-# Kluczowe zmiany:
+# Key patterns:
 #
-# 1.  **ORM Django zamiast Plików**: Cała logika pobierania danych została
-#     zastąpiona zapytaniami do bazy danych za pomocą ORM Django.
+# 1.  **ORM instead of files**: all data fetching goes through Django models.
 #
-# 2.  **Optymalizacja Zapytań**:
-#     - `prefetch_related`: Używane do "dociągania" powiązanych obiektów
-#       (np. odpowiedzi i tagów dla pytań) w jednym dodatkowym zapytaniu,
-#       co eliminuje problem "N+1" i drastycznie przyspiesza działanie.
-#     - `annotate`: Używane w `TestListView` do obliczania liczby pytañ
-#       bezpośrednio w zapytaniu do bazy danych, co jest niezwykle wydajne.
+# 2.  **Query optimisation**:
+#     - `prefetch_related`: fetches related objects (answers, tags) in a single
+#       extra query, eliminating the N+1 problem.
+#     - `annotate`: computes question counts directly in SQL (TestListView).
 #
-# 3.  **Logika Biznesowa**: Logika filtrowania pytań ('open', 'closed', 'mixed')
-#     i losowania została zaimplementowana przy użyciu metod ORM, takich
-#     jak `.filter()`, `.order_by('?')` i `Q objects`.
+# 3.  **Business logic**: question-type filtering ('open', 'closed', 'mixed')
+#     and randomisation use `.filter()`, `.order_by('?')`, and `Q objects`.
 #
-# 4.  **Kompatybilność**: Mimo całkowitej zmiany backendu, widoki używają
-#     serializerów, aby zwracać dane w formacie identycznym z poprzednią
-#     wersją, zapewniając pełną kompatybilność z istniejącym frontendem.
+# 4.  **Compatibility**: serializers return the same shape as the old API,
+#     keeping the frontend unchanged.
 #
 # -----------------------------------------------------------------------------
 
 
 class ReactAppView(View):
-    """
-    Widok serwujący główny plik index.html aplikacji React.
-    Pozostaje bez zmian.
-    """
+    """Serves the React app's index.html for all non-API routes."""
     def get(self, request, *args, **kwargs):
         try:
             with open(os.path.join(settings.REACT_APP_BUILD_PATH, 'index.html')) as f:
@@ -148,20 +137,17 @@ class ReactAppView(View):
 
 
 class TestListView(APIView):
-    """
-    Widok API do listowania dostępnych testów, teraz oparty na bazie danych.
-    """
+    """Returns a list of all available tests with question counts."""
     def get(self, request, *args, **kwargs):
         try:
-            # Używamy adnotacji, aby baza danych sama policzyła nam pytania
-            # dla każdego testu. Jest to bardzo wydajne.
+            # Annotate each test with question counts computed in SQL.
             tests_with_counts = Test.objects.annotate(
                 total_questions_count=Count('questions'),
                 open_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE])),
                 closed_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]))
             ).prefetch_related('categories')
 
-            # Przekazujemy queryset do serializera
+            # Pass the annotated queryset to the serializer.
             serializer = TestMetadataSerializer(tests_with_counts, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -173,9 +159,7 @@ class TestListView(APIView):
 
 
 class QuestionListView(APIView):
-    """
-    Widok API do pobierania listy pytań do testu z bazy danych.
-    """
+    """Returns a randomised list of questions for the selected tests."""
     def get(self, request, *args, **kwargs):
         test_ids_str = request.query_params.get('categories')
         num_questions_str = request.query_params.get('num_questions')
@@ -196,10 +180,10 @@ class QuestionListView(APIView):
         if not 1 <= num_questions <= 200:
             return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "num_questions must be between 1 and 200."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Budujemy queryset pytań na podstawie wybranych testów (ich ID)
+        # Build the question queryset from the selected test IDs.
         questions_queryset = Question.objects.filter(test__id__in=test_ids)
 
-        # Filtrujemy pytania zgodnie z wybranym trybem ('mode')
+        # Filter by question type based on the requested mode.
         if mode == 'open':
             questions_queryset = questions_queryset.filter(
                 question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
@@ -207,10 +191,10 @@ class QuestionListView(APIView):
         elif mode == 'closed':
             questions_queryset = questions_queryset.filter(question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE])
 
-        # Optymalizacja: pobieramy z góry powiązane odpowiedzi i tagi
+        # Prefetch related answers and tags to avoid N+1 queries.
         questions_queryset = questions_queryset.prefetch_related('answers', 'tags')
 
-        # Losujemy zadaną liczbę pytañ. `order_by('?')` jest kluczowe.
+        # Randomly sample the requested number of questions.
         final_questions = questions_queryset.order_by('?')[:num_questions]
         
         if not final_questions:
@@ -264,9 +248,7 @@ class GetTaskResultView(APIView):
 
 
 class ReportIssueView(APIView):
-    """
-    Widok API do tworzenia nowego zgłoszenia problemu.
-    """
+    """Creates a new reported issue for a question or AI grading result."""
     def post(self, request, *args, **kwargs):
         serializer = ReportedIssueSerializer(data=request.data)
         if serializer.is_valid():

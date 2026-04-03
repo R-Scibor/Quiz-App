@@ -54,6 +54,8 @@ const OpenEndedQuestionUI = () => {
         error: apiError
     } = useTestStore();
     const [userAnswer, setUserAnswer] = useState('');
+    const [isSlowGrading, setIsSlowGrading] = useState(false);
+    const slowWarningRef = useRef(null);
     const question = currentQuestions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
     const questionResult = openQuestionResults[question.id];
@@ -69,16 +71,22 @@ const OpenEndedQuestionUI = () => {
     useEffect(() => {
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current);
+            if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
         };
     }, []);
 
     const startPolling = (taskId, questionId) => {
+        setIsSlowGrading(false);
+        if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
+        slowWarningRef.current = setTimeout(() => setIsSlowGrading(true), 15000);
+
         let retries = 0;
         const MAX_RETRIES = 60; // 60 × 2s = 120s timeout
         pollingRef.current = setInterval(async () => {
             if (retries >= MAX_RETRIES) {
                 clearInterval(pollingRef.current);
                 pollingRef.current = null;
+                if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
                 useTestStore.getState().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
                 return;
             }
@@ -89,6 +97,7 @@ const OpenEndedQuestionUI = () => {
                 if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
                     clearInterval(pollingRef.current);
                     pollingRef.current = null;
+                    if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
 
                     if (resultResponse.status === 'SUCCESS') {
                         useTestStore.getState().setLastAnswerFeedback(resultResponse.data, questionId);
@@ -99,6 +108,7 @@ const OpenEndedQuestionUI = () => {
             } catch (error) {
                 clearInterval(pollingRef.current);
                 pollingRef.current = null;
+                if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
                 useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
             }
         }, 2000);
@@ -139,6 +149,9 @@ const OpenEndedQuestionUI = () => {
                 <LoadingSpinner />
                 <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Możesz przejść do następnego pytania.</p>
+                {isSlowGrading && (
+                    <p className="text-sm text-yellow-500 dark:text-yellow-400 mt-1">This is taking longer than expected...</p>
+                )}
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

@@ -3,7 +3,7 @@ import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
     const {
-        score, currentQuestions, resetTest, timerEnabled, totalTimeSpent, reviewAnswers,
+        score, currentQuestions, resetTest, retryTest, timerEnabled, totalTimeSpent, reviewAnswers,
         userAnswers, openQuestionResults, availableTests,
     } = useTestStore();
 
@@ -174,7 +174,7 @@ const ResultsPage = () => {
             )}
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button onClick={resetTest} className="btn-primary font-bold py-3 px-10 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2">
+                <button onClick={retryTest} className="btn-primary font-bold py-3 px-10 rounded-full text-lg w-full sm:w-auto flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                     <span>Spróbuj Ponownie</span>
                 </button>

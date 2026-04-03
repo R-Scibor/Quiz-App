@@ -115,6 +115,7 @@ const TestSetupPage = () => {
 
     const [numQuestionsInput, setNumQuestionsInput] = useState(numQuestionsConfig.toString());
     const [inputError, setInputError] = useState('');
+    const [countAdjustedMsg, setCountAdjustedMsg] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [isLlmWarningModalOpen, setIsLlmWarningModalOpen] = useState(false);
@@ -159,11 +160,17 @@ const TestSetupPage = () => {
                 setNumQuestionsInput(newNum.toString());
                 setConfig(newNum, timerEnabled);
                 setInputError('');
+                if (!isNaN(currentNum) && currentNum > totalAvailableQuestions) {
+                    setCountAdjustedMsg(`Adjusted to ${newNum} (max available for selection)`);
+                }
+            } else {
+                setCountAdjustedMsg('');
             }
         } else {
              const newNum = Math.min(10, totalAvailableQuestions);
              setNumQuestionsInput(newNum.toString());
              setConfig(newNum, timerEnabled);
+             setCountAdjustedMsg('');
         }
     }, [totalAvailableQuestions, selectedCategories, questionMode]);
 
@@ -357,6 +364,7 @@ const TestSetupPage = () => {
                             <label htmlFor="num-questions" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Liczba pytań (dostępnych: {totalAvailableQuestions})</label>
                             <input type="number" id="num-questions" className={`w-full p-2 bg-gray-50 dark:bg-gray-900 border rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary ${inputError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} value={numQuestionsInput} onChange={handleNumQuestionsChange} max={totalAvailableQuestions} min="1" />
                             {inputError && <p className="text-red-500 text-xs mt-1">{inputError}</p>}
+                            {countAdjustedMsg && <p className="text-yellow-500 dark:text-yellow-400 text-xs mt-1">{countAdjustedMsg}</p>}
                         </div>
                         <div className="flex items-center pt-6">
                             <AnimatedCheckbox id="timer-enabled" checked={timerEnabled} onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)}>

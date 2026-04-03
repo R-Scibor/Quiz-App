@@ -19,12 +19,17 @@ const MoonIcon = () => (
 
 const Navbar = () => {
     const {
-        user, studyQueueCount, theme,
+        user, studyQueueCount, theme, view,
         goToHome, goToStats, goToStudySetup, goToLogin, goToRegister, logout, toggleTheme,
     } = useTestStore();
 
+    const guardNav = (action) => {
+        if (view === 'test' && !window.confirm('Abandon quiz? Your progress will be lost.')) return;
+        action();
+    };
+
     const handleStudyClick = () => {
-        goToStudySetup();
+        guardNav(goToStudySetup);
     };
 
     return (
@@ -32,7 +37,7 @@ const Navbar = () => {
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
                 {/* Logo */}
                 <button
-                    onClick={goToHome}
+                    onClick={() => guardNav(goToHome)}
                     className="flex items-center gap-2 font-bold text-lg text-gray-800 dark:text-white hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -48,7 +53,7 @@ const Navbar = () => {
                         <>
                             {/* Stats */}
                             <button
-                                onClick={goToStats}
+                                onClick={() => guardNav(goToStats)}
                                 className="text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Stats

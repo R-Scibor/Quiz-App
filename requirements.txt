@@ -42,3 +42,4 @@ urllib3==2.5.0
 whitenoise==6.9.0
 celery==5.4.0
 redis==5.0.7
+google-cloud-aiplatform>=1.91.0

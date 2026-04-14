@@ -105,13 +105,24 @@ Gdy wszystkie zależności są gotowe, możesz sklonować repozytorium i skonfig
     CELERY_BROKER_URL=redis://redis:6379/0
     CELERY_RESULT_BACKEND=redis://redis:6379/0
 
-    # Gemini API Key (opcjonalne)
+    # Ocenianie AI — wybierz jednego dostawcę:
+
+    # Opcja A: bezpośredni klucz API Gemini (domyślne)
+    LLM_PROVIDER=gemini
     GEMINI_API_KEY='twój_klucz_api_gemini'
+
+    # Opcja B: Google Vertex AI przez konto usługi
+    # LLM_PROVIDER=vertex
+    # VERTEX_PROJECT_ID=twoj-projekt-gcp
+    # VERTEX_LOCATION=us-central1
+    # VERTEX_MODEL=gemini-2.5-flash
+    # (umieść plik JSON konta usługi w secrets/vertex-sa-key.json)
     ```
     **Ważne:**
     * Wygeneruj nowy `SECRET_KEY` poleceniem: `openssl rand -base64 48`.
     * Ustaw własne, bezpieczne hasło w `POSTGRES_PASSWORD`.
     * W `DJANGO_ALLOWED_HOSTS` zastąp `twoja_domena.com` swoją prawdziwą domeną lub publicznym adresem IP.
+    * Dla Vertex AI utwórz katalog `secrets/` w głównym katalogu projektu i umieść tam plik JSON konta usługi jako `vertex-sa-key.json` przed uruchomieniem kontenerów. Szczegóły w `docs/GRADING.md`.
 
 ---
 

@@ -6,7 +6,7 @@ This document describes how open-ended questions are graded in Quiz App and how 
 
 ## Overview
 
-Instead of sending every open-ended answer to the Gemini LLM, Quiz App uses a **cascade**: fast, cheap local methods run first and only escalate to the LLM when they can't give a confident result.
+Instead of sending every open-ended answer to an LLM, Quiz App uses a **cascade**: fast, cheap local methods run first and only escalate to the LLM when they can't give a confident result.
 
 ```
 User answer
@@ -14,12 +14,12 @@ User answer
     ▼
 open-text ──► Vector similarity ──► score ≥ 0.85 → Auto-Pass  (instant)
                                  ├── score ≤ 0.30 → Auto-Fail  (instant)
-                                 └── 0.30–0.85   → Gemini 2.5 Flash
+                                 └── 0.30–0.85   → LLM (Gemini or Vertex AI)
 
 open-cli  ──► Regex match ──► match   → Auto-Pass  (instant)
-                          └── no match → Gemini 2.5 Flash
+                          └── no match → LLM (Gemini or Vertex AI)
 
-open-code ──────────────────────────────► Gemini 2.5 Flash (always)
+open-code ──────────────────────────────► LLM (Gemini or Vertex AI, always)
 ```
 
 **Expected LLM call reduction:**
@@ -41,8 +41,8 @@ Natural language answers — explanations, descriptions, definitions.
 3. Cosine similarity is computed:
    - **≥ 0.85** → Auto-Pass: full points, feedback `"Correct — strong semantic match."`
    - **≤ 0.30** → Auto-Fail: 0 points, feedback `"Incorrect — answer does not match expected meaning."`
-   - **0.30–0.85** → Escalated to Gemini with the standard `PromptConfiguration` template.
-4. If the vector microservice is unreachable, falls back to Gemini directly (`grading_method: "fallback_llm"`).
+   - **0.30–0.85** → Escalated to the active LLM with the standard `PromptConfiguration` template.
+4. If the vector microservice is unreachable, falls back to the LLM directly (`grading_method: "fallback_llm"`).
 
 **`gradingCriteria` field:** Write a natural language description of a correct answer. This text is used both as the vector comparison baseline and as the Gemini rubric.
 
@@ -64,7 +64,7 @@ Terminal commands — `kubectl`, `git`, `docker`, `bash`, etc.
 1. The student answer is sanitized (leading/trailing whitespace stripped, internal spaces collapsed to one).
 2. `re.fullmatch(gradingCriteria, normalized_answer, re.IGNORECASE)` is evaluated.
 3. **Match** → Auto-Pass: full points.
-4. **No match** → Escalated to Gemini with a CLI-specific prompt that explicitly rejects destructive flags (`--force`, `-f` with `rm`, `--delete`, etc.).
+4. **No match** → Escalated to the active LLM with a CLI-specific prompt that explicitly rejects destructive flags (`--force`, `-f` with `rm`, `--delete`, etc.).
 
 **`gradingCriteria` field:** A Python-compatible regex pattern. The pattern is matched against the full answer (not a substring search). JSON requires backslashes to be doubled.
 
@@ -94,9 +94,9 @@ Terminal commands — `kubectl`, `git`, `docker`, `bash`, etc.
 Programming logic — functions, algorithms, scripts.
 
 **Grading pipeline:**
-1. Always sent to Gemini 2.5 Flash with a code-specific prompt:
+1. Always sent to the active LLM with a code-specific prompt:
    - Language is parsed from the `gradingCriteria` prefix (e.g. `python: ...`).
-   - Prompt instructs Gemini to evaluate correctness, not style, and to award partial credit.
+   - Prompt instructs the model to evaluate correctness, not style, and to award partial credit.
 
 **`gradingCriteria` field:** Must start with a language identifier followed by a colon, then a description of requirements.
 
@@ -126,6 +126,42 @@ Every grading result includes a `grading_method` field in the Celery task result
 | `exact_pass` | Reserved for future exact-match path |
 | `llm` | LLM used (score was in ambiguous range, or no local method matched) |
 | `fallback_llm` | Vector service was unreachable; Gemini used as fallback |
+
+---
+
+## LLM Provider
+
+The active LLM gateway is controlled by the `LLM_PROVIDER` environment variable. Both `web` and `celery` must see the same value.
+
+| `LLM_PROVIDER` | Authentication | Required env vars |
+|---|---|---|
+| `gemini` *(default)* | Direct API key | `GEMINI_API_KEY` |
+| `vertex` | GCP service account | `VERTEX_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` |
+
+### Switching to Vertex AI
+
+1. Create `secrets/` at the project root and place your service-account JSON key there as `vertex-sa-key.json`:
+   ```
+   Quiz-App/
+   └── secrets/
+       └── vertex-sa-key.json   ← never commit this file
+   ```
+   > The `docker-compose.yml` mounts it read-only at `/run/secrets/vertex-sa-key.json` inside `web` and `celery`.
+
+2. Add to `.env`:
+   ```env
+   LLM_PROVIDER=vertex
+   VERTEX_PROJECT_ID=your-gcp-project-id
+   VERTEX_LOCATION=us-central1      # optional, default: us-central1
+   VERTEX_MODEL=gemini-2.5-flash    # optional, default: gemini-2.5-flash
+   ```
+
+3. Rebuild and restart:
+   ```bash
+   docker compose up --build -d
+   ```
+
+To revert to the direct Gemini API key, set `LLM_PROVIDER=gemini` (or remove the variable).
 
 ---
 

@@ -76,52 +76,103 @@ def call_vector_service(student: str, reference: str) -> float | None:
 
 
 # ---------------------------------------------------------------------------
-# Gemini LLM helper
+# LLM shared helpers
+# ---------------------------------------------------------------------------
+
+def _build_prompt(question_text: str, grading_criteria: str, max_points: int,
+                  user_answer: str, system_prompt_override: str | None = None) -> str:
+    if system_prompt_override:
+        return system_prompt_override.format(
+            question_text=question_text,
+            grading_criteria=grading_criteria,
+            max_points=max_points,
+            user_answer=user_answer,
+        )
+    prompt_config = PromptConfiguration.objects.filter(is_active=True).first()
+    if not prompt_config:
+        raise RuntimeError("No active PromptConfiguration found in the database.")
+    return prompt_config.prompt_text.format(
+        question_text=question_text,
+        grading_criteria=grading_criteria,
+        max_points=max_points,
+        user_answer=user_answer,
+    )
+
+
+def _parse_llm_json(raw_text: str) -> dict:
+    cleaned = raw_text.strip().replace("```json", "").replace("```", "").strip()
+    try:
+        result = json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        logger.error("LLM returned invalid JSON: %s. Raw (500 chars): %s", exc, cleaned[:500])
+        raise ValueError(f"LLM returned invalid JSON: {exc}") from exc
+    if "score" not in result or "feedback" not in result:
+        raise ValueError("LLM response missing 'score' or 'feedback' keys.")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Gemini (API-key) gateway
 # ---------------------------------------------------------------------------
 
 def _call_gemini(question_text: str, grading_criteria: str, max_points: int,
                  user_answer: str, system_prompt_override: str | None = None) -> dict:
-    """
-    Call Gemini 2.5 Flash and return a dict with at minimum 'score' and 'feedback'.
-    Raises on error.
-    """
+    """Call Gemini via direct API key. Raises on error."""
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY is not configured on the server.")
 
-    if system_prompt_override:
-        prompt = system_prompt_override.format(
-            question_text=question_text,
-            grading_criteria=grading_criteria,
-            max_points=max_points,
-            user_answer=user_answer,
-        )
-    else:
-        prompt_config = PromptConfiguration.objects.filter(is_active=True).first()
-        if not prompt_config:
-            raise RuntimeError("No active PromptConfiguration found in the database.")
-        prompt = prompt_config.prompt_text.format(
-            question_text=question_text,
-            grading_criteria=grading_criteria,
-            max_points=max_points,
-            user_answer=user_answer,
-        )
-
+    prompt = _build_prompt(question_text, grading_criteria, max_points, user_answer, system_prompt_override)
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-2.5-flash")
     ai_response = model.generate_content(prompt)
+    return _parse_llm_json(ai_response.text)
 
-    cleaned = ai_response.text.strip().replace("```json", "").replace("```", "").strip()
-    try:
-        result = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        logger.error("Gemini returned invalid JSON: %s. Raw (500 chars): %s", exc, cleaned[:500])
-        raise ValueError(f"Gemini returned invalid JSON: {exc}") from exc
 
-    if "score" not in result or "feedback" not in result:
-        raise ValueError("Gemini response missing 'score' or 'feedback' keys.")
+# ---------------------------------------------------------------------------
+# Vertex AI (service-account) gateway
+# ---------------------------------------------------------------------------
 
-    return result
+def _call_vertex(question_text: str, grading_criteria: str, max_points: int,
+                 user_answer: str, system_prompt_override: str | None = None) -> dict:
+    """Call Gemini on Vertex AI using a service-account credential. Raises on error."""
+    import vertexai
+    from vertexai.generative_models import GenerativeModel as VertexGenerativeModel
+
+    project = os.environ.get("VERTEX_PROJECT_ID")
+    location = os.environ.get("VERTEX_LOCATION", "us-central1")
+    model_name = os.environ.get("VERTEX_MODEL", "gemini-2.5-flash")
+
+    if not project:
+        raise RuntimeError("VERTEX_PROJECT_ID is not configured on the server.")
+
+    credentials = None
+    sa_key_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if sa_key_path:
+        from google.oauth2 import service_account
+        credentials = service_account.Credentials.from_service_account_file(
+            sa_key_path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+
+    vertexai.init(project=project, location=location, credentials=credentials)
+    prompt = _build_prompt(question_text, grading_criteria, max_points, user_answer, system_prompt_override)
+    model = VertexGenerativeModel(model_name)
+    ai_response = model.generate_content(prompt)
+    return _parse_llm_json(ai_response.text)
+
+
+# ---------------------------------------------------------------------------
+# Provider dispatcher
+# ---------------------------------------------------------------------------
+
+def _call_llm(question_text: str, grading_criteria: str, max_points: int,
+              user_answer: str, system_prompt_override: str | None = None) -> dict:
+    """Route to Gemini or Vertex AI based on LLM_PROVIDER env var (default: gemini)."""
+    provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
+    if provider == "vertex":
+        return _call_vertex(question_text, grading_criteria, max_points, user_answer, system_prompt_override)
+    return _call_gemini(question_text, grading_criteria, max_points, user_answer, system_prompt_override)
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +218,7 @@ def grade_open_text(question_text: str, grading_criteria: str, max_points: int,
     else:
         grading_method = "fallback_llm"
 
-    result = _call_gemini(question_text, grading_criteria, max_points, user_answer)
+    result = _call_llm(question_text, grading_criteria, max_points, user_answer)
     result.setdefault("max_points", max_points)
     result["grading_method"] = grading_method
     result["vector_score"] = vector_score
@@ -208,8 +259,8 @@ def grade_open_cli(question_text: str, grading_criteria: str, max_points: int,
         "Student answer: {user_answer}\n\n"
         'Respond ONLY with JSON: {{"score": <int>, "feedback": "<string>"}}'
     )
-    result = _call_gemini(question_text, grading_criteria, max_points, user_answer,
-                          system_prompt_override=cli_system_prompt)
+    result = _call_llm(question_text, grading_criteria, max_points, user_answer,
+                       system_prompt_override=cli_system_prompt)
     result.setdefault("max_points", max_points)
     result["grading_method"] = "llm"
     result["vector_score"] = None
@@ -237,8 +288,8 @@ def grade_open_code(question_text: str, grading_criteria: str, max_points: int,
         "Student answer:\n{user_answer}\n\n"
         'Respond ONLY with JSON: {{"score": <int>, "feedback": "<string>"}}'
     )
-    result = _call_gemini(question_text, grading_criteria, max_points, user_answer,
-                          system_prompt_override=code_system_prompt)
+    result = _call_llm(question_text, grading_criteria, max_points, user_answer,
+                       system_prompt_override=code_system_prompt)
     result.setdefault("max_points", max_points)
     result["grading_method"] = "llm"
     result["vector_score"] = None
@@ -255,17 +306,23 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points,
                        question_type="open-text", force_llm=False):
     """
     Route grading based on question_type:
-      open-text  → vector similarity → Gemini fallback
-      open-cli   → regex → Gemini fallback
-      open-code  → Gemini only (code rubric)
+      open-text  → vector similarity → LLM fallback
+      open-cli   → regex → LLM fallback
+      open-code  → LLM only (code rubric)
       open-ended → treated as open-text (legacy)
 
-    force_llm=True skips local methods (vector/regex) and goes straight to Gemini.
+    force_llm=True skips local methods (vector/regex) and goes straight to the LLM.
+    Active provider is controlled by the LLM_PROVIDER env var (gemini | vertex).
     """
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-    if not GEMINI_API_KEY:
-        logger.critical("GEMINI_API_KEY is not configured on the server.")
-        return {"error": "API_KEY_MISSING", "message": "AI API key is not configured on the server."}
+    provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
+    if provider == "vertex":
+        if not os.environ.get("VERTEX_PROJECT_ID"):
+            logger.critical("VERTEX_PROJECT_ID is not configured on the server.")
+            return {"error": "API_KEY_MISSING", "message": "AI API key is not configured on the server."}
+    else:
+        if not os.environ.get("GEMINI_API_KEY"):
+            logger.critical("GEMINI_API_KEY is not configured on the server.")
+            return {"error": "API_KEY_MISSING", "message": "AI API key is not configured on the server."}
 
     try:
         if question_type in ("open-text", "open-ended"):
@@ -279,7 +336,7 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points,
             logger.warning("Unknown question_type '%s', defaulting to open-text pipeline.", question_type)
             return grade_open_text(question_text, grading_criteria, max_points, user_answer, force_llm=force_llm)
     except ResourceExhausted as exc:
-        logger.warning("Gemini rate limit hit: %s", exc)
+        logger.warning("LLM rate limit hit: %s", exc)
         return {"error": "RATE_LIMIT", "message": "AI grading service is temporarily rate-limited. Please try again in a moment."}
     except Exception as exc:
         logger.exception("Unexpected error during grading: %s", exc)

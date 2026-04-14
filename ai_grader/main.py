@@ -1,5 +1,6 @@
 import os
 import threading
+from contextlib import asynccontextmanager
 from functools import lru_cache
 
 import uvicorn
@@ -8,8 +9,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-
-app = FastAPI()
 
 _model: SentenceTransformer | None = None
 _model_ready = threading.Event()
@@ -21,9 +20,15 @@ def _load_model():
     _model_ready.set()
 
 
-# Load model in background so the container starts immediately and the
-# healthcheck can detect readiness separately.
-threading.Thread(target=_load_model, daemon=True).start()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load model in background so the container starts immediately and the
+    # healthcheck can detect readiness separately.
+    threading.Thread(target=_load_model, daemon=True).start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @lru_cache(maxsize=128)

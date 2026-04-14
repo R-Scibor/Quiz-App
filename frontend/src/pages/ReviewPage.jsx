@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import useTestStore from '../store/testStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReportModal from '../components/ReportModal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Warianty animacji dla listy pytań
 const listVariants = {
@@ -57,20 +58,16 @@ const ClosedQuestionReview = ({ question, userAnswer }) => {
 };
 
 // --- Komponent dla pytania OTWARTEGO ---
-const OpenQuestionReview = ({ question, result }) => {
+const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
     if (!result) {
         return <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-800 dark:text-yellow-200">Brak zapisanej odpowiedzi dla tego pytania.</div>;
     }
 
     const { userAnswer, points_awarded, feedback } = result;
 
-    // Sprawdzamy, czy wynik jest wyższy niż połowa maksymalnej liczby punktów
     const isScoreHigh = points_awarded >= question.maxPoints / 2;
-
-    // Definiujemy klasy CSS dla obu wariantów
     const successClasses = 'p-4 bg-green-100 dark:bg-green-900/50 rounded-lg mt-2 text-green-800 dark:text-green-200';
     const warningClasses = 'p-4 bg-red-100 dark:bg-red-900/50 rounded-lg mt-2 text-red-800 dark:text-red-200';
-
 
     return (
         <div className="space-y-4 mt-4">
@@ -79,11 +76,27 @@ const OpenQuestionReview = ({ question, result }) => {
                 <p className="p-4 bg-gray-100 dark:bg-option-bg rounded-lg mt-2 text-gray-800 dark:text-gray-300">{userAnswer || "Brak odpowiedzi"}</p>
             </div>
             <div>
-                <h4 className="font-bold text-gray-700 dark:text-gray-200">Ocena ({points_awarded} / {question.maxPoints} pkt):</h4>
-                {/* Używamy operatora trójargumentowego do dynamicznego przypisania klas */}
-                <p className={isScoreHigh ? successClasses : warningClasses}>
-                    {feedback}
-                </p>
+                {isRegrading ? (
+                    <div className="flex flex-col items-center gap-2 py-4">
+                        <LoadingSpinner />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Re-grading with AI…</p>
+                    </div>
+                ) : (
+                    <>
+                        <h4 className="font-bold text-gray-700 dark:text-gray-200">Ocena ({points_awarded} / {question.maxPoints} pkt):</h4>
+                        <p className={isScoreHigh ? successClasses : warningClasses}>
+                            {feedback}
+                        </p>
+                        {userAnswer && (
+                            <button
+                                onClick={onRegrade}
+                                className="mt-3 text-xs text-gray-500 dark:text-gray-400 hover:text-brand-primary dark:hover:text-brand-primary underline underline-offset-2 transition-colors"
+                            >
+                                Re-grade with AI
+                            </button>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );
@@ -93,7 +106,7 @@ const OpenQuestionReview = ({ question, result }) => {
 // --- GŁÓWNY KOMPONENT STRONY ---
 const ReviewPage = () => {
     // Pobieramy ze stanu wszystkie potrzebne dane, które przygotowaliśmy wcześniej
-    const { currentQuestions, userAnswers, openQuestionResults, backToResults } = useTestStore();
+    const { currentQuestions, userAnswers, openQuestionResults, backToResults, checkingQuestionId, regradeQuestion, startPolling } = useTestStore();
     const [reportingQuestion, setReportingQuestion] = useState(null);
     const [reportedQuestions, setReportedQuestions] = useState(new Set());
 
@@ -134,6 +147,11 @@ const ReviewPage = () => {
                             <OpenQuestionReview
                                 question={question}
                                 result={openQuestionResults[question.id]}
+                                isRegrading={checkingQuestionId === question.id}
+                                onRegrade={async () => {
+                                    const resp = await regradeQuestion(question.id);
+                                    if (resp?.task_id) startPolling(resp.task_id, question.id);
+                                }}
                             />
                         ) : (
                             <ClosedQuestionReview

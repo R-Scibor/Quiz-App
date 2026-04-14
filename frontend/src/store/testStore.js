@@ -216,6 +216,23 @@ const useTestStore = create((set, get) => ({
         set(state => ({ activePolls: { ...state.activePolls, [taskId]: interval } }));
     },
 
+    regradeQuestion: async (questionId) => {
+        const { currentQuestions, openQuestionResults } = get();
+        const question = currentQuestions.find(q => q.id === questionId);
+        const userAnswer = openQuestionResults[questionId]?.userAnswer;
+        if (!question || !userAnswer) return null;
+        set({ checkingQuestionId: questionId, error: null });
+        const response = await checkOpenAnswerApi({
+            questionText: question.questionText,
+            userAnswer,
+            gradingCriteria: question.gradingCriteria,
+            maxPoints: question.maxPoints,
+            questionType: question.type,
+            forceAI: true,
+        });
+        return response.data; // { task_id }
+    },
+
     setLastAnswerFeedback: (feedbackData, questionId) => {
         const { score, feedback, grading_method } = feedbackData;
         const { currentQuestions } = get();

@@ -28,6 +28,7 @@ const useTestStore = create((set, get) => ({
     checkingQuestionId: null, // Will hold the ID of the question being graded
     openQuestionResults: {}, // Will store all feedback permanently
     questionTimes: {}, // Per-question time tracking { questionId: seconds }
+    activePolls: {}, // { [taskId]: intervalId } — persists polling across view/component changes
 
     // Auth state
     user: null,
@@ -134,7 +135,7 @@ const useTestStore = create((set, get) => ({
         const { currentQuestionIndex, currentQuestions, questionStartTime, checkingQuestionId } = get();
         const question = currentQuestions[currentQuestionIndex];
 
-        if (checkingQuestionId) return { task_id: null };
+        if (checkingQuestionId === question.id) return { task_id: null };
 
         // Only record time on the first (non-forced) submission
         if (!forceAI && questionStartTime) {
@@ -176,6 +177,43 @@ const useTestStore = create((set, get) => ({
     getTaskResult: async (taskId) => {
         const response = await getTaskResultApi(taskId);
         return response.data; // Returns { status, data }
+    },
+
+    startPolling: (taskId, questionId) => {
+        let retries = 0;
+        const MAX_RETRIES = 60; // 60 × 2s = 120s timeout
+        const interval = setInterval(async () => {
+            const clearPoll = () => {
+                clearInterval(interval);
+                set(state => {
+                    const polls = { ...state.activePolls };
+                    delete polls[taskId];
+                    return { activePolls: polls };
+                });
+            };
+            if (retries >= MAX_RETRIES) {
+                clearPoll();
+                get().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
+                return;
+            }
+            retries++;
+            try {
+                const resultResponse = await getTaskResultApi(taskId);
+                const data = resultResponse.data;
+                if (data.status === 'SUCCESS' || data.status === 'FAILURE') {
+                    clearPoll();
+                    if (data.status === 'SUCCESS') {
+                        get().setLastAnswerFeedback(data.data, questionId);
+                    } else {
+                        get().setError({ message: data.data || 'Wystąpił błąd podczas przetwarzania zadania.' });
+                    }
+                }
+            } catch (error) {
+                clearPoll();
+                get().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
+            }
+        }, 2000);
+        set(state => ({ activePolls: { ...state.activePolls, [taskId]: interval } }));
     },
 
     setLastAnswerFeedback: (feedbackData, questionId) => {
@@ -232,48 +270,58 @@ const useTestStore = create((set, get) => ({
         }
     },
 
-    resetTest: () => set({
-        questionMode: 'closed',
-        view: 'home',
-        selectedCategories: [],
-        currentQuestions: [],
-        currentQuestionIndex: 0,
-        userAnswers: {},
-        score: 0,
-        testStartTime: null,
-        testEndTime: null,
-        error: null,
-        openQuestionResults: {},
-        checkingQuestionId: null,
-        isTimerRunning: false,
-        questionStartTime: null,
-        totalTimeSpent: 0,
-        questionTimes: {},
-        currentSessionId: null,
-        difficultyRatings: {},
-        studySelectedTestIds: null,
-    }),
+    resetTest: () => {
+        const { activePolls } = get();
+        Object.values(activePolls).forEach(clearInterval);
+        set({
+            questionMode: 'closed',
+            view: 'home',
+            selectedCategories: [],
+            currentQuestions: [],
+            currentQuestionIndex: 0,
+            userAnswers: {},
+            score: 0,
+            testStartTime: null,
+            testEndTime: null,
+            error: null,
+            openQuestionResults: {},
+            checkingQuestionId: null,
+            activePolls: {},
+            isTimerRunning: false,
+            questionStartTime: null,
+            totalTimeSpent: 0,
+            questionTimes: {},
+            currentSessionId: null,
+            difficultyRatings: {},
+            studySelectedTestIds: null,
+        });
+    },
 
-    retryTest: () => set({
-        view: 'setup',
-        currentQuestions: [],
-        currentQuestionIndex: 0,
-        userAnswers: {},
-        score: 0,
-        testStartTime: null,
-        testEndTime: null,
-        error: null,
-        openQuestionResults: {},
-        checkingQuestionId: null,
-        isTimerRunning: false,
-        questionStartTime: null,
-        totalTimeSpent: 0,
-        questionTimes: {},
-        currentSessionId: null,
-        difficultyRatings: {},
-        studySelectedTestIds: null,
-        // selectedCategories, numQuestionsConfig, timerEnabled, questionMode are preserved
-    }),
+    retryTest: () => {
+        const { activePolls } = get();
+        Object.values(activePolls).forEach(clearInterval);
+        set({
+            view: 'setup',
+            currentQuestions: [],
+            currentQuestionIndex: 0,
+            userAnswers: {},
+            score: 0,
+            testStartTime: null,
+            testEndTime: null,
+            error: null,
+            openQuestionResults: {},
+            checkingQuestionId: null,
+            activePolls: {},
+            isTimerRunning: false,
+            questionStartTime: null,
+            totalTimeSpent: 0,
+            questionTimes: {},
+            currentSessionId: null,
+            difficultyRatings: {},
+            studySelectedTestIds: null,
+            // selectedCategories, numQuestionsConfig, timerEnabled, questionMode are preserved
+        });
+    },
 
     _finalizeSession: async () => {
         const { currentSessionId, user, currentQuestions, userAnswers, openQuestionResults, score, questionTimes, difficultyRatings } = get();

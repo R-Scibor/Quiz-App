@@ -66,63 +66,24 @@ const OpenEndedQuestionUI = () => {
         ? question.gradingCriteria.split(':')[0].trim()
         : null;
 
-    const pollingRef = useRef(null);
-
     useEffect(() => {
         return () => {
-            if (pollingRef.current) clearInterval(pollingRef.current);
             if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
         };
     }, []);
 
-    const startPolling = (taskId, questionId) => {
-        setIsSlowGrading(false);
-        if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
-        slowWarningRef.current = setTimeout(() => setIsSlowGrading(true), 15000);
-
-        let retries = 0;
-        const MAX_RETRIES = 60; // 60 × 2s = 120s timeout
-        pollingRef.current = setInterval(async () => {
-            if (retries >= MAX_RETRIES) {
-                clearInterval(pollingRef.current);
-                pollingRef.current = null;
-                if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
-                useTestStore.getState().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
-                return;
-            }
-            retries++;
-            try {
-                const resultResponse = await useTestStore.getState().getTaskResult(taskId);
-
-                if (resultResponse.status === 'SUCCESS' || resultResponse.status === 'FAILURE') {
-                    clearInterval(pollingRef.current);
-                    pollingRef.current = null;
-                    if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
-
-                    if (resultResponse.status === 'SUCCESS') {
-                        useTestStore.getState().setLastAnswerFeedback(resultResponse.data, questionId);
-                    } else {
-                        throw new Error(resultResponse.data || "Wystąpił błąd podczas przetwarzania zadania.");
-                    }
-                }
-            } catch (error) {
-                clearInterval(pollingRef.current);
-                pollingRef.current = null;
-                if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
-                useTestStore.getState().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
-            }
-        }, 2000);
-    };
-
     const handleSubmit = async () => {
         if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
         setError(null);
+        setIsSlowGrading(false);
+        if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
+        slowWarningRef.current = setTimeout(() => setIsSlowGrading(true), 15000);
 
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
             const taskId = taskResponse.task_id;
             if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
-            startPolling(taskId, question.id);
+            useTestStore.getState().startPolling(taskId, question.id);
         } catch (error) {
              useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć zadania oceny.' });
         }
@@ -131,12 +92,15 @@ const OpenEndedQuestionUI = () => {
     const handleRequestAI = async () => {
         if (isCurrentlyChecking) return;
         setError(null);
+        setIsSlowGrading(false);
+        if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
+        slowWarningRef.current = setTimeout(() => setIsSlowGrading(true), 15000);
         const answerToRe = questionResult?.userAnswer || userAnswer;
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(answerToRe, true);
             const taskId = taskResponse.task_id;
             if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
-            startPolling(taskId, question.id);
+            useTestStore.getState().startPolling(taskId, question.id);
         } catch (error) {
             useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć oceny AI.' });
         }

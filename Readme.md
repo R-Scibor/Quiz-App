@@ -171,7 +171,7 @@ A detailed description of the available API endpoints, their parameters, and exa
 ### Possible Extensions (Future Ideas)
 
 - [ ] **OAuth / Social Login:** Google or GitHub sign-in as an alternative to username/password.
-- [ ] **Statistics Charts:** Visual graphs for accuracy trends and study activity over time.
+- [x] **Statistics Charts:** Accuracy trend sparkline, per-test accuracy bars, and session history — all on the Stats page.
 - [ ] **Leaderboards:** Compare scores with other users across categories.
 - [ ] **Sandboxed Code Execution:** Run submitted code against test cases for reliable `open-code` grading (v0.3).
 - [ ] **Per-Question Vector Thresholds:** Override the global 0.85/0.30 thresholds on a per-question basis for better accuracy.

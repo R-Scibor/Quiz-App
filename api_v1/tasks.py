@@ -9,6 +9,7 @@ from html.parser import HTMLParser
 import requests
 from celery import shared_task
 import google.generativeai as genai
+from google.api_core.exceptions import ResourceExhausted
 from .models import PromptConfiguration
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,9 @@ def generate_ai_answer(user_answer, grading_criteria, question_text, max_points,
             # Unknown type — fall back to open-text pipeline
             logger.warning("Unknown question_type '%s', defaulting to open-text pipeline.", question_type)
             return grade_open_text(question_text, grading_criteria, max_points, user_answer, force_llm=force_llm)
+    except ResourceExhausted as exc:
+        logger.warning("Gemini rate limit hit: %s", exc)
+        return {"error": "RATE_LIMIT", "message": "AI grading service is temporarily rate-limited. Please try again in a moment."}
     except Exception as exc:
         logger.exception("Unexpected error during grading: %s", exc)
         raise

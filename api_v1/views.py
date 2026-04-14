@@ -230,11 +230,20 @@ class GetTaskResultView(APIView):
         logger.debug(f"GET_TASK_RESULT: Raw meta from backend: {meta}")
 
         if meta:
-            response_data = {
-                "status": meta.get('status', 'UNKNOWN'),
-                "task_id": task_id,
-                "data": meta.get('result')
-            }
+            task_status = meta.get('status', 'UNKNOWN')
+            if task_status == 'FAILURE':
+                result = meta.get('result')
+                response_data = {
+                    "status": "FAILURE",
+                    "task_id": task_id,
+                    "data": {"error": "TASK_FAILED", "message": str(result) if result else "Grading task failed unexpectedly."},
+                }
+            else:
+                response_data = {
+                    "status": task_status,
+                    "task_id": task_id,
+                    "data": meta.get('result')
+                }
         else:
             # If there's no metadata, the task is likely still pending or unknown
             response_data = {

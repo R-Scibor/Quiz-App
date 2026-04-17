@@ -475,12 +475,14 @@ class UserStatsView(APIView):
         agg = sessions.aggregate(
             total_sessions=Count('id'),
             total_questions=Sum('total_questions'),
-            total_correct=Sum('correct_count'),
+            total_score_achieved=Sum('score_achieved'),
+            total_score_possible=Sum('score_possible'),
         )
         total_sessions = agg['total_sessions'] or 0
         total_questions = agg['total_questions'] or 0
-        total_correct = agg['total_correct'] or 0
-        overall_accuracy = round((total_correct / total_questions * 100), 1) if total_questions > 0 else 0
+        total_score_achieved = agg['total_score_achieved'] or 0
+        total_score_possible = agg['total_score_possible'] or 0
+        overall_accuracy = round((total_score_achieved / total_score_possible * 100), 1) if total_score_possible > 0 else 0
 
         # Streak: count consecutive days with at least one completed session ending today
         from datetime import date, timedelta
@@ -541,10 +543,9 @@ class UserStatsView(APIView):
                 'id': str(s.id),
                 'date': s.completed_at.strftime('%Y-%m-%d'),
                 'total_questions': s.total_questions,
-                'correct_count': s.correct_count,
                 'score_achieved': s.score_achieved,
                 'score_possible': s.score_possible,
-                'accuracy': round(s.correct_count / s.total_questions * 100) if s.total_questions > 0 else 0,
+                'accuracy': round(s.score_achieved / s.score_possible * 100) if s.score_possible > 0 else 0,
             }
             for s in recent
         ]
@@ -574,7 +575,8 @@ class StatsTestBreakdownView(APIView):
             .values('test__id', 'test__title')
             .annotate(
                 total_attempts=Count('id'),
-                correct=Count(Case(When(is_correct=True, then=1), output_field=IntegerField())),
+                points_earned=Sum('points_awarded'),
+                points_possible=Sum('question__max_points'),
                 avg_time_secs=Avg('time_spent_secs'),
             )
             .order_by('-total_attempts')[:20]
@@ -584,8 +586,9 @@ class StatsTestBreakdownView(APIView):
                 'test_id': str(row['test__id']),
                 'title': row['test__title'],
                 'total_attempts': row['total_attempts'],
-                'correct': row['correct'],
-                'accuracy': round(row['correct'] / row['total_attempts'] * 100, 1) if row['total_attempts'] > 0 else 0,
+                'points_earned': row['points_earned'] or 0,
+                'points_possible': row['points_possible'] or 0,
+                'accuracy': round((row['points_earned'] or 0) / row['points_possible'] * 100, 1) if row['points_possible'] else 0,
                 'avg_time_secs': round(row['avg_time_secs']) if row['avg_time_secs'] else 0,
             }
             for row in breakdown

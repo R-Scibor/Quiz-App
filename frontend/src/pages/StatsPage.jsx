@@ -83,6 +83,7 @@ const StatsPage = () => {
 
     useEffect(() => {
         fetchStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (statsLoading) {
@@ -159,7 +160,7 @@ const StatsPage = () => {
                                             {t.title}
                                         </span>
                                         <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-                                            {t.correct}/{t.total_attempts}
+                                            {t.points_earned}/{t.points_possible} pts
                                             {t.avg_time_secs > 0 && <span className="ml-2">{t.avg_time_secs}s avg</span>}
                                             <span className={`ml-2 font-semibold ${accuracyColor(t.accuracy)}`}>{t.accuracy}%</span>
                                         </span>
@@ -192,7 +193,7 @@ const StatsPage = () => {
                                 <div key={s.id} className="flex items-center justify-between bg-gray-50 dark:bg-black/20 rounded-lg px-4 py-3">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">{s.date}</span>
                                     <span className="text-sm text-gray-700 dark:text-gray-300">
-                                        {s.correct_count} / {s.total_questions} correct
+                                        {s.score_achieved} / {s.score_possible} pts
                                     </span>
                                     <span className={`text-sm font-semibold ${accuracyColor(s.accuracy)}`}>
                                         {s.accuracy}%

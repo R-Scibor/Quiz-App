@@ -4,41 +4,41 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Category(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla kategorii.")
-    name = models.CharField(max_length=255, unique=True, help_text="Nazwa kategorii.")
-    description = models.TextField(blank=True, null=True, help_text="Opcjonalny opis kategorii.")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the category.")
+    name = models.CharField(max_length=255, unique=True, help_text="Category name.")
+    description = models.TextField(blank=True, null=True, help_text="Optional category description.")
 
     class Meta:
-        verbose_name = "Kategoria"
-        verbose_name_plural = "Kategorie"
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
         ordering = ['name']
 
     def __str__(self):
         return self.name
 
 class Tag(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla tagu.")
-    name = models.CharField(max_length=100, unique=True, help_text="Nazwa tagu.")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the tag.")
+    name = models.CharField(max_length=100, unique=True, help_text="Tag name.")
 
     class Meta:
         verbose_name = "Tag"
-        verbose_name_plural = "Tagi"
+        verbose_name_plural = "Tags"
         ordering = ['name']
 
     def __str__(self):
         return self.name
 
 class Test(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla testu.")
-    title = models.CharField(max_length=255, help_text="Tytuł testu.")
-    description = models.TextField(blank=True, null=True, help_text="Opcjonalny opis testu.")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Data i czas utworzenia testu.")
-    updated_at = models.DateTimeField(auto_now=True, help_text="Data i czas ostatniej aktualizacji testu.")
-    categories = models.ManyToManyField(Category, related_name="tests", blank=True, help_text="Kategorie, do których należy test.")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the test.")
+    title = models.CharField(max_length=255, help_text="Test title.")
+    description = models.TextField(blank=True, null=True, help_text="Optional test description.")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Date and time the test was created.")
+    updated_at = models.DateTimeField(auto_now=True, help_text="Date and time of last update.")
+    categories = models.ManyToManyField(Category, related_name="tests", blank=True, help_text="Categories this test belongs to.")
 
     class Meta:
         verbose_name = "Test"
-        verbose_name_plural = "Testy"
+        verbose_name_plural = "Tests"
         ordering = ['-created_at']
 
     def __str__(self):
@@ -53,42 +53,42 @@ class Question(models.Model):
     OPEN_CODE = 'open-code'
 
     QUESTION_TYPE_CHOICES = [
-        (SINGLE_CHOICE, 'Jednokrotnego wyboru'),
-        (MULTIPLE_CHOICE, 'Wielokrotnego wyboru'),
-        (OPEN_TEXT, 'Otwarte (tekst)'),
-        (OPEN_CLI, 'Otwarte (polecenie CLI)'),
-        (OPEN_CODE, 'Otwarte (kod)'),
+        (SINGLE_CHOICE, 'Single choice'),
+        (MULTIPLE_CHOICE, 'Multiple choice'),
+        (OPEN_TEXT, 'Open (text)'),
+        (OPEN_CLI, 'Open (CLI command)'),
+        (OPEN_CODE, 'Open (code)'),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla pytania.")
-    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions", help_text="Test, do którego przypisane jest to pytanie.")
-    text = models.TextField(help_text="Treść pytania.")
-    image = models.URLField(max_length=1024, blank=True, null=True, help_text="Opcjonalny link URL do obrazka powiązanego z pytaniem.")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the question.")
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions", help_text="Test this question belongs to.")
+    text = models.TextField(help_text="Question text.")
+    image = models.URLField(max_length=1024, blank=True, null=True, help_text="Optional URL to an image associated with the question.")
 
-    explanation = models.TextField(blank=True, null=True, help_text="Opcjonalne wyjaśnienie poprawnej odpowiedzi.")
-    
+    explanation = models.TextField(blank=True, null=True, help_text="Optional explanation of the correct answer.")
+
     question_type = models.CharField(
         max_length=20,
         choices=QUESTION_TYPE_CHOICES,
         default=SINGLE_CHOICE,
-        help_text="Typ pytania (jednokrotnego wyboru, wielokrotnego wyboru, otwarte)."
+        help_text="Question type (single choice, multiple choice, open)."
     )
 
     grading_criteria = models.TextField(
-        blank=True, null=True, 
-        help_text="Kryteria oceny dla pytań otwartych."
+        blank=True, null=True,
+        help_text="Grading criteria for open questions."
     )
     max_points = models.PositiveIntegerField(
         blank=True, null=True,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
-        help_text="Maksymalna liczba punktów dla pytań otwartych (1–100)."
+        help_text="Maximum points for open questions (1–100)."
     )
 
-    tags = models.ManyToManyField(Tag, related_name="questions", blank=True, help_text="Tagi powiązane z pytaniem.")
+    tags = models.ManyToManyField(Tag, related_name="questions", blank=True, help_text="Tags associated with this question.")
 
     class Meta:
-        verbose_name = "Pytanie"
-        verbose_name_plural = "Pytania"
+        verbose_name = "Question"
+        verbose_name_plural = "Questions"
         ordering = ['id']
         indexes = [models.Index(fields=['test'], name='question_test_id_idx')]
         constraints = [models.UniqueConstraint(fields=['test', 'text'], name='unique_question_text_in_test')]
@@ -97,14 +97,14 @@ class Question(models.Model):
         return f"{self.text[:80]}..." if len(self.text) > 80 else self.text
 
 class Answer(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unikalny identyfikator UUID dla odpowiedzi.")
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers", help_text="Pytanie, do którego przypisana jest ta odpowiedź.")
-    text = models.CharField(max_length=1024, help_text="Treść odpowiedzi.")
-    is_correct = models.BooleanField(default=False, help_text="Czy ta odpowiedź jest poprawna?")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the answer.")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers", help_text="Question this answer belongs to.")
+    text = models.CharField(max_length=1024, help_text="Answer text.")
+    is_correct = models.BooleanField(default=False, help_text="Whether this answer is correct.")
 
     class Meta:
-        verbose_name = "Odpowiedź"
-        verbose_name_plural = "Odpowiedzi"
+        verbose_name = "Answer"
+        verbose_name_plural = "Answers"
         ordering = ['id']
         indexes = [models.Index(fields=['question'], name='answer_question_id_idx')]
         constraints = [models.UniqueConstraint(fields=['question', 'text'], name='unique_answer_text_for_question')]
@@ -117,58 +117,58 @@ class Answer(models.Model):
 class ReportedIssue(models.Model):
     """Stores user-submitted reports for question errors or incorrect AI grading."""
     ISSUE_TYPE_CHOICES = [
-        ('QUESTION_ERROR', 'Błąd w pytaniu/odpowiedzi'),
-        ('AI_GRADING_ERROR', 'Niesłuszna ocena AI'),
+        ('QUESTION_ERROR', 'Error in question/answer'),
+        ('AI_GRADING_ERROR', 'Incorrect AI grading'),
     ]
 
     STATUS_CHOICES = [
-        ('NEW', 'Nowe'),
-        ('IN_PROGRESS', 'W trakcie analizy'),
-        ('RESOLVED', 'Rozwiązane'),
-        ('REJECTED', 'Odrzucone'),
+        ('NEW', 'New'),
+        ('IN_PROGRESS', 'In progress'),
+        ('RESOLVED', 'Resolved'),
+        ('REJECTED', 'Rejected'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reported_issues", help_text="Pytanie, którego dotyczy zgłoszenie.")
-    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="reported_issues", help_text="Test, w którym wystąpiło zgłoszenie.")
-    
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="reported_issues", help_text="Question this report relates to.")
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="reported_issues", help_text="Test in which the issue occurred.")
+
     issue_type = models.CharField(
         max_length=20,
         choices=ISSUE_TYPE_CHOICES,
-        help_text="Typ zgłoszonego problemu."
+        help_text="Type of reported issue."
     )
     description = models.TextField(
-        blank=True, 
-        null=True, 
-        help_text="Opcjonalny opis problemu od użytkownika."
+        blank=True,
+        null=True,
+        help_text="Optional description of the issue from the user."
     )
     ai_feedback_snapshot = models.TextField(
-        blank=True, 
-        null=True, 
-        help_text="Zapisana odpowiedź AI w momencie zgłoszenia (dla zgłoszeń typu 'AI_GRADING_ERROR')."
+        blank=True,
+        null=True,
+        help_text="Saved AI response at the time of the report (for AI_GRADING_ERROR reports)."
     )
     user_answer_open = models.TextField(
         blank=True,
         null=True,
-        help_text="Odpowiedź użytkownika dla pytań otwartych."
+        help_text="User's answer for open questions."
     )
     user_answer_choices = models.JSONField(
         blank=True,
         null=True,
-        help_text="Zaznaczone opcje przez użytkownika dla pytań zamkniętych (przechowywane jako lista tekstów)."
+        help_text="User's selected options for closed questions (stored as a list of strings)."
     )
-    
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='NEW',
-        help_text="Aktualny status zgłoszenia."
+        help_text="Current status of the report."
     )
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Data i czas utworzenia zgłoszenia.")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Date and time the report was created.")
 
     class Meta:
-        verbose_name = "Zgłoszony Problem"
-        verbose_name_plural = "Zgłoszone Problemy"
+        verbose_name = "Reported Issue"
+        verbose_name_plural = "Reported Issues"
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['question'], name='reported_issue_question_idx'),
@@ -177,20 +177,20 @@ class ReportedIssue(models.Model):
         ]
 
     def __str__(self):
-        return f"Zgłoszenie {self.id} dla pytania {self.question.id}"
+        return f"Report {self.id} for question {self.question.id}"
 
 
 class PromptConfiguration(models.Model):
-    name = models.CharField(max_length=100, unique=True, help_text="Unikalna nazwa dla promptu, np. 'default_grading_prompt'")
-    prompt_text = models.TextField(help_text="Szablon promptu. Użyj {zmiennych} dla dynamicznych danych.")
-    is_active = models.BooleanField(default=True, help_text="Oznacz, czy ten prompt jest obecnie aktywny.")
+    name = models.CharField(max_length=100, unique=True, help_text="Unique prompt name, e.g. 'default_grading_prompt'.")
+    prompt_text = models.TextField(help_text="Prompt template. Use {variables} for dynamic data.")
+    is_active = models.BooleanField(default=True, help_text="Whether this prompt is currently active.")
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = "Konfiguracja Promptu"
-        verbose_name_plural = "Konfiguracje Promptów"
+        verbose_name = "Prompt Configuration"
+        verbose_name_plural = "Prompt Configurations"
 
 
 class QuizSession(models.Model):

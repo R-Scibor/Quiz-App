@@ -24,13 +24,9 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('api/v1/', include('api_v1.urls')),
     
-        # --- DODANA SEKCJA DLA BRAKUJĄCYCH OBRAZKÓW ---
-    # Przekierowanie dla favicona i innych zasobów z katalogu /public
+    # Redirect icon and other public-dir assets that Nginx doesn't serve directly
     path('icon.png', RedirectView.as_view(url='/static/icon.png', permanent=True)),
-    # Dodaj tutaj kolejne linie, jeśli brakuje innych plików
-    # --- KONIEC DODANEJ SEKCJI ---
-    
-    # Ta reguła musi być na końcu. Przechwytuje wszystkie inne ścieżki
-    # i przekazuje je do aplikacji React.
+
+    # Catch-all: must be last — passes everything else to the React SPA.
     re_path(r'^.*$', ReactAppView.as_view(), name='react-app'),
 ]

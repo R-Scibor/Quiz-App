@@ -190,27 +190,25 @@ class ReportedIssueSerializer(serializers.ModelSerializer):
 
         # Sprawdzamy, czy pytanie faktycznie należy do podanego testu.
         if question and test and question.test != test:
-            raise serializers.ValidationError({"detail": "To pytanie nie należy do podanego testu."})
+            raise serializers.ValidationError({"detail": "This question does not belong to the given test."})
 
-        # Jeśli typem zgłoszenia jest błąd oceny AI, pole ai_feedback_snapshot jest wymagane.
         if attrs.get('issue_type') == 'AI_GRADING_ERROR' and not attrs.get('ai_feedback_snapshot'):
             raise serializers.ValidationError({
-                'ai_feedback_snapshot': 'Zapis odpowiedzi AI jest wymagany przy zgłaszaniu błędu oceny.'
+                'ai_feedback_snapshot': 'A snapshot of the AI response is required when reporting a grading error.'
             })
 
-        # Walidacja odpowiedzi użytkownika w zależności od typu pytania
         if question:
             if question.question_type in [Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]:
                 if not user_answer_open:
-                    raise serializers.ValidationError({'user_answer_open': 'Odpowiedź użytkownika jest wymagana dla pytań otwartych.'})
+                    raise serializers.ValidationError({'user_answer_open': 'User answer is required for open questions.'})
                 if user_answer_choices:
-                    raise serializers.ValidationError({'user_answer_choices': 'Odpowiedzi w formie opcji nie są dozwolone dla pytań otwartych.'})
-            
+                    raise serializers.ValidationError({'user_answer_choices': 'Choice answers are not allowed for open questions.'})
+
             elif question.question_type in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]:
                 if not user_answer_choices:
-                    raise serializers.ValidationError({'user_answer_choices': 'Odpowiedź użytkownika jest wymagana dla pytań zamkniętych.'})
+                    raise serializers.ValidationError({'user_answer_choices': 'User answer is required for closed questions.'})
                 if user_answer_open:
-                    raise serializers.ValidationError({'user_answer_open': 'Odpowiedź tekstowa nie jest dozwolona dla pytań zamkniętych.'})
+                    raise serializers.ValidationError({'user_answer_open': 'Text answers are not allowed for closed questions.'})
 
         return attrs
 

@@ -129,9 +129,9 @@ class ReactAppView(View):
             with open(os.path.join(settings.REACT_APP_BUILD_PATH, 'index.html')) as f:
                 return render(request, 'index.html')
         except FileNotFoundError:
-            logger.error("Nie znaleziono pliku index.html aplikacji React w ścieżce: %s", settings.REACT_APP_BUILD_PATH)
+            logger.error("React index.html not found at path: %s", settings.REACT_APP_BUILD_PATH)
             return Response(
-                {"error": "REACT_APP_NOT_FOUND", "message": "Plik index.html aplikacji React nie został znaleziony."},
+                {"error": "REACT_APP_NOT_FOUND", "message": "React app index.html was not found."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -151,9 +151,9 @@ class TestListView(APIView):
             serializer = TestMetadataSerializer(tests_with_counts, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
-            logger.exception("Wystąpił nieoczekiwany błąd podczas listowania testów z bazy danych.")
+            logger.exception("Unexpected error listing tests from database.")
             return Response(
-                {"error": "DB_LIST_ERROR", "message": "Wystąpił błąd serwera podczas pobierania listy testów."},
+                {"error": "DB_LIST_ERROR", "message": "Server error while fetching test list."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -166,16 +166,16 @@ class QuestionListView(APIView):
         mode = request.query_params.get('mode', 'mixed').lower()
 
         if not test_ids_str or not num_questions_str:
-            return Response({"error": "MISSING_PARAMETERS", "message": "Parametry 'categories' i 'num_questions' są wymagane."}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({"error": "MISSING_PARAMETERS", "message": "Parameters 'categories' and 'num_questions' are required."}, status=status.HTTP_400_BAD_REQUEST)
+
         if mode not in ['open', 'closed', 'mixed']:
-            return Response({"error": "INVALID_MODE_PARAMETER", "message": "Parametr 'mode' musi mieć wartość 'open', 'closed' lub 'mixed'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "INVALID_MODE_PARAMETER", "message": "Parameter 'mode' must be 'open', 'closed', or 'mixed'."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             num_questions = int(num_questions_str)
             test_ids = test_ids_str.split(',')
         except (ValueError, TypeError):
-            return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "Nieprawidłowy format parametrów."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "Invalid parameter format."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not 1 <= num_questions <= 200:
             return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "num_questions must be between 1 and 200."}, status=status.HTTP_400_BAD_REQUEST)
@@ -198,7 +198,7 @@ class QuestionListView(APIView):
         final_questions = questions_queryset.order_by('?')[:num_questions]
         
         if not final_questions:
-             return Response({"error": "NO_QUESTIONS_FOUND", "message": f"Nie znaleziono pytań dla wybranych kategorii w trybie '{mode}'."}, status=status.HTTP_404_NOT_FOUND)
+             return Response({"error": "NO_QUESTIONS_FOUND", "message": f"No questions found for the selected categories in mode '{mode}'."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = QuestionSerializer(final_questions, many=True)
         return Response(shuffle_options(serializer.data), status=status.HTTP_200_OK)
@@ -216,7 +216,7 @@ class CheckOpenAnswerView(APIView):
         force_llm = bool(request.data.get('forceAI', False))
 
         if not all([user_answer, grading_criteria, question_text, max_points]):
-            return Response({"error": "INCOMPLETE_DATA", "message": "Brak wszystkich wymaganych pól."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "INCOMPLETE_DATA", "message": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
         task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points, question_type, force_llm) # type: ignore
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)

@@ -2,8 +2,6 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act } from '@testing-library/react';
-
 import ReportModal from './ReportModal';
 
 // ---------------------------------------------------------------------------
@@ -20,7 +18,7 @@ vi.mock('framer-motion', () => ({
             const Tag = typeof tag === 'string' ? tag : 'div';
             return ({ children, ...props }) => {
                 // Strip framer-motion-specific props that cause React warnings
-                const { variants, initial, animate, exit, transition, ...rest } = props;
+                const { variants: _variants, initial: _initial, animate: _animate, exit: _exit, transition: _transition, ...rest } = props;
                 return React.createElement(Tag, rest, children);
             };
         },

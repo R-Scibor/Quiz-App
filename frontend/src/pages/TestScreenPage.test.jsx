@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
 
 import TestScreenPage from './TestScreenPage';
@@ -90,12 +90,76 @@ describe('TestScreenPage - Scenariusze rozwiązywania testu', () => {
         // Użytkownik odpowiada na ostatnie pytanie.
         await user.click(screen.getByText('Mars'));
         await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
-        
+
         // Na ostatnim pytaniu przycisk do nawigacji zmienia tekst.
         const finishButton = screen.getByRole('button', { name: /zobacz wyniki/i });
         await user.click(finishButton);
-        
+
         // Sprawdzamy, czy widok w stanie zmienił się na 'results', co oznacza koniec testu.
+        expect(useTestStore.getState().view).toBe('results');
+    });
+
+    // -------------------------------------------------------------------------
+    // Scoring edge cases
+    // -------------------------------------------------------------------------
+
+    test('confirmAnswer scores correctly when all multiple-choice options selected', async () => {
+        // Use the second question (multiple-choice: correctAnswers=[0, 2] for Mars+Jowisz)
+        act(() => {
+            useTestStore.setState({ currentQuestionIndex: 1, score: 0 });
+        });
+        render(<TestScreenPage />);
+
+        // Select both correct answers
+        await user.click(screen.getByText('Mars'));
+        await user.click(screen.getByText('Jowisz'));
+        await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
+
+        expect(useTestStore.getState().score).toBe(1);
+    });
+
+    test('confirmAnswer accepts correct answers regardless of selection order', async () => {
+        // Select in reverse order: Jowisz then Mars (correct is [0, 2] → Mars, Jowisz)
+        act(() => {
+            useTestStore.setState({ currentQuestionIndex: 1, score: 0 });
+        });
+        render(<TestScreenPage />);
+
+        await user.click(screen.getByText('Jowisz'));
+        await user.click(screen.getByText('Mars'));
+        await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
+
+        expect(useTestStore.getState().score).toBe(1);
+    });
+
+    test('confirmAnswer does not score when only partial selection made', async () => {
+        // Only select Mars (index 0) but not Jowisz (index 2) → incorrect
+        act(() => {
+            useTestStore.setState({ currentQuestionIndex: 1, score: 0 });
+        });
+        render(<TestScreenPage />);
+
+        await user.click(screen.getByText('Mars')); // only one of two required
+        await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
+
+        expect(useTestStore.getState().score).toBe(0);
+    });
+
+    test('nextQuestion on last question transitions to results view', async () => {
+        // Patch _finalizeSession to prevent real API calls
+        const mockFinalize = vi.fn().mockResolvedValue(undefined);
+        act(() => {
+            useTestStore.setState({
+                currentQuestionIndex: 1,
+                _finalizeSession: mockFinalize,
+            });
+        });
+        render(<TestScreenPage />);
+
+        await user.click(screen.getByText('Mars'));
+        await user.click(screen.getByRole('button', { name: /zatwierdź/i }));
+        await user.click(screen.getByRole('button', { name: /zobacz wyniki/i }));
+
         expect(useTestStore.getState().view).toBe('results');
     });
 });

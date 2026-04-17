@@ -1,10 +1,10 @@
-import { ReactNode, createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import { motion } from "framer-motion";
 
 const CheckboxContext = createContext({
   id: "",
   isChecked: false,
-  setIsChecked: (isChecked) => {},
+  setIsChecked: (_isChecked) => {},
   onChange: () => {},
 });
 

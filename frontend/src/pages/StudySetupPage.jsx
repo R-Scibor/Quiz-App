@@ -19,11 +19,11 @@ const ChevronIcon = ({ expanded }) => (
 );
 
 const StudySetupPage = () => {
-    const { studySetupData, studyNumQuestions, startStudyMode, setStudyConfig, resetTest, isLoading, user } = useTestStore();
+    const { studySetupData, studyNumQuestions, startStudyMode, setStudyConfig, isLoading, user } = useTestStore();
 
     const EXCLUDED_KEY = `study_excluded_tests_${user?.username || 'guest'}`;
     const totalQueued = studySetupData?.total_queued ?? 0;
-    const studiedTests = studySetupData?.studied_tests ?? [];
+    const studiedTests = useMemo(() => studySetupData?.studied_tests ?? [], [studySetupData]);
     const allTestIds = useMemo(() => studiedTests.map(t => String(t.id)), [studiedTests]);
 
     // Initialize session length: use persisted preference, capped at available

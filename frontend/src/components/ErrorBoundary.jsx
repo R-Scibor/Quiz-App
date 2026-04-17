@@ -10,7 +10,7 @@ class ErrorBoundary extends React.Component {
 
     // Ta metoda jest wywoływana, gdy potomek rzuci błędem.
     // Pozwala zaktualizować stan, aby następne renderowanie pokazało UI zapasowe.
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(_error) {
         return { hasError: true };
     }
 

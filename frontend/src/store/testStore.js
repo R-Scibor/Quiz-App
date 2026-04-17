@@ -406,7 +406,7 @@ const useTestStore = create((set, get) => ({
         try {
             const res = await getStudyStats();
             set({ studyQueueCount: res.data.total_queued, studySetupData: res.data });
-        } catch (e) {
+        } catch {
             // Silently ignore — count badge is non-critical
         }
     },
@@ -501,7 +501,7 @@ const useTestStore = create((set, get) => ({
     logout: async () => {
         try {
             await logoutUser();
-        } catch (_) {
+        } catch {
             // Ignore errors — clear local state regardless
         }
         localStorage.removeItem('auth_token');

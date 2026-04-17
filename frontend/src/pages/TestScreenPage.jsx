@@ -46,7 +46,6 @@ const OpenEndedQuestionUI = () => {
     const {
         currentQuestions,
         currentQuestionIndex,
-        checkOpenAnswer,
         checkingQuestionId,
         openQuestionResults,
         nextQuestion,
@@ -264,7 +263,7 @@ const TestScreenPage = () => {
         // In react-markdown v9+, the 'inline' prop was removed. We detect block
         // code by the presence of a language class; no-language fenced blocks
         // are handled by the 'pre' override above (which preserves whitespace).
-        code({node, className, children, ...props}) {
+        code({node: _node, className, children, ...props}) {
             const match = /language-(\w+)/.exec(className || '');
             if (match) {
                 return (

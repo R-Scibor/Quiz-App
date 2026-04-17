@@ -3,7 +3,7 @@ import useTestStore from '../store/testStore';
 
 const ResultsPage = () => {
     const {
-        score, currentQuestions, resetTest, retryTest, timerEnabled, totalTimeSpent, reviewAnswers,
+        score, currentQuestions, retryTest, timerEnabled, totalTimeSpent, reviewAnswers,
         userAnswers, openQuestionResults, availableTests,
     } = useTestStore();
 

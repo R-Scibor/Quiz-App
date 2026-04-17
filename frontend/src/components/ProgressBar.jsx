@@ -5,8 +5,6 @@ const ProgressBar = () => {
     const { currentQuestionIndex, currentQuestions } = useTestStore();
     const total = currentQuestions.length;
     const current = currentQuestionIndex + 1;
-    const progress = total > 0 ? ((current -1) / total) * 100 : 0;
-    
     const finalProgress = total > 0 ? (current / total) * 100 : 0;
 
     return (

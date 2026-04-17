@@ -44,11 +44,6 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
         }
     };
 
-    const backdropVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1 },
-    };
-
     const modalVariants = {
         hidden: { opacity: 0, y: "-50px" },
         visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } },

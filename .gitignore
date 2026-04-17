@@ -51,6 +51,7 @@ db.sqlite3
 # Pliki konfiguracyjne i wrażliwe
 .env
 local_settings.py
+secrets/
 
 # Pliki generowane przez biblioteki
 .pytest_cache/

@@ -108,7 +108,6 @@ const TestSetupPage = () => {
         timerEnabled, 
         setConfig, 
         startTest,
-        resetTest,
         questionMode,
         setQuestionMode
     } = useTestStore();
@@ -172,6 +171,7 @@ const TestSetupPage = () => {
              setConfig(newNum, timerEnabled);
              setCountAdjustedMsg('');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [totalAvailableQuestions, selectedCategories, questionMode]);
 
     const handleCategoryClick = (category) => {

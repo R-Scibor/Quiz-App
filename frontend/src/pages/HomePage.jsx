@@ -7,6 +7,7 @@ const HomePage = () => {
 
     useEffect(() => {
         fetchStudyStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Warianty animacji dla kontenera i jego dzieci

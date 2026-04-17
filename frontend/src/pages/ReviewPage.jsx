@@ -173,6 +173,11 @@ const ReviewPage = () => {
                                         question={reportingQuestion}
                                         testId={reportingQuestion.test_id}
                                         aiFeedback={openQuestionResults[reportingQuestion.id]}
+                                        userAnswer={
+                                            reportingQuestion.type.startsWith('open-')
+                                                ? openQuestionResults[reportingQuestion.id]?.userAnswer
+                                                : (userAnswers[reportingQuestion.id] || []).map(i => reportingQuestion.options[i])
+                                        }
                                         onClose={() => setReportingQuestion(null)}
                                         onReportSuccess={() => {
                                             setReportedQuestions(prev => new Set(prev).add(reportingQuestion.id));

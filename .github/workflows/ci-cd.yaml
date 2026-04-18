@@ -3,7 +3,25 @@ name: CI/CD
 on:
   push:
     branches: [main]
+    paths:
+      - 'api_v1/**'
+      - 'backend_project/**'
+      - 'frontend/**'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'nginx/**'
+      - '.github/workflows/ci-cd.yaml'
   pull_request:
+    paths:
+      - 'api_v1/**'
+      - 'backend_project/**'
+      - 'frontend/**'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'nginx/**'
+      - '.github/workflows/ci-cd.yaml'
   workflow_dispatch:
 
 jobs:

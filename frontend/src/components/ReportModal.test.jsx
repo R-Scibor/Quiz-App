@@ -72,28 +72,28 @@ afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 describe('ReportModal — rendering', () => {
     test('renders with "Question error" radio selected by default', () => {
         renderModal();
-        const radio = screen.getByRole('radio', { name: /błąd w pytaniu/i });
+        const radio = screen.getByRole('radio', { name: /error in question/i });
         expect(radio).toBeChecked();
     });
 
     test('shows AI grading option for open questions', () => {
         renderModal({ question: OPEN_QUESTION });
-        expect(screen.getByRole('radio', { name: /niesłuszna ocena AI/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /incorrect AI grading/i })).toBeInTheDocument();
     });
 
     test('hides AI grading option for closed questions', () => {
         renderModal({ question: CLOSED_QUESTION });
-        expect(screen.queryByRole('radio', { name: /niesłuszna ocena AI/i })).toBeNull();
+        expect(screen.queryByRole('radio', { name: /incorrect AI grading/i })).toBeNull();
     });
 
     test('AI grading radio is disabled when aiFeedback is null', () => {
         renderModal({ question: OPEN_QUESTION, aiFeedback: null });
-        expect(screen.getByRole('radio', { name: /niesłuszna ocena AI/i })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: /incorrect AI grading/i })).toBeDisabled();
     });
 
     test('AI grading radio is enabled when aiFeedback is present', () => {
         renderModal({ question: OPEN_QUESTION, aiFeedback: AI_FEEDBACK });
-        expect(screen.getByRole('radio', { name: /niesłuszna ocena AI/i })).not.toBeDisabled();
+        expect(screen.getByRole('radio', { name: /incorrect AI grading/i })).not.toBeDisabled();
     });
 });
 
@@ -107,7 +107,7 @@ describe('ReportModal — interactions', () => {
         const onClose = vi.fn();
         renderModal({ onClose });
 
-        await user.click(screen.getByRole('button', { name: /anuluj/i }));
+        await user.click(screen.getByRole('button', { name: /cancel/i }));
         expect(onClose).toHaveBeenCalledOnce();
     });
 
@@ -118,7 +118,7 @@ describe('ReportModal — interactions', () => {
         renderModal({ question: OPEN_QUESTION, aiFeedback: null });
 
         // Get a reference to the submit button before clicking
-        const submitBtn = screen.getByRole('button', { name: /wyślij/i });
+        const submitBtn = screen.getByRole('button', { name: /submit report/i });
         await user.click(submitBtn);
 
         // After clicking, the button renders the spinner — query by type=submit
@@ -138,10 +138,10 @@ describe('ReportModal — successful submission', () => {
         mockReportIssue.mockResolvedValueOnce({ data: {} });
         renderModal();
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => {
-            expect(screen.getByText(/dziękujemy/i)).toBeInTheDocument();
+            expect(screen.getByText(/thank you/i)).toBeInTheDocument();
         });
     });
 
@@ -165,7 +165,7 @@ describe('ReportModal — successful submission', () => {
         mockReportIssue.mockResolvedValueOnce({ data: {} });
         renderModal({ onClose, onReportSuccess });
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         // Wait until the component's try block has run and registered the timeout.
         await waitFor(() => expect(capturedCallback).toBeDefined());
@@ -189,7 +189,7 @@ describe('ReportModal — error handling', () => {
         mockReportIssue.mockRejectedValueOnce({ message: 'Server error 500' });
         renderModal();
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => {
             expect(screen.getByText(/server error 500/i)).toBeInTheDocument();
@@ -201,10 +201,10 @@ describe('ReportModal — error handling', () => {
         mockReportIssue.mockRejectedValueOnce({});
         renderModal();
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => {
-            expect(screen.getByText(/błąd podczas wysyłania/i)).toBeInTheDocument();
+            expect(screen.getByText(/failed to submit/i)).toBeInTheDocument();
         });
     });
 });
@@ -219,7 +219,7 @@ describe('ReportModal — payload structure', () => {
         mockReportIssue.mockResolvedValueOnce({ data: {} });
         renderModal({ question: OPEN_QUESTION, aiFeedback: null });
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => expect(mockReportIssue).toHaveBeenCalled());
         const payload = mockReportIssue.mock.calls[0][0];
@@ -233,8 +233,8 @@ describe('ReportModal — payload structure', () => {
         renderModal({ question: OPEN_QUESTION, aiFeedback: AI_FEEDBACK });
 
         // Select AI grading error
-        await user.click(screen.getByRole('radio', { name: /niesłuszna ocena AI/i }));
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('radio', { name: /incorrect AI grading/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => expect(mockReportIssue).toHaveBeenCalled());
         const payload = mockReportIssue.mock.calls[0][0];
@@ -247,7 +247,7 @@ describe('ReportModal — payload structure', () => {
         mockReportIssue.mockResolvedValueOnce({ data: {} });
         renderModal({ question: OPEN_QUESTION, userAnswer: 'DNS does name resolution' });
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => expect(mockReportIssue).toHaveBeenCalled());
         const payload = mockReportIssue.mock.calls[0][0];
@@ -261,7 +261,7 @@ describe('ReportModal — payload structure', () => {
         const choiceAnswer = [1]; // integer index
         renderModal({ question: CLOSED_QUESTION, userAnswer: choiceAnswer });
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => expect(mockReportIssue).toHaveBeenCalled());
         const payload = mockReportIssue.mock.calls[0][0];
@@ -277,7 +277,7 @@ describe('ReportModal — payload structure', () => {
         const questionWithOptions = { ...CLOSED_QUESTION, options: ['Earth', 'Mars', 'Jupiter'] };
         renderModal({ question: questionWithOptions, userAnswer: ['Jupiter'] });
 
-        await user.click(screen.getByRole('button', { name: /wyślij/i }));
+        await user.click(screen.getByRole('button', { name: /submit report/i }));
 
         await waitFor(() => expect(mockReportIssue).toHaveBeenCalled());
         const payload = mockReportIssue.mock.calls[0][0];

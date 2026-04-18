@@ -167,7 +167,7 @@ const OpenEndedQuestionUI = () => {
                     onClick={nextQuestion}
                     className="btn-primary mt-4 py-2 px-8 flex items-center justify-center mx-auto"
                 >
-                    <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
+                    <span>{isLastQuestion ? "View results" : "Next"}</span>
                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </motion.button>
             </motion.div>
@@ -418,7 +418,7 @@ const TestScreenPage = () => {
                                                 onClick={handleNext}
                                                 className="btn-primary mt-3 py-2 px-8 flex items-center justify-center mx-auto"
                                             >
-                                                <span>{isLastQuestion ? "Zobacz wyniki" : "Dalej"}</span>
+                                                <span>{isLastQuestion ? "View results" : "Next"}</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                                             </motion.button>
                                         </>

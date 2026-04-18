@@ -2,47 +2,47 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
 import useTestStore from './testStore';
 
-// `describe` grupuje powiązane ze sobą testy
-describe('useTestStore - testowanie logiki stanu', () => {
+// `describe` groups related tests
+describe('useTestStore - state logic tests', () => {
 
-  // Hook `beforeEach` jest uruchamiany przed każdym testem w tej grupie.
-  // Tutaj resetujemy stan do początkowych wartości, aby testy były od siebie niezależne.
+  // `beforeEach` runs before each test in this group.
+  // Reset state to initial values so tests are independent.
   beforeEach(() => {
     act(() => {
       useTestStore.getState().resetTest();
     });
   });
 
-  test('powinien mieć poprawny stan początkowy', () => {
+  test('should have the correct initial state', () => {
     const initialState = useTestStore.getState();
-    expect(initialState.view).toBe('home'); 
+    expect(initialState.view).toBe('home');
     expect(initialState.availableTests).toEqual([]);
     expect(initialState.selectedCategories).toEqual([]);
     expect(initialState.score).toBe(0);
     expect(initialState.isLoading).toBe(false);
   });
 
-  test('akcja toggleCategory powinna poprawnie dodawać i usuwać kategorię', () => {
-    // Sprawdzamy dodanie pierwszej kategorii
+  test('toggleCategory action should correctly add and remove a category', () => {
+    // Check adding the first category
     act(() => {
-      useTestStore.getState().toggleCategory('historia');
+      useTestStore.getState().toggleCategory('history');
     });
-    expect(useTestStore.getState().selectedCategories).toEqual(['historia']);
+    expect(useTestStore.getState().selectedCategories).toEqual(['history']);
 
-    // Sprawdzamy dodanie drugiej kategorii
+    // Check adding the second category
     act(() => {
-      useTestStore.getState().toggleCategory('biologia');
+      useTestStore.getState().toggleCategory('biology');
     });
-    expect(useTestStore.getState().selectedCategories).toEqual(['historia', 'biologia']);
+    expect(useTestStore.getState().selectedCategories).toEqual(['history', 'biology']);
 
-    // Sprawdzamy usunięcie pierwszej kategorii
+    // Check removing the first category
     act(() => {
-      useTestStore.getState().toggleCategory('historia');
+      useTestStore.getState().toggleCategory('history');
     });
-    expect(useTestStore.getState().selectedCategories).toEqual(['biologia']);
+    expect(useTestStore.getState().selectedCategories).toEqual(['biology']);
   });
 
-  test('akcja setConfig powinna poprawnie ustawiać konfigurację', () => {
+  test('setConfig action should correctly set the configuration', () => {
     act(() => {
       useTestStore.getState().setConfig(25, true);
     });
@@ -51,20 +51,20 @@ describe('useTestStore - testowanie logiki stanu', () => {
     expect(state.timerEnabled).toBe(true);
   });
 
-  test('akcja resetTest powinna przywracać stan do wartości domyślnych', () => {
-    // Najpierw "brudzimy" stan
+  test('resetTest action should restore state to default values', () => {
+    // First "dirty" the state
     act(() => {
-      useTestStore.getState().toggleCategory('historia');
+      useTestStore.getState().toggleCategory('history');
       useTestStore.getState().setConfig(50, true);
       useTestStore.setState({ score: 5, view: 'results' });
     });
 
     let dirtyState = useTestStore.getState();
-    expect(dirtyState.selectedCategories).toEqual(['historia']);
+    expect(dirtyState.selectedCategories).toEqual(['history']);
     expect(dirtyState.score).toBe(5);
     expect(dirtyState.view).toBe('results');
 
-    // Teraz resetujemy i sprawdzamy
+    // Now reset and verify
     act(() => {
       useTestStore.getState().resetTest();
     });

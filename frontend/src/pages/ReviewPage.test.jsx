@@ -79,7 +79,7 @@ describe('ReviewPage - regrading UI', () => {
         render(<ReviewPage />);
 
         expect(screen.getByText(OPEN_RESULT.feedback)).toBeInTheDocument();
-        expect(screen.getByText(/1 \/ 3 pkt/)).toBeInTheDocument();
+        expect(screen.getByText(/1 \/ 3 pts/)).toBeInTheDocument();
     });
 
     test('renders user answer for open questions', () => {
@@ -191,6 +191,6 @@ describe('ReviewPage - regrading UI', () => {
         });
         render(<ReviewPage />);
 
-        expect(screen.getByText(/brak zapisanej odpowiedzi/i)).toBeInTheDocument();
+        expect(screen.getByText(/no saved answer/i)).toBeInTheDocument();
     });
 });

@@ -128,7 +128,7 @@ describe('useTestStore - startPolling', () => {
         await act(async () => { await vi.advanceTimersByTimeAsync(61 * 2000 + 100); });
 
         const state = useTestStore.getState();
-        expect(state.error?.message).toMatch(/limit czasu/i);
+        expect(state.error?.message).toMatch(/timed out/i);
         expect(state.activePolls['task-timeout']).toBeUndefined();
         expect(mockGetTaskResult).toHaveBeenCalledTimes(60);
     });

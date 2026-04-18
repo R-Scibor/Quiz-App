@@ -52,24 +52,24 @@ class ApiViewsTestCase(APITestCase):
         """Create stub JSON fixtures that mirror the old file-based API format."""
         self.tests_dir = TEST_MEDIA_DIR / 'tests'
 
-        # Test 1 (historia) — mixed closed and open questions
+        # Test 1 (history) — mixed closed and open questions
         self.historia_data = {
-            "category": "Historia", "scope": "Polska", "version": "1.0",
+            "category": "History", "scope": "Poland", "version": "1.0",
             "questions": [
-                {"id": 1, "questionText": "Kto był pierwszym królem Polski?", "type": "single-choice", "tags": ["władcy", "Polska"], "options": ["Mieszko I", "Bolesław Chrobry", "Kazimierz Wielki"], "correctAnswers": [1], "explanation": "Wyjaśnienie do pytania 1."},
-                {"id": 2, "questionText": "W którym roku odbył się chrzest Polski?", "type": "single-choice", "tags": ["daty", "Polska"], "options": ["966", "1025", "1410"], "correctAnswers": [0], "explanation": "Wyjaśnienie do pytania 2."},
-                {"id": 3, "questionText": "Opisz przyczyny Unii Lubelskiej.", "type": "open-ended", "tags": ["unia", "polityka"], "gradingCriteria": "Musi wspomnieć o zagrożeniu moskiewskim i bezpotomnej śmierci Zygmunta Augusta.", "maxPoints": 5, "explanation": "Kluczowe były zagrożenie ze strony Moskwy oraz dążenie do zapewnienia trwałości związku Polski i Litwy."}
+                {"id": 1, "questionText": "Who was the first king of Poland?", "type": "single-choice", "tags": ["rulers", "Poland"], "options": ["Mieszko I", "Bolesław Chrobry", "Kazimierz Wielki"], "correctAnswers": [1], "explanation": "Explanation for question 1."},
+                {"id": 2, "questionText": "In what year was the baptism of Poland?", "type": "single-choice", "tags": ["dates", "Poland"], "options": ["966", "1025", "1410"], "correctAnswers": [0], "explanation": "Explanation for question 2."},
+                {"id": 3, "questionText": "Describe the causes of the Union of Lublin.", "type": "open-ended", "tags": ["union", "politics"], "gradingCriteria": "Must mention the Muscovite threat and the childless death of Sigismund Augustus.", "maxPoints": 5, "explanation": "Key factors were the threat from Moscow and the effort to ensure the durability of the union of Poland and Lithuania."}
             ]
         }
         with open(self.tests_dir / 'historia.json', 'w', encoding='utf-8') as f:
             json.dump(self.historia_data, f)
-            
-        # Test 2 (biologia) — closed questions only
+
+        # Test 2 (biology) — closed questions only
         self.biologia_data = {
-            "category": "Biologia", "scope": "Komórka", "version": "1.1",
+            "category": "Biology", "scope": "Cell", "version": "1.1",
             "questions": [
-                {"id": 10, "questionText": "Co jest centrum energetycznym komórki?", "type": "single-choice", "tags": ["komórka", "organella"], "options": ["Jądro", "Rybosom", "Mitochondrium"], "correctAnswers": [2], "explanation": "Wyjaśnienie do pytania 10."},
-                {"id": 11, "questionText": "Które z poniższych to organella?", "type": "multiple-choice", "tags": ["komórka", "organella"], "options": ["DNA", "RNA", "Aparat Golgiego", "Mitochondrium"], "correctAnswers": [2, 3], "explanation": "Wyjaśnienie do pytania 11."}
+                {"id": 10, "questionText": "What is the energy center of the cell?", "type": "single-choice", "tags": ["cell", "organelle"], "options": ["Nucleus", "Ribosome", "Mitochondrion"], "correctAnswers": [2], "explanation": "Explanation for question 10."},
+                {"id": 11, "questionText": "Which of the following are organelles?", "type": "multiple-choice", "tags": ["cell", "organelle"], "options": ["DNA", "RNA", "Golgi apparatus", "Mitochondrion"], "correctAnswers": [2, 3], "explanation": "Explanation for question 11."}
             ]
         }
         with open(self.tests_dir / 'biologia.json', 'w', encoding='utf-8') as f:
@@ -150,7 +150,7 @@ class ApiViewsTestCase(APITestCase):
         self.assertEqual(len(questions), 2)
         for q in questions:
             self.assertIn(q['type'], ['single-choice', 'multiple-choice'])
-            self.assertIn('options', q) # Sprawdza poprawność serializera
+            self.assertIn('options', q) # Verifies serializer correctness
 
     def test_get_questions_mode_open_only(self):
         """`mode=open` returns only open-ended questions."""
@@ -159,8 +159,8 @@ class ApiViewsTestCase(APITestCase):
         questions = response.json()
         self.assertEqual(len(questions), 1)
         self.assertEqual(questions[0]['type'], 'open-ended')
-        self.assertIn('gradingCriteria', questions[0]) # Sprawdza poprawność serializera
-        self.assertNotIn('options', questions[0]) # Sprawdza poprawność serializera
+        self.assertIn('gradingCriteria', questions[0]) # Verifies serializer correctness
+        self.assertNotIn('options', questions[0]) # Verifies serializer correctness
 
     def test_get_questions_mode_mixed_default(self):
         """Default mode (mixed) returns both open and closed questions."""
@@ -209,9 +209,9 @@ class CheckOpenAnswerViewTestCase(APITestCase):
     def setUp(self):
         self.url = '/api/v1/check_answer/'
         self.payload = {
-            'userAnswer': 'Unia była spowodowana zagrożeniem ze strony Moskwy i brakiem potomka u króla.',
-            'gradingCriteria': 'Musi wspomnieć o zagrożeniu moskiewskim i bezpotomnej śmierci Zygmunta Augusta.',
-            'questionText': 'Opisz przyczyny Unii Lubelskiej.',
+            'userAnswer': 'The union was caused by the threat from Moscow and the king having no heir.',
+            'gradingCriteria': 'Must mention the Muscovite threat and the childless death of Sigismund Augustus.',
+            'questionText': 'Describe the causes of the Union of Lublin.',
             'maxPoints': 5
         }
 
@@ -221,7 +221,7 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         """Endpoint returns score and feedback on a successful AI response."""
         # Configure the mock
         mock_ai_response = MagicMock()
-        mock_ai_response.text = json.dumps({"score": 4, "feedback": "Dobra odpowiedź."})
+        mock_ai_response.text = json.dumps({"score": 4, "feedback": "Good answer."})
         
         mock_model_instance = MagicMock()
         mock_model_instance.generate_content.return_value = mock_ai_response
@@ -230,7 +230,7 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         response = self.client.post(self.url, self.payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['score'], 4)
-        self.assertEqual(response.data['feedback'], "Dobra odpowiedź.")
+        self.assertEqual(response.data['feedback'], "Good answer.")
         mock_model_instance.generate_content.assert_called_once()
 
     @patch.dict(os.environ, clear=True)
@@ -238,7 +238,7 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         """Returns HTTP 500 when the Gemini API key is not configured."""
         response = self.client.post(self.url, self.payload, format='json')
         self.assertEqual(response.data['error'], 'API_KEY_MISSING')
-        self.assertIn('Klucz API do usługi AI nie jest skonfigurowany', response.data['message'])
+        self.assertIn('AI API key is not configured', response.data['message'])
 
     @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
     def test_check_answer_missing_payload(self):
@@ -264,15 +264,15 @@ class CheckOpenAnswerViewTestCase(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.data['error'], 'AI_RESPONSE_INVALID_FORMAT')
-        self.assertIn('Otrzymano nieprawidłowy format odpowiedzi', response.data['message'])
+        self.assertIn('Received an invalid response format', response.data['message'])
 
     @unittest.skipUnless(os.environ.get('GEMINI_API_KEY'), "GEMINI_API_KEY is not set, skipping integration test.")
     def test_integration_check_answer_real_api_call(self):
         """Integration test that makes a real Gemini API call. Skipped unless GEMINI_API_KEY is set."""
         payload = {
-            'userAnswer': 'Słońce jest gwiazdą.',
-            'gradingCriteria': 'Odpowiedź musi stwierdzać, że Słońce jest gwiazdą.',
-            'questionText': 'Czym jest Słońce?',
+            'userAnswer': 'The Sun is a star.',
+            'gradingCriteria': 'The answer must state that the Sun is a star.',
+            'questionText': 'What is the Sun?',
             'maxPoints': 1
         }
         

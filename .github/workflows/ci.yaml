@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: self-hosted
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: quiz_test
+          POSTGRES_USER: quiz_user
+          POSTGRES_PASSWORD: quiz_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: ci-not-a-real-secret
+      DEBUG: "True"
+      DATABASE_URL: postgresql://quiz_user:quiz_pass@localhost:5432/quiz_test
+      DB_SSL_REQUIRE: "False"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+
+      - name: Run tests
+        run: python manage.py test api_v1 --verbosity=2
+
+  frontend:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Test
+        run: npm test -- --run
+        working-directory: frontend

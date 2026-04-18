@@ -27,7 +27,7 @@ apiClient.interceptors.response.use(
     // Normalise error responses.
     (error) => {
         let structuredError = {
-            message: 'Wystąpił nieoczekiwany błąd. Proszę spróbować ponownie.',
+            message: 'An unexpected error occurred. Please try again.',
             details: null,
             code: 'UNKNOWN_ERROR'
         };
@@ -41,13 +41,13 @@ apiClient.interceptors.response.use(
                 structuredError.code = backendError.error || `HTTP_${error.response.status}`;
             } else {
                 // Fallback for responses that don't match the expected shape.
-                structuredError.message = `Błąd serwera: Otrzymano status ${error.response.status}.`;
+                structuredError.message = `Server error: received status ${error.response.status}.`;
                 structuredError.code = `HTTP_${error.response.status}`;
             }
             structuredError.details = backendError;
         } else if (error.request) {
             // Request was sent but no response was received (network error).
-            structuredError.message = 'Błąd połączenia z serwerem. Sprawdź swoje połączenie internetowe.';
+            structuredError.message = 'Could not connect to the server. Check your internet connection.';
             structuredError.code = 'NETWORK_ERROR';
         } else {
             // Unexpected error (e.g. misconfigured request).

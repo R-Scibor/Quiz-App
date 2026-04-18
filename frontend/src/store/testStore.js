@@ -78,7 +78,7 @@ const useTestStore = create((set, get) => ({
     startTest: async () => {
         const { numQuestionsConfig, selectedCategories, questionMode } = get();
         if (selectedCategories.length === 0) {
-            set({ error: { message: 'Wybierz przynajmniej jedną kategorię.', code: 'VALIDATION_ERROR' } });
+            set({ error: { message: 'Select at least one category.', code: 'VALIDATION_ERROR' } });
             return;
         }
         set({ isLoading: true, error: null, view: 'test', score: 0, currentQuestionIndex: 0, userAnswers: {}, questionTimes: {}, currentSessionId: null });
@@ -193,7 +193,7 @@ const useTestStore = create((set, get) => ({
             };
             if (retries >= MAX_RETRIES) {
                 clearPoll();
-                get().setError({ message: 'Upłynął limit czasu oceny AI. Spróbuj ponownie.' });
+                get().setError({ message: 'AI grading timed out. Please try again.' });
                 return;
             }
             retries++;
@@ -205,12 +205,12 @@ const useTestStore = create((set, get) => ({
                     if (data.status === 'SUCCESS') {
                         get().setLastAnswerFeedback(data.data, questionId);
                     } else {
-                        get().setError({ message: data.data || 'Wystąpił błąd podczas przetwarzania zadania.' });
+                        get().setError({ message: data.data || 'An error occurred while processing the task.' });
                     }
                 }
             } catch (error) {
                 clearPoll();
-                get().setError({ message: error.message || 'Błąd podczas sprawdzania wyniku zadania.' });
+                get().setError({ message: error.message || 'Error checking task result.' });
             }
         }, 2000);
         set(state => ({ activePolls: { ...state.activePolls, [taskId]: interval } }));

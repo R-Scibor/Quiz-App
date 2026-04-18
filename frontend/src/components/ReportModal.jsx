@@ -13,7 +13,7 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!issueType) {
-            setError('Proszę wybrać typ problemu.');
+            setError('Please select an issue type.');
             return;
         }
         
@@ -38,7 +38,7 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
                 onClose();
             }, 2000);
         } catch (err) {
-            setError(err.message || 'Wystąpił błąd podczas wysyłania zgłoszenia.');
+            setError(err.message || 'Failed to submit the report.');
         } finally {
             setIsSubmitting(false);
         }
@@ -60,16 +60,16 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
         >
             {success ? (
                 <div className="text-center">
-                    <h3 className="text-2xl font-bold text-green-500 mb-4">Dziękujemy!</h3>
-                    <p className="text-gray-700 dark:text-gray-300">Twoje zgłoszenie zostało pomyślnie wysłane.</p>
+                    <h3 className="text-2xl font-bold text-green-500 mb-4">Thank you!</h3>
+                    <p className="text-gray-700 dark:text-gray-300">Your report was submitted successfully.</p>
                 </div>
             ) : (
                 <>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Zgłoś problem</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Report Issue</h2>
                     <form onSubmit={handleSubmit} className="flex flex-col h-full">
                         <div className="flex-grow">
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Typ problemu:</label>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Issue type:</label>
                                 <div className="space-y-3">
                                     <div className="flex items-center">
                                         <input
@@ -82,7 +82,7 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
                                             className="h-4 w-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-option-bg"
                                         />
                                         <label htmlFor="question_error" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Błąd w pytaniu / odpowiedzi
+                                            Error in question / answer
                                         </label>
                                     </div>
                                     {question.type.startsWith('open-') && (
@@ -98,8 +98,8 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
                                                 className="h-4 w-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-option-bg"
                                             />
                                             <label htmlFor="ai_grading_error" className={`ml-3 block text-sm font-medium ${!aiFeedback ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                Niesłuszna ocena AI
-                                                {!aiFeedback && <span className="text-xs block">(Niedostępne dla tego pytania)</span>}
+                                                Incorrect AI grading
+                                                {!aiFeedback && <span className="text-xs block">(Not available for this question)</span>}
                                             </label>
                                         </div>
                                     )}
@@ -108,13 +108,13 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
 
                             <div className="mb-6">
                                 <label htmlFor="description" className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                    Opcjonalne uzasadnienie:
+                                    Optional description:
                                 </label>
                                 <textarea
                                     id="description"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Opisz problem bardziej szczegółowo..."
+                                    placeholder="Describe the issue in more detail..."
                                     className="w-full h-28 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white"
                                 />
                             </div>
@@ -124,10 +124,10 @@ const ReportModal = ({ question, testId, aiFeedback, userAnswer, onClose, onRepo
 
                         <div className="flex justify-end items-center gap-4 mt-auto">
                             <button type="button" onClick={onClose} className="btn-secondary py-2 px-6">
-                                Anuluj
+                                Cancel
                             </button>
                             <button type="submit" className="btn-primary py-2 px-6" disabled={isSubmitting || !issueType}>
-                                {isSubmitting ? <LoadingSpinner size="sm" /> : 'Wyślij zgłoszenie'}
+                                {isSubmitting ? <LoadingSpinner size="sm" /> : 'Submit report'}
                             </button>
                         </div>
                     </form>

@@ -52,7 +52,7 @@ const HomePage = () => {
                         Quiz App
                     </h1>
                     <p className="text-md text-gray-500 dark:text-gray-400 mt-2">
-                        Platforma do sprawdzania wiedzy
+                        Knowledge testing platform
                     </p>
                 </div>
 
@@ -64,11 +64,11 @@ const HomePage = () => {
                     animate="visible"
                 >
                     <motion.h2 variants={itemVariants} className="text-3xl font-bold text-gray-800 dark:text-white">
-                        Gotowy na wyzwanie?
+                        Ready for a challenge?
                     </motion.h2>
 
                     <motion.p variants={itemVariants} className="text-lg text-gray-600 dark:text-gray-300 mt-2 mb-8">
-                        Kliknij przycisk poniżej, aby skonfigurować i rozpocząć swój personalizowany test.
+                        Click the button below to configure and start your quiz.
                     </motion.p>
                     
                     <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
@@ -78,7 +78,7 @@ const HomePage = () => {
                             onClick={goToSetup}
                             className="btn-primary font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
                         >
-                            Rozpocznij Quiz
+                            Start Quiz
                         </motion.button>
                         {user && (
                             <motion.button
@@ -106,9 +106,9 @@ const HomePage = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="mt-8 pt-6 border-t border-gray-200 dark:border-card-border">
-                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-400 mb-2">O Projekcie</h3>
+                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-400 mb-2">About</h3>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
-                            Aplikacja stworzona przy użyciu React, Zustand, Framer Motion, Tailwind CSS oraz Django REST Framework.
+                            Built with React, Zustand, Framer Motion, Tailwind CSS, and Django REST Framework.
                         </p>
                     </motion.div>
                 </motion.div>

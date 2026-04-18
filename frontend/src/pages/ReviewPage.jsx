@@ -49,7 +49,7 @@ const ClosedQuestionReview = ({ question, userAnswer }) => {
             </div>
             {question.explanation && (
                 <div className="mt-4 p-4 bg-gray-100 dark:bg-black/20 rounded-lg">
-                    <h4 className="font-bold text-gray-700 dark:text-gray-200">Wyjaśnienie:</h4>
+                    <h4 className="font-bold text-gray-700 dark:text-gray-200">Explanation:</h4>
                     <p className="text-gray-600 dark:text-gray-300 mt-1">{question.explanation}</p>
                 </div>
             )}
@@ -60,7 +60,7 @@ const ClosedQuestionReview = ({ question, userAnswer }) => {
 // --- Komponent dla pytania OTWARTEGO ---
 const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
     if (!result) {
-        return <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-800 dark:text-yellow-200">Brak zapisanej odpowiedzi dla tego pytania.</div>;
+        return <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-800 dark:text-yellow-200">No saved answer for this question.</div>;
     }
 
     const { userAnswer, points_awarded, feedback } = result;
@@ -72,8 +72,8 @@ const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
     return (
         <div className="space-y-4 mt-4">
             <div>
-                <h4 className="font-bold text-gray-700 dark:text-gray-200">Twoja odpowiedź:</h4>
-                <p className="p-4 bg-gray-100 dark:bg-option-bg rounded-lg mt-2 text-gray-800 dark:text-gray-300">{userAnswer || "Brak odpowiedzi"}</p>
+                <h4 className="font-bold text-gray-700 dark:text-gray-200">Your answer:</h4>
+                <p className="p-4 bg-gray-100 dark:bg-option-bg rounded-lg mt-2 text-gray-800 dark:text-gray-300">{userAnswer || "No answer"}</p>
             </div>
             <div>
                 {isRegrading ? (
@@ -83,7 +83,7 @@ const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
                     </div>
                 ) : (
                     <>
-                        <h4 className="font-bold text-gray-700 dark:text-gray-200">Ocena ({points_awarded} / {question.maxPoints} pkt):</h4>
+                        <h4 className="font-bold text-gray-700 dark:text-gray-200">Score ({points_awarded} / {question.maxPoints} pts):</h4>
                         <p className={isScoreHigh ? successClasses : warningClasses}>
                             {feedback}
                         </p>
@@ -113,14 +113,14 @@ const ReviewPage = () => {
     return (
         <motion.div className="main-card bg-white dark:bg-card-bg w-full max-w-4xl mx-auto p-8 md:p-12">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Przegląd odpowiedzi</h1>
+                <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Answer Review</h1>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={backToResults} 
+                    onClick={backToResults}
                     className="btn-primary py-2 px-6 rounded-lg"
                 >
-                    Wróć do wyników
+                    Back to results
                 </motion.button>
             </div>
 
@@ -133,12 +133,12 @@ const ReviewPage = () => {
                 {currentQuestions.map((question, index) => (
                     <motion.div variants={itemVariants} key={question.id} className="relative border-t border-gray-300 dark:border-card-border pt-6 pb-10">
                         <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                            Pytanie {index + 1}: <span className="font-normal">{question.questionText}</span>
+                            Question {index + 1}: <span className="font-normal">{question.questionText}</span>
                         </p>
                         
                         {question.image && (
                             <div className="my-4 flex justify-center">
-                                <img src={question.image} alt="Ilustracja do pytania" className="rounded-lg max-w-xs h-auto" />
+                                <img src={question.image} alt="Question illustration" className="rounded-lg max-w-xs h-auto" />
                             </div>
                         )}
 
@@ -197,7 +197,7 @@ const ReviewPage = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 20 }}
-                                    title="Zgłoś problem"
+                                    title="Report issue"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -209,7 +209,7 @@ const ReviewPage = () => {
                         {reportedQuestions.has(question.id) && (
                             <div className="absolute bottom-2 left-4 text-sm text-green-600 dark:text-green-500 flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                Zgłoszono
+                                Reported
                             </div>
                         )}
                     </motion.div>

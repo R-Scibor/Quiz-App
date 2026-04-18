@@ -21,16 +21,16 @@ const ConfirmationModal = ({ isOpen, availableCount, requestedCount, onConfirm, 
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className="main-card bg-white dark:bg-card-bg w-full max-w-md p-8 rounded-2xl"
                 >
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Uwaga</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Warning</h2>
                     <p className="text-gray-600 dark:text-gray-300 my-4">
-                        Wybrano {requestedCount} pytań, ale w zaznaczonych kategoriach dostępnych jest tylko {availableCount}.
+                        You selected {requestedCount} questions, but only {availableCount} are available in the selected categories.
                     </p>
                     <p className="text-gray-600 dark:text-gray-300 font-semibold">
-                        Czy chcesz rozpocząć test z {availableCount} pytaniami?
+                        Would you like to start with {availableCount} questions?
                     </p>
                     <div className="flex justify-end gap-4 mt-8">
-                        <button onClick={onCancel} className="btn-secondary py-2 px-6">Anuluj</button>
-                        <button onClick={onConfirm} className="btn-primary py-2 px-6">Rozpocznij</button>
+                        <button onClick={onCancel} className="btn-secondary py-2 px-6">Cancel</button>
+                        <button onClick={onConfirm} className="btn-primary py-2 px-6">Start</button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -55,21 +55,21 @@ const LlmWarningModal = ({ isOpen, onConfirm, onCancel }) => {
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className="main-card bg-white dark:bg-card-bg w-full max-w-md p-8 rounded-2xl"
                 >
-                    <h2 className="text-2xl font-bold text-brand-primary">Uwaga</h2>
+                    <h2 className="text-2xl font-bold text-brand-primary">Warning</h2>
                     <div className="text-gray-600 dark:text-gray-300 my-4 space-y-3">
                         <p>
-                            Pytania otwarte są oceniane przez LLM, przez co w niektórych przypadkach mogą być niesłusznie ocenione.
+                            Open questions are graded by an LLM and may occasionally be scored incorrectly.
                         </p>
                         <p className="font-semibold">
-                            Bajabongo Entertainment nie ma wpływu na odpowiedzi LLM.
+                            Bajabongo Entertainment has no control over LLM responses.
                         </p>
                         <p>
-                            Czy chcesz kontynuować z pytaniami otwartymi?
+                            Do you want to continue with open questions?
                         </p>
                     </div>
                     <div className="flex justify-end gap-4 mt-8">
-                        <button onClick={onCancel} className="btn-secondary py-2 px-6">Anuluj</button>
-                        <button onClick={onConfirm} className="btn-primary py-2 px-6">Kontynuuj</button>
+                        <button onClick={onCancel} className="btn-secondary py-2 px-6">Cancel</button>
+                        <button onClick={onConfirm} className="btn-primary py-2 px-6">Continue</button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -190,14 +190,14 @@ const TestSetupPage = () => {
         const value = e.target.value;
         setNumQuestionsInput(value); 
         if (value === '') {
-            setInputError('Pole nie może być puste.');
+            setInputError('Field cannot be empty.');
             return;
         }
         const num = parseInt(value, 10);
         if (isNaN(num) || num <= 0) {
-            setInputError('Wprowadź liczbę większą od zera.');
+            setInputError('Enter a number greater than zero.');
         } else if (num > totalAvailableQuestions) {
-            setInputError(`Maksymalna liczba pytań dla tego trybu to ${totalAvailableQuestions}.`);
+            setInputError(`Maximum number of questions for this mode is ${totalAvailableQuestions}.`);
         } else {
             setInputError('');
             setConfig(num, timerEnabled);
@@ -260,20 +260,18 @@ const TestSetupPage = () => {
                 transition={{ duration: 0.5 }}
                 className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center"
             >
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Wybierz Kategorię</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Sprawdź swoją wiedzę w różnych dziedzinach.</p>
-                
-                {/* --- ZMIANA W WYŚWIETLANIU BŁĘDU --- */}
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-2">Select Category</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">Test your knowledge across different topics.</p>
+
                 {error && (
                     <div className="text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-3 rounded-md mb-6">
-                        <p className="font-bold">Wystąpił błąd</p>
+                        <p className="font-bold">An error occurred</p>
                         <p>{error.message}</p>
                     </div>
                 )}
                 
-                {/* --- ZMIANA: Lista kategorii z animacjami --- */}
                 <div className="mb-8 text-left">
-                    {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Ładowanie listy testów...</p>}
+                    {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Loading tests...</p>}
                     <motion.div 
                         className="space-y-4"
                         variants={{
@@ -300,7 +298,7 @@ const TestSetupPage = () => {
                                         <div className='flex flex-col items-start'>
                                           <span>{category}</span>
                                           <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                                            Całkowita: {question_counts.total}, Zamknięte: {question_counts.closed}, Otwarte: {question_counts.open}
+                                            Total: {question_counts.total}, Closed: {question_counts.closed}, Open: {question_counts.open}
                                           </span>
                                         </div>
                                         <ChevronIcon expanded={expandedCategory === category} />
@@ -308,12 +306,11 @@ const TestSetupPage = () => {
                                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${expandedCategory === category ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                         <div className="overflow-hidden">
                                             <div className="p-5 border-t border-gray-300 dark:border-card-border space-y-4">
-                                                {/* Tutaj też można dodać animacje dla poszczególnych checkboxów */}
-                                                <div className="p-3 rounded-md bg-gray-200 dark:bg-black/20 hover:bg-gray-300 dark:hover:bg-black/40 transition-colors">
+                                                    <div className="p-3 rounded-md bg-gray-200 dark:bg-black/20 hover:bg-gray-300 dark:hover:bg-black/40 transition-colors">
                                                     <AnimatedCheckbox id={`select-all-${category}`} checked={areAllSelected} onChange={() => handleSelectAll(tests, areAllSelected)}>
                                                         <AnimatedCheckbox.Indicator />
                                                         <AnimatedCheckbox.Label>
-                                                            <span className="font-semibold">Zaznacz całą kategorię</span>
+                                                            <span className="font-semibold">Select all in category</span>
                                                         </AnimatedCheckbox.Label>
                                                     </AnimatedCheckbox>
                                                 </div>
@@ -338,17 +335,16 @@ const TestSetupPage = () => {
                     </motion.div>
                 </div>
 
-                {/* --- ZMIANA: Sekcje ustawień z animacjami --- */}
                 <motion.div
                     whileHover={hoverEffect}
                     className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700"
                 >
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Tryb Pytań</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Question Mode</h2>
                     <div className="flex flex-col sm:flex-row justify-around gap-4">
                         {['closed', 'open', 'mixed'].map((mode) => (
                             <label key={mode} className="flex items-center cursor-pointer p-2 rounded-md hover:bg-gray-300 dark:hover:bg-white/10">
                                 <input type="radio" name="questionMode" value={mode} checked={questionMode === mode} onChange={handleModeChange} className="h-5 w-5 text-brand-primary focus:ring-brand-primary" />
-                                <span className="ml-3 text-gray-700 dark:text-gray-200 capitalize">{mode === 'mixed' ? 'Mieszane' : mode === 'closed' ? 'Zamknięte' : 'Otwarte'}</span>
+                                <span className="ml-3 text-gray-700 dark:text-gray-200 capitalize">{mode === 'mixed' ? 'Mixed' : mode === 'closed' ? 'Closed' : 'Open'}</span>
                             </label>
                         ))}
                     </div>
@@ -358,10 +354,10 @@ const TestSetupPage = () => {
                     whileHover={hoverEffect}
                     className="mb-8 text-left p-6 bg-gray-200 dark:bg-black/20 rounded-lg border border-solid border-gray-300 dark:border-gray-700"
                 >
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Ustawienia</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Settings</h2>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-4 sm:space-y-0">
                         <div className="flex-1">
-                            <label htmlFor="num-questions" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Liczba pytań (dostępnych: {totalAvailableQuestions})</label>
+                            <label htmlFor="num-questions" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Number of questions (available: {totalAvailableQuestions})</label>
                             <input type="number" id="num-questions" className={`w-full p-2 bg-gray-50 dark:bg-gray-900 border rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary ${inputError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`} value={numQuestionsInput} onChange={handleNumQuestionsChange} max={totalAvailableQuestions} min="1" />
                             {inputError && <p className="text-red-500 text-xs mt-1">{inputError}</p>}
                             {countAdjustedMsg && <p className="text-yellow-500 dark:text-yellow-400 text-xs mt-1">{countAdjustedMsg}</p>}
@@ -370,7 +366,7 @@ const TestSetupPage = () => {
                             <AnimatedCheckbox id="timer-enabled" checked={timerEnabled} onChange={(e) => setConfig(parseInt(numQuestionsInput, 10), e.target.checked)}>
                                 <AnimatedCheckbox.Indicator />
                                 <AnimatedCheckbox.Label>
-                                    <span className="font-medium">Włącz licznik</span>
+                                    <span className="font-medium">Enable timer</span>
                                 </AnimatedCheckbox.Label>
                             </AnimatedCheckbox>
                         </div>
@@ -384,7 +380,7 @@ const TestSetupPage = () => {
                     disabled={isStartButtonDisabled} 
                     className="bg-brand-primary text-white font-bold py-3 px-10 rounded-full text-lg shadow-primary hover:bg-brand-primary-hover hover:shadow-primary-hover disabled:bg-gray-500 dark:disabled:bg-gray-700 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 ease-in-out disabled:transform-none"
                 >
-                    {isLoading ? "Ładowanie..." : "Rozpocznij Test"}
+                    {isLoading ? "Loading..." : "Start Test"}
                 </motion.button>
             </motion.div>
         </>

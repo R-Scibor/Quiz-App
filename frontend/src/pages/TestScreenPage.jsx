@@ -81,10 +81,10 @@ const OpenEndedQuestionUI = () => {
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
             const taskId = taskResponse.task_id;
-            if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
+            if (!taskId) throw new Error("No task ID received from server.");
             useTestStore.getState().startPolling(taskId, question.id);
         } catch (error) {
-             useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć zadania oceny.' });
+             useTestStore.getState().setError({ message: error.message || 'Failed to start the grading task.' });
         }
     };
 
@@ -98,10 +98,10 @@ const OpenEndedQuestionUI = () => {
         try {
             const taskResponse = await useTestStore.getState().checkOpenAnswer(answerToRe, true);
             const taskId = taskResponse.task_id;
-            if (!taskId) throw new Error("Nie otrzymano ID zadania od serwera.");
+            if (!taskId) throw new Error("No task ID received from server.");
             useTestStore.getState().startPolling(taskId, question.id);
         } catch (error) {
-            useTestStore.getState().setError({ message: error.message || 'Nie udało się rozpocząć oceny AI.' });
+            useTestStore.getState().setError({ message: error.message || 'Failed to start AI grading.' });
         }
     };
 
@@ -110,8 +110,8 @@ const OpenEndedQuestionUI = () => {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <LoadingSpinner />
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Ocenianie odpowiedzi przez AI...</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Możesz przejść do następnego pytania.</p>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mt-4">Grading your answer with AI...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">You can continue to the next question.</p>
                 {isSlowGrading && (
                     <p className="text-sm text-yellow-500 dark:text-yellow-400 mt-1">This is taking longer than expected...</p>
                 )}
@@ -121,7 +121,7 @@ const OpenEndedQuestionUI = () => {
                     onClick={nextQuestion}
                     className="btn-primary mt-6 py-2 px-8"
                 >
-                    {isLastQuestion ? "Zakończ test" : "Następne pytanie"}
+                    {isLastQuestion ? "Finish test" : "Next question"}
                 </motion.button>
             </div>
         );
@@ -133,7 +133,7 @@ const OpenEndedQuestionUI = () => {
         const isAutoGraded = autoGradedMethods.includes(questionResult.grading_method);
         return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Wynik oceny</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Grading result</h3>
                 <p className="text-3xl font-bold text-brand-primary mb-2">
                     {questionResult.points_awarded} / {questionResult.maxPoints} pkt
                 </p>
@@ -188,13 +188,13 @@ const OpenEndedQuestionUI = () => {
             <textarea
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder={isCli ? "Enter command..." : isCode ? "Write your code here..." : "Wpisz swoją odpowiedź tutaj..."}
+                placeholder={isCli ? "Enter command..." : isCode ? "Write your code here..." : "Type your answer here..."}
                 className={`${baseTextareaClass}${(isCli || isCode) ? ' font-mono' : ''}`}
                 style={(isCli || isCode) ? { fontFamily: 'monospace' } : undefined}
                 spellCheck={isCli || isCode ? false : undefined}
                 autoCorrect={isCli || isCode ? "off" : undefined}
                 autoCapitalize={isCli || isCode ? "off" : undefined}
-                aria-label="Pole odpowiedzi"
+                aria-label="Answer field"
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
                 {userAnswer.length} {userAnswer.length === 1 ? 'character' : 'characters'}
@@ -222,7 +222,7 @@ const OpenEndedQuestionUI = () => {
                         disabled={!userAnswer.trim()}
                         className="btn-primary py-2 px-8"
                     >
-                        Sprawdź odpowiedź
+                        Check answer
                     </motion.button>
                 </div>
             )}
@@ -292,13 +292,13 @@ const TestScreenPage = () => {
             }
             setShowFeedback(false);
         }
-        setIsReported(false); // Resetuj status zgłoszenia przy zmianie pytania
+        setIsReported(false);
     }, [question, userAnswers]);
 
     if (!question) {
         return (
             <div className="main-card bg-white dark:bg-card-bg w-full max-w-2xl mx-auto p-8 md:p-12 text-center text-gray-800 dark:text-white">
-                Ładowanie pytania...
+                Loading question...
             </div>
         );
     }
@@ -363,7 +363,7 @@ const TestScreenPage = () => {
                     <div className="main-card relative bg-white dark:bg-card-bg w-full p-8 md:p-12">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                                Pytanie {currentQuestionIndex + 1}/{currentQuestions.length}
+                                Question {currentQuestionIndex + 1}/{currentQuestions.length}
                             </h2>
                             {timerEnabled && <Timer />}
                         </div>
@@ -378,7 +378,7 @@ const TestScreenPage = () => {
                         
                         {question.image && (
                             <div className="my-4 flex justify-center">
-                                <img src={question.image} alt="Ilustracja do pytania" className="rounded-lg max-w-full h-auto" />
+                                <img src={question.image} alt="Question illustration" className="rounded-lg max-w-full h-auto" />
                             </div>
                         )}
                         
@@ -407,7 +407,7 @@ const TestScreenPage = () => {
                                             disabled={selection.length === 0}
                                             className="btn-primary py-2 px-8"
                                         >
-                                            Zatwierdź
+                                            Confirm
                                         </motion.button>
                                     ) : (
                                         <>
@@ -485,7 +485,7 @@ const TestScreenPage = () => {
                             animate={{ opacity: 1, x: 0 }}
                             className="mt-6 md:mt-0 md:absolute md:top-1/2 md:left-full md:-translate-y-1/2 md:ml-8 md:w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg"
                         >
-                            <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Wyjaśnienie:</h4>
+                            <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Explanation:</h4>
                             <div className="prose prose-sm dark:prose-invert mt-2 text-gray-600 dark:text-gray-300">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.explanation}</ReactMarkdown>
                             </div>

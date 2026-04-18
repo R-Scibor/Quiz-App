@@ -77,3 +77,15 @@ jobs:
       - name: Test
         run: npm test -- --run
         working-directory: frontend
+
+  deploy:
+    runs-on: self-hosted
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Pull and rebuild
+        run: |
+          cd /home/endmin/homelab/Quiz-App
+          git pull
+          docker compose up --build -d

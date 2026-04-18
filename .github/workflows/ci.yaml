@@ -32,7 +32,13 @@ jobs:
       DB_SSL_REQUIRE: "False"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - name: Cache virtualenv
+        uses: actions/cache@v5
+        with:
+          path: .venv
+          key: venv-${{ hashFiles('requirements.txt') }}
 
       - name: Set up virtualenv
         run: |
@@ -52,7 +58,13 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - name: Cache node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: npm-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Install dependencies
         run: npm ci

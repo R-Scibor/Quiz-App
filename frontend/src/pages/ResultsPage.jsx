@@ -9,7 +9,6 @@ const ResultsPage = () => {
 
     const totalMaxPoints = useMemo(() => {
         return currentQuestions.reduce((total, question) => {
-            // Dla pytań zamkniętych przyjmujemy 1 pkt, dla otwartych bierzemy maxPoints
             return total + (question.maxPoints || 1);
         }, 0);
     }, [currentQuestions]);

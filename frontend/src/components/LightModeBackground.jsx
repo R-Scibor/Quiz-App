@@ -9,7 +9,7 @@ const LightModeBackground = () => (
       width: '100%',
       height: '100%',
       zIndex: -1,
-      backgroundColor: '#f3f4f6', // Jasnoszare tło (gray-100)
+      backgroundColor: '#f3f4f6', // gray-100
       backgroundImage: `
         repeating-linear-gradient(
           -45deg,

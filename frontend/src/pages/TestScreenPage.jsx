@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-// --- Komponent oceny trudności (spaced repetition) ---
+// --- Difficulty rater component (spaced repetition) ---
 const DifficultyRater = ({ questionId }) => {
     const { rateDifficulty, difficultyRatings, user } = useTestStore();
     if (!user) return null;
@@ -41,7 +41,7 @@ const DifficultyRater = ({ questionId }) => {
     );
 };
 
-// --- Komponent dla pytań otwartych ---
+// --- Open-ended question component ---
 const OpenEndedQuestionUI = () => {
     const {
         currentQuestions,
@@ -174,7 +174,6 @@ const OpenEndedQuestionUI = () => {
         );
     }
 
-    // Domyślny widok do wpisania odpowiedzi
     const baseTextareaClass = "w-full h-40 p-3 rounded-lg bg-gray-100 dark:bg-option-bg border-2 border-gray-300 dark:border-gray-600 focus:border-brand-primary focus:ring-brand-primary transition-colors text-gray-900 dark:text-white";
     return (
          <div className="w-full">
@@ -303,7 +302,7 @@ const TestScreenPage = () => {
         );
     }
 
-    // --- LOGIKA DLA PYTAŃ ZAMKNIĘTYCH (BEZ ZMIAN) ---
+    // --- Closed question logic ---
     const handleOptionChange = (optionIndex) => {
         if (showFeedback) return;
         let newSelection;
@@ -344,7 +343,7 @@ const TestScreenPage = () => {
 
         return isSelected ? `${baseClasses} option-selected` : baseClasses;
     };
-    // --- KONIEC LOGIKI DLA PYTAŃ ZAMKNIĘTYCH ---
+    // --- End closed question logic ---
 
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
     const isClosedQuestion = question.type === 'single-choice' || question.type === 'multiple-choice';

@@ -1,7 +1,7 @@
 import React from 'react';
 import useTestStore from '../store/testStore';
 
-// Ikony słońca i księżyca jako komponenty SVG
+// Sun and moon SVG icon components
 const SunIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="5"></circle>
@@ -30,7 +30,7 @@ const ThemeSwitcher = () => {
         <button
             onClick={toggleTheme}
             className="absolute top-4 right-4 p-2 rounded-full text-gray-400 bg-black/20 hover:text-white hover:bg-black/40 transition-colors"
-            aria-label="Przełącz motyw"
+            aria-label="Toggle theme"
         >
             {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>

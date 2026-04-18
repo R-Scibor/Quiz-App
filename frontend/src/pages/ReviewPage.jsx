@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReportModal from '../components/ReportModal';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-// Warianty animacji dla listy pytań
+// Animation variants for question list
 const listVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -20,7 +20,7 @@ const itemVariants = {
     visible: { opacity: 1, x: 0 }
 };
 
-// --- Komponent dla pytania ZAMKNIĘTEGO ---
+// --- Closed question component ---
 const ClosedQuestionReview = ({ question, userAnswer }) => {
 
     const getOptionClass = (optionIndex) => {
@@ -57,7 +57,7 @@ const ClosedQuestionReview = ({ question, userAnswer }) => {
     );
 };
 
-// --- Komponent dla pytania OTWARTEGO ---
+// --- Open question component ---
 const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
     if (!result) {
         return <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg text-yellow-800 dark:text-yellow-200">No saved answer for this question.</div>;
@@ -103,9 +103,8 @@ const OpenQuestionReview = ({ question, result, isRegrading, onRegrade }) => {
 };
 
 
-// --- GŁÓWNY KOMPONENT STRONY ---
+// --- Main page component ---
 const ReviewPage = () => {
-    // Pobieramy ze stanu wszystkie potrzebne dane, które przygotowaliśmy wcześniej
     const { currentQuestions, userAnswers, openQuestionResults, backToResults, checkingQuestionId, regradeQuestion, startPolling } = useTestStore();
     const [reportingQuestion, setReportingQuestion] = useState(null);
     const [reportedQuestions, setReportedQuestions] = useState(new Set());

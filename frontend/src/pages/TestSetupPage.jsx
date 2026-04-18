@@ -3,7 +3,7 @@ import useTestStore from '/src/store/testStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedCheckbox from '/src/components/AnimatedCheckbox.jsx';
 
-// --- Komponenty Modalne (bez zmian) ---
+// Modal components
 const ConfirmationModal = ({ isOpen, availableCount, requestedCount, onConfirm, onCancel }) => {
     if (!isOpen) return null;
     return (
@@ -78,7 +78,7 @@ const LlmWarningModal = ({ isOpen, onConfirm, onCancel }) => {
 };
 
 
-// --- Definicje animacji ---
+// --- Animation definitions ---
 const hoverEffect = {
     scale: 1.02,
     boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.12)",
@@ -95,7 +95,7 @@ const ChevronIcon = ({ expanded }) => (
     </svg>
 );
 
-// --- Główny komponent ---
+// --- Main component ---
 const TestSetupPage = () => {
     const { 
         fetchAvailableTests, 
@@ -120,7 +120,6 @@ const TestSetupPage = () => {
     const [isLlmWarningModalOpen, setIsLlmWarningModalOpen] = useState(false);
     const [pendingQuestionMode, setPendingQuestionMode] = useState(null);
 
-    // Cała logika pozostaje bez zmian
     useEffect(() => { 
         fetchAvailableTests(); 
     }, [fetchAvailableTests]);

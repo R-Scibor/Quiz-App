@@ -19,7 +19,6 @@ from rest_framework.authtoken.models import Token
 
 from datetime import date, timedelta
 
-# Import serializers and models
 from .models import Test, Question, Answer, ReportedIssue, QuizSession, QuestionAttempt
 from .serializers import (
     TestMetadataSerializer, QuestionSerializer, ReportedIssueSerializer,
@@ -97,31 +96,6 @@ def _build_study_buckets(user):
     return latest_map, due_ids, struggling_ids, studied_test_ids
 
 
-# -----------------------------------------------------------------------------
-# Views Overview
-# -----------------------------------------------------------------------------
-#
-# All views use the Django ORM against PostgreSQL, replacing the previous
-# file-based backend.
-#
-# Key patterns:
-#
-# 1.  **ORM instead of files**: all data fetching goes through Django models.
-#
-# 2.  **Query optimisation**:
-#     - `prefetch_related`: fetches related objects (answers, tags) in a single
-#       extra query, eliminating the N+1 problem.
-#     - `annotate`: computes question counts directly in SQL (TestListView).
-#
-# 3.  **Business logic**: question-type filtering ('open', 'closed', 'mixed')
-#     and randomisation use `.filter()`, `.order_by('?')`, and `Q objects`.
-#
-# 4.  **Compatibility**: serializers return the same shape as the old API,
-#     keeping the frontend unchanged.
-#
-# -----------------------------------------------------------------------------
-
-
 class ReactAppView(View):
     """Serves the React app's index.html for all non-API routes."""
     def get(self, request, *args, **kwargs):
@@ -140,14 +114,11 @@ class TestListView(APIView):
     """Returns a list of all available tests with question counts."""
     def get(self, request, *args, **kwargs):
         try:
-            # Annotate each test with question counts computed in SQL.
             tests_with_counts = Test.objects.annotate(
                 total_questions_count=Count('questions'),
                 open_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE])),
                 closed_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]))
             ).prefetch_related('categories')
-
-            # Pass the annotated queryset to the serializer.
             serializer = TestMetadataSerializer(tests_with_counts, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -180,10 +151,7 @@ class QuestionListView(APIView):
         if not 1 <= num_questions <= 200:
             return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "num_questions must be between 1 and 200."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Build the question queryset from the selected test IDs.
         questions_queryset = Question.objects.filter(test__id__in=test_ids)
-
-        # Filter by question type based on the requested mode.
         if mode == 'open':
             questions_queryset = questions_queryset.filter(
                 question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
@@ -191,10 +159,7 @@ class QuestionListView(APIView):
         elif mode == 'closed':
             questions_queryset = questions_queryset.filter(question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE])
 
-        # Prefetch related answers and tags to avoid N+1 queries.
         questions_queryset = questions_queryset.prefetch_related('answers', 'tags')
-
-        # Randomly sample the requested number of questions.
         final_questions = questions_queryset.order_by('?')[:num_questions]
         
         if not final_questions:

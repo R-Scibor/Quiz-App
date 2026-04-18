@@ -9,7 +9,7 @@ const DarkModeBackground = () => (
       width: '100%',
       height: '100%',
       zIndex: -1,
-      backgroundColor: '#1a1016', // Twój oryginalny kolor tła
+      backgroundColor: '#1a1016',
       backgroundImage: `
         repeating-linear-gradient(
           -45deg,

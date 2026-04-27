@@ -376,9 +376,13 @@ const useTestStore = create((set, get) => ({
                 score_achieved: score,
                 score_possible: totalMaxPoints,
             });
+        } catch (e) {
+            console.error('Failed to complete session:', e);
+        }
+        try {
             await submitAttempts(attempts);
         } catch (e) {
-            console.error('Failed to finalize session:', e);
+            console.error('Failed to submit attempts:', e);
         }
     },
 

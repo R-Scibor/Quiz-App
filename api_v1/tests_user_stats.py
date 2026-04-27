@@ -101,18 +101,6 @@ class UserStatsStreakTestCase(APITestCase):
         response = self.client.get(STATS_URL)
         self.assertEqual(response.data['current_streak_days'], 3)
 
-    @unittest.skip(
-        "BUG: Streak algorithm in views.py:496-504 has an incorrect gap check. "
-        "The outer condition `d == check or d == check - timedelta(days=1)` is "
-        "intended to allow yesterday to START a streak (when current_streak==0), "
-        "but the `d == check - timedelta(days=1)` clause also fires mid-loop, "
-        "causing a day-2 gap to silently extend an existing streak. "
-        "Example: sessions [today, yesterday, 3_days_ago] returns current_streak=3 "
-        "instead of the correct 2. "
-        "Root cause: views.py:497, `d == check - timedelta(days=1)` in the outer if. "
-        "Fix: only use `d == check - timedelta(days=1)` when current_streak==0 "
-        "(i.e., move it inside the inner `if ... and current_streak == 0:` branch)."
-    )
     def test_gap_breaks_current_streak_counts_only_recent_run(self):
         """Sessions: today, yesterday, 3 days ago (gap at day 2). Current=2."""
         self._create_session(days_ago=0)

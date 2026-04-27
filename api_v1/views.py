@@ -461,10 +461,11 @@ class UserStatsView(APIView):
             # Current streak
             check = date.today()
             for d in completed_dates:
-                if d == check or d == check - timedelta(days=1):
-                    if d == check - timedelta(days=1) and current_streak == 0:
-                        # Allow yesterday to start a streak (not broken yet today)
-                        pass
+                if d == check:
+                    current_streak += 1
+                    check = d - timedelta(days=1)
+                elif d == check - timedelta(days=1) and current_streak == 0:
+                    # Allow yesterday to start a streak (not broken yet today)
                     current_streak += 1
                     check = d - timedelta(days=1)
                 elif d < check:

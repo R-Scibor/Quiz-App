@@ -1,84 +1,62 @@
-import os
-import json
-import shutil
-import tempfile
 import unittest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from django.test import override_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-# Temporary media directory used by @override_settings in ApiViewsTestCase.
-TEST_MEDIA_DIR = Path(tempfile.gettempdir()) / 'django_test_media'
+from api_v1.models import Category, Test, Question, Answer
 
 
-@unittest.skip(
-    "STALE: These tests create JSON fixture files in a temp directory, but all views "
-    "now query PostgreSQL via ORM. The JSON files have zero effect on API responses. "
-    "Every assertion in this class is vacuously wrong — tests may pass or fail for "
-    "unrelated reasons. "
-    "Rewrite required: seed the database using TestCase.setUpTestData with ORM objects "
-    "(Test, Question, Answer) and remove the file I/O entirely."
-)
-@override_settings(
-    MEDIA_ROOT=TEST_MEDIA_DIR,
-    SECRET_KEY='a-test-secret-key-for-development'
-)
-class ApiViewsTestCase(APITestCase):
-    """
-    Tests for TestListView and QuestionListView.
-
-    NOTE: These tests were written for the original file-based backend and are
-    now stale — the views query PostgreSQL via ORM, so the JSON files created
-    here have no effect on the responses. They are kept as a placeholder until
-    the test suite is rewritten with ORM fixtures.
-    """
+class QuizAPITests(APITestCase):
+    """Tests for TestListView and QuestionListView."""
 
     @classmethod
-    def setUpClass(cls):
-        """Create the temporary media directory once before all tests in this class."""
-        super().setUpClass()
-        os.makedirs(TEST_MEDIA_DIR / 'tests', exist_ok=True)
+    def setUpTestData(cls):
+        cls.cat_history = Category.objects.create(name="History")
+        cls.cat_biology = Category.objects.create(name="Biology")
 
-    @classmethod
-    def tearDownClass(cls):
-        """Remove the temporary media directory after all tests in this class."""
-        super().tearDownClass()
-        shutil.rmtree(TEST_MEDIA_DIR, ignore_errors=True)
+        cls.test_historia = Test.objects.create(title="Historia")
+        cls.test_historia.categories.add(cls.cat_history)
 
-    def setUp(self):
-        """Create stub JSON fixtures that mirror the old file-based API format."""
-        self.tests_dir = TEST_MEDIA_DIR / 'tests'
+        cls.test_biologia = Test.objects.create(title="Biologia")
+        cls.test_biologia.categories.add(cls.cat_biology)
 
-        # Test 1 (history) — mixed closed and open questions
-        self.historia_data = {
-            "category": "History", "scope": "Poland", "version": "1.0",
-            "questions": [
-                {"id": 1, "questionText": "Who was the first king of Poland?", "type": "single-choice", "tags": ["rulers", "Poland"], "options": ["Mieszko I", "Bolesław Chrobry", "Kazimierz Wielki"], "correctAnswers": [1], "explanation": "Explanation for question 1."},
-                {"id": 2, "questionText": "In what year was the baptism of Poland?", "type": "single-choice", "tags": ["dates", "Poland"], "options": ["966", "1025", "1410"], "correctAnswers": [0], "explanation": "Explanation for question 2."},
-                {"id": 3, "questionText": "Describe the causes of the Union of Lublin.", "type": "open-ended", "tags": ["union", "politics"], "gradingCriteria": "Must mention the Muscovite threat and the childless death of Sigismund Augustus.", "maxPoints": 5, "explanation": "Key factors were the threat from Moscow and the effort to ensure the durability of the union of Poland and Lithuania."}
-            ]
-        }
-        with open(self.tests_dir / 'historia.json', 'w', encoding='utf-8') as f:
-            json.dump(self.historia_data, f)
+        # Historia: 2 closed + 1 open
+        cls.q1 = Question.objects.create(
+            test=cls.test_historia, text="Who was the first king of Poland?",
+            question_type=Question.SINGLE_CHOICE, explanation="Mieszko I.",
+        )
+        Answer.objects.create(question=cls.q1, text="Mieszko I", is_correct=True)
+        Answer.objects.create(question=cls.q1, text="Bolesław Chrobry", is_correct=False)
 
-        # Test 2 (biology) — closed questions only
-        self.biologia_data = {
-            "category": "Biology", "scope": "Cell", "version": "1.1",
-            "questions": [
-                {"id": 10, "questionText": "What is the energy center of the cell?", "type": "single-choice", "tags": ["cell", "organelle"], "options": ["Nucleus", "Ribosome", "Mitochondrion"], "correctAnswers": [2], "explanation": "Explanation for question 10."},
-                {"id": 11, "questionText": "Which of the following are organelles?", "type": "multiple-choice", "tags": ["cell", "organelle"], "options": ["DNA", "RNA", "Golgi apparatus", "Mitochondrion"], "correctAnswers": [2, 3], "explanation": "Explanation for question 11."}
-            ]
-        }
-        with open(self.tests_dir / 'biologia.json', 'w', encoding='utf-8') as f:
-            json.dump(self.biologia_data, f)
+        cls.q2 = Question.objects.create(
+            test=cls.test_historia, text="Year of Poland's baptism?",
+            question_type=Question.SINGLE_CHOICE, explanation="966 AD.",
+        )
+        Answer.objects.create(question=cls.q2, text="966", is_correct=True)
+        Answer.objects.create(question=cls.q2, text="1025", is_correct=False)
 
-    def tearDown(self):
-        """Remove JSON fixture files created during the test."""
-        for f in self.tests_dir.glob('*.json'):
-            os.remove(f)
+        cls.q3 = Question.objects.create(
+            test=cls.test_historia, text="Describe causes of the Union of Lublin.",
+            question_type=Question.OPEN_TEXT,
+            grading_criteria="Must mention the Muscovite threat.", max_points=5,
+        )
+
+        # Biologia: 1 single + 1 multiple, 0 open
+        cls.q4 = Question.objects.create(
+            test=cls.test_biologia, text="Energy center of the cell?",
+            question_type=Question.SINGLE_CHOICE, explanation="Mitochondria.",
+        )
+        Answer.objects.create(question=cls.q4, text="Nucleus", is_correct=False)
+        Answer.objects.create(question=cls.q4, text="Mitochondrion", is_correct=True)
+
+        cls.q5 = Question.objects.create(
+            test=cls.test_biologia, text="Which are organelles?",
+            question_type=Question.MULTIPLE_CHOICE, explanation="Golgi and Mitochondrion.",
+        )
+        Answer.objects.create(question=cls.q5, text="DNA", is_correct=False)
+        Answer.objects.create(question=cls.q5, text="Golgi apparatus", is_correct=True)
+        Answer.objects.create(question=cls.q5, text="Mitochondrion", is_correct=True)
 
     # --- TestListView ---
 
@@ -86,27 +64,24 @@ class ApiViewsTestCase(APITestCase):
         """GET /tests/ returns test metadata with question counts."""
         response = self.client.get('/api/v1/tests/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_data = response.json()
-        self.assertEqual(len(response_data), 2)
-        
-        response_data.sort(key=lambda x: x['test_id'])
+        data = response.json()
+        self.assertEqual(len(data), 2)
 
-        self.assertEqual(response_data[0]['test_id'], 'biologia')
-        self.assertEqual(response_data[0]['question_counts']['total'], 2)
-        self.assertEqual(response_data[0]['question_counts']['closed'], 2)
-        self.assertEqual(response_data[0]['question_counts']['open'], 0)
+        by_scope = {item['scope']: item for item in data}
+        self.assertIn('Historia', by_scope)
+        self.assertIn('Biologia', by_scope)
 
-        self.assertEqual(response_data[1]['test_id'], 'historia')
-        self.assertEqual(response_data[1]['question_counts']['total'], 3)
-        self.assertEqual(response_data[1]['question_counts']['closed'], 2)
-        self.assertEqual(response_data[1]['question_counts']['open'], 1)
-    
-    def test_list_available_tests_empty(self):
-        """GET /tests/ returns an empty list when no tests exist."""
-        self.tearDown() 
-        response = self.client.get('/api/v1/tests/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), [])
+        historia = by_scope['Historia']
+        self.assertEqual(historia['test_id'], str(self.test_historia.id))
+        self.assertEqual(historia['question_counts']['total'], 3)
+        self.assertEqual(historia['question_counts']['closed'], 2)
+        self.assertEqual(historia['question_counts']['open'], 1)
+
+        biologia = by_scope['Biologia']
+        self.assertEqual(biologia['test_id'], str(self.test_biologia.id))
+        self.assertEqual(biologia['question_counts']['total'], 2)
+        self.assertEqual(biologia['question_counts']['closed'], 2)
+        self.assertEqual(biologia['question_counts']['open'], 0)
 
     # --- QuestionListView ---
 
@@ -118,179 +93,98 @@ class ApiViewsTestCase(APITestCase):
 
     def test_get_questions_more_than_available(self):
         """Requesting more questions than available returns all available."""
-        response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 10})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_biologia.id), 'num_questions': 10},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
-        
+
     def test_question_shuffling_logic(self):
         """After shuffling, correctAnswers indices still point to the correct option texts."""
-        original_question = self.biologia_data['questions'][1]
-        original_options = original_question['options']
-        original_correct_indices = original_question['correctAnswers']
-        original_correct_answers_text = {original_options[i] for i in original_correct_indices}
+        correct_texts = set(
+            Answer.objects.filter(question=self.q5, is_correct=True).values_list('text', flat=True)
+        )
 
-        response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 2})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_biologia.id), 'num_questions': 2},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        response_data = response.json()
-        shuffled_question = next((q for q in response_data if q['id'] == original_question['id']), None)
-        self.assertIsNotNone(shuffled_question)
 
-        if shuffled_question:
-            shuffled_options = shuffled_question['options']
-            shuffled_correct_indices = shuffled_question['correctAnswers']
-            shuffled_correct_answers_text = {shuffled_options[i] for i in shuffled_correct_indices}
-            self.assertEqual(original_correct_answers_text, shuffled_correct_answers_text)
+        q5_str = str(self.q5.id)
+        shuffled = next((q for q in response.json() if q['id'] == q5_str), None)
+        self.assertIsNotNone(shuffled, "q5 (multiple-choice) must appear in the response")
+
+        shuffled_correct_texts = {shuffled['options'][i] for i in shuffled['correctAnswers']}
+        self.assertEqual(correct_texts, shuffled_correct_texts)
 
     def test_get_questions_mode_closed_only(self):
         """`mode=closed` returns only closed questions."""
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 2, 'mode': 'closed'})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_historia.id), 'num_questions': 2, 'mode': 'closed'},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
         self.assertEqual(len(questions), 2)
         for q in questions:
             self.assertIn(q['type'], ['single-choice', 'multiple-choice'])
-            self.assertIn('options', q) # Verifies serializer correctness
+            self.assertGreater(len(q['options']), 0)
 
     def test_get_questions_mode_open_only(self):
-        """`mode=open` returns only open-ended questions."""
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'open'})
+        """`mode=open` returns only open questions."""
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_historia.id), 'num_questions': 1, 'mode': 'open'},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
         self.assertEqual(len(questions), 1)
-        self.assertEqual(questions[0]['type'], 'open-ended')
-        self.assertIn('gradingCriteria', questions[0]) # Verifies serializer correctness
-        self.assertNotIn('options', questions[0]) # Verifies serializer correctness
+        self.assertEqual(questions[0]['type'], 'open-text')
+        self.assertIsNotNone(questions[0]['gradingCriteria'])
+        self.assertEqual(questions[0]['options'], [])
 
     def test_get_questions_mode_mixed_default(self):
         """Default mode (mixed) returns both open and closed questions."""
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 3})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_historia.id), 'num_questions': 3},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = response.json()
         self.assertEqual(len(questions), 3)
         types = {q['type'] for q in questions}
-        self.assertIn('open-ended', types)
+        self.assertIn('open-text', types)
         self.assertIn('single-choice', types)
 
     def test_get_questions_invalid_mode(self):
         """An invalid `mode` value returns HTTP 400."""
-        response = self.client.get('/api/v1/questions/', {'categories': 'historia', 'num_questions': 1, 'mode': 'wrong_mode'})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_historia.id), 'num_questions': 1, 'mode': 'wrong_mode'},
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'INVALID_MODE_PARAMETER')
-    
+
     def test_get_questions_no_questions_for_mode(self):
         """Returns HTTP 404 when no questions match the requested mode."""
-        # biologia has no open questions
-        response = self.client.get('/api/v1/questions/', {'categories': 'biologia', 'num_questions': 1, 'mode': 'open'})
+        response = self.client.get(
+            '/api/v1/questions/',
+            {'categories': str(self.test_biologia.id), 'num_questions': 1, 'mode': 'open'},
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['error'], 'NO_QUESTIONS_FOUND')
 
 
+class QuizAPIEmptyStateTests(APITestCase):
+    """Tests API behaviour when the database has no Test objects."""
 
-@unittest.skip(
-    "STALE: These tests patch 'api_v1.views.genai.GenerativeModel', but CheckOpenAnswerView "
-    "now calls generate_ai_answer.delay() (Celery task). The mocked symbol is dead code in "
-    "views.py — genai is never imported or called there. Most tests here exercise nothing real. "
-    "Exceptions: test_check_answer_missing_payload and test_check_answer_no_api_key may still "
-    "reflect valid behavior; they are preserved and rewritten in tests_celery_tasks.py. "
-    "Rewrite required: patch 'api_v1.views.generate_ai_answer' (the Celery task) instead."
-)
-@override_settings(SECRET_KEY='a-test-secret-key-for-development')
-class CheckOpenAnswerViewTestCase(APITestCase):
-    """
-    Tests for CheckOpenAnswerView.
-
-    NOTE: These tests mock `api_v1.views.genai.GenerativeModel`, but the view
-    now delegates to `generate_ai_answer.delay()` (Celery). The mocks patch a
-    symbol that is no longer called in views.py, so most tests here are stale.
-    They are kept as documentation until the suite is rewritten.
-    """
-
-    def setUp(self):
-        self.url = '/api/v1/check_answer/'
-        self.payload = {
-            'userAnswer': 'The union was caused by the threat from Moscow and the king having no heir.',
-            'gradingCriteria': 'Must mention the Muscovite threat and the childless death of Sigismund Augustus.',
-            'questionText': 'Describe the causes of the Union of Lublin.',
-            'maxPoints': 5
-        }
-
-    @patch('api_v1.views.genai.GenerativeModel')
-    @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
-    def test_check_answer_success(self, mock_generative_model):
-        """Endpoint returns score and feedback on a successful AI response."""
-        # Configure the mock
-        mock_ai_response = MagicMock()
-        mock_ai_response.text = json.dumps({"score": 4, "feedback": "Good answer."})
-        
-        mock_model_instance = MagicMock()
-        mock_model_instance.generate_content.return_value = mock_ai_response
-        mock_generative_model.return_value = mock_model_instance
-
-        response = self.client.post(self.url, self.payload, format='json')
+    def test_list_available_tests_empty(self):
+        """GET /tests/ returns an empty list when no tests exist."""
+        response = self.client.get('/api/v1/tests/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['score'], 4)
-        self.assertEqual(response.data['feedback'], "Good answer.")
-        mock_model_instance.generate_content.assert_called_once()
-
-    @patch.dict(os.environ, clear=True)
-    def test_check_answer_no_api_key(self):
-        """Returns HTTP 500 when the Gemini API key is not configured."""
-        response = self.client.post(self.url, self.payload, format='json')
-        self.assertEqual(response.data['error'], 'API_KEY_MISSING')
-        self.assertIn('AI API key is not configured', response.data['message'])
-
-    @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
-    def test_check_answer_missing_payload(self):
-        """Incomplete payload returns HTTP 400."""
-        incomplete_payload = self.payload.copy()
-        del incomplete_payload['userAnswer']
-        response = self.client.post(self.url, incomplete_payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 'INCOMPLETE_DATA')
-
-    @patch('api_v1.views.genai.GenerativeModel')
-    @patch.dict(os.environ, {'GEMINI_API_KEY': 'fake-api-key'})
-    def test_check_answer_ai_invalid_json(self, mock_generative_model):
-        """Returns HTTP 500 when the AI response is not valid JSON."""
-        mock_ai_response = MagicMock()
-        mock_ai_response.text = "Sorry, an error occurred."  # non-JSON
-        
-        mock_model_instance = MagicMock()
-        mock_model_instance.generate_content.return_value = mock_ai_response
-        mock_generative_model.return_value = mock_model_instance
-        
-        response = self.client.post(self.url, self.payload, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(response.data['error'], 'AI_RESPONSE_INVALID_FORMAT')
-        self.assertIn('Received an invalid response format', response.data['message'])
-
-    @unittest.skipUnless(os.environ.get('GEMINI_API_KEY'), "GEMINI_API_KEY is not set, skipping integration test.")
-    def test_integration_check_answer_real_api_call(self):
-        """Integration test that makes a real Gemini API call. Skipped unless GEMINI_API_KEY is set."""
-        payload = {
-            'userAnswer': 'The Sun is a star.',
-            'gradingCriteria': 'The answer must state that the Sun is a star.',
-            'questionText': 'What is the Sun?',
-            'maxPoints': 1
-        }
-        
-        response = self.client.post(self.url, payload, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Verify the response shape
-        response_data = response.json()
-        self.assertIn('score', response_data)
-        self.assertIn('feedback', response_data)
-        self.assertIsInstance(response_data['score'], int)
-        self.assertIsInstance(response_data['feedback'], str)
-
-        print(f"\n--- Integration Test Response ---\n"
-              f"Score: {response_data['score']}\n"
-              f"Feedback: {response_data['feedback']}\n"
-              f"-------------------------------")
+        self.assertEqual(response.json(), [])
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +205,7 @@ class SanitizersTestCase(unittest.TestCase):
     def test_sanitize_text_normalizes_unicode(self):
         from api_v1.tasks import sanitize_text
         # NFKC: ligature ﬁ → fi
-        self.assertEqual(sanitize_text("\ufb01le"), "file")
+        self.assertEqual(sanitize_text("ﬁle"), "file")
 
     def test_sanitize_cli_collapses_spaces(self):
         from api_v1.tasks import sanitize_cli
@@ -323,7 +217,7 @@ class SanitizersTestCase(unittest.TestCase):
 
 
 class CascadeRoutingTestCase(unittest.TestCase):
-    """Integration tests for cascade grading routing (mocking vector service and Gemini)."""
+    """Integration tests for cascade grading routing (mocking vector service and LLM dispatcher)."""
 
     def _make_result(self, score, feedback, grading_method, vector_score=None):
         return {
@@ -346,36 +240,23 @@ class CascadeRoutingTestCase(unittest.TestCase):
         self.assertEqual(result["grading_method"], "vector_fail")
         self.assertEqual(result["score"], 0)
 
-    @unittest.skip(
-        "BUG: This test patches 'api_v1.tasks._call_gemini', but _call_llm() routes "
-        "to _call_vertex() when LLM_PROVIDER=vertex (the Docker default). "
-        "The _call_gemini mock is never invoked, so mock_gemini.assert_called_once() fails. "
-        "Root cause: tests assume Gemini provider but the environment uses Vertex AI. "
-        "Fix: also patch 'api_v1.tasks._call_llm' directly (the provider dispatcher) "
-        "so tests are provider-agnostic."
-    )
-    @patch("api_v1.tasks._call_gemini")
+    @patch("api_v1.tasks._call_llm")
     @patch("api_v1.tasks.call_vector_service", return_value=0.55)
-    def test_open_text_ambiguous_calls_gemini(self, _mock_vec, mock_gemini):
+    def test_open_text_ambiguous_calls_llm(self, _mock_vec, mock_llm):
         from api_v1.tasks import grade_open_text
-        mock_gemini.return_value = {"score": 3, "feedback": "Partially correct."}
+        mock_llm.return_value = {"score": 3, "feedback": "Partially correct."}
         result = grade_open_text("Q?", "expected answer", 5, "partial answer")
         self.assertEqual(result["grading_method"], "llm")
-        mock_gemini.assert_called_once()
+        mock_llm.assert_called_once()
 
-    @unittest.skip(
-        "BUG: Same provider mismatch as test_open_text_ambiguous_calls_gemini. "
-        "Patches _call_gemini but environment routes to _call_vertex. "
-        "Fix: patch _call_llm instead."
-    )
     @patch("api_v1.tasks.call_vector_service", return_value=None)
-    @patch("api_v1.tasks._call_gemini")
-    def test_open_text_vector_unreachable_fallback(self, mock_gemini, _mock_vec):
+    @patch("api_v1.tasks._call_llm")
+    def test_open_text_vector_unreachable_fallback(self, mock_llm, _mock_vec):
         from api_v1.tasks import grade_open_text
-        mock_gemini.return_value = {"score": 4, "feedback": "Good."}
+        mock_llm.return_value = {"score": 4, "feedback": "Good."}
         result = grade_open_text("Q?", "expected answer", 5, "good answer")
         self.assertEqual(result["grading_method"], "fallback_llm")
-        mock_gemini.assert_called_once()
+        mock_llm.assert_called_once()
 
     def test_open_cli_regex_match(self):
         from api_v1.tasks import grade_open_cli
@@ -383,24 +264,20 @@ class CascadeRoutingTestCase(unittest.TestCase):
         self.assertEqual(result["grading_method"], "regex_pass")
         self.assertEqual(result["score"], 3)
 
-    def test_open_cli_regex_no_match_calls_gemini(self):
+    def test_open_cli_regex_no_match_calls_llm(self):
         from api_v1.tasks import grade_open_cli
-        with patch("api_v1.tasks._call_gemini") as mock_gemini:
-            mock_gemini.return_value = {"score": 0, "feedback": "Wrong."}
+        with patch("api_v1.tasks._call_llm") as mock_llm:
+            mock_llm.return_value = {"score": 0, "feedback": "Wrong."}
             result = grade_open_cli("List files", r"ls\s+-la?\s*/tmp", 3, "rm -rf /tmp")
         self.assertEqual(result["grading_method"], "llm")
 
-    @unittest.skip(
-        "BUG: Same provider mismatch — patches _call_gemini but environment uses Vertex AI. "
-        "Fix: patch _call_llm instead."
-    )
-    def test_open_code_always_uses_gemini(self):
+    def test_open_code_always_uses_llm(self):
         from api_v1.tasks import grade_open_code
-        with patch("api_v1.tasks._call_gemini") as mock_gemini:
-            mock_gemini.return_value = {"score": 2, "feedback": "Partial."}
+        with patch("api_v1.tasks._call_llm") as mock_llm:
+            mock_llm.return_value = {"score": 2, "feedback": "Partial."}
             result = grade_open_code("Write FizzBuzz", "python: FizzBuzz in Python", 5, "print('fizz')")
         self.assertEqual(result["grading_method"], "llm")
-        mock_gemini.assert_called_once()
+        mock_llm.assert_called_once()
 
 
 class ImportQuizzesValidationTestCase(unittest.TestCase):

@@ -356,14 +356,7 @@ describe('_finalizeSession — attempt metadata', () => {
 describe('_finalizeSession — error handling', () => {
     beforeEach(() => setupSession());
 
-    test.skip(
-        // BUG: _finalizeSession calls completeSession then submitAttempts sequentially
-        // inside a single try/catch block (testStore.js:372-382).
-        // If completeSession() throws, execution jumps to the catch handler and
-        // submitAttempts() is never called — attempt records are silently lost.
-        // Root cause: `await completeSession(...); await submitAttempts(...)` inside one try.
-        // Fix: wrap each call in its own try/catch so submitAttempts always runs
-        // regardless of completeSession outcome.
+    test(
         'submitAttempts is called even when completeSession throws',
         async () => {
             const q = CLOSED_Q('q1', [0]);

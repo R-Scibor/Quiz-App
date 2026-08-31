@@ -513,6 +513,28 @@ const useTestStore = create((set, get) => ({
         set({ authToken: null, user: null });
     },
 
+    handleUnauthorized: () => {
+        const { view, activePolls } = get();
+        Object.values(activePolls).forEach(clearInterval);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_username');
+        const midQuiz = view === 'test' || view === 'results' || view === 'review';
+        set({
+            authToken: null,
+            user: null,
+            currentSessionId: null,
+            checkingQuestionId: null,
+            activePolls: {},
+            view: 'login',
+            authError: {
+                code: 'SESSION_EXPIRED',
+                message: midQuiz
+                    ? 'Your session expired. Progress for this quiz was not saved. Please log in again.'
+                    : 'Your session expired. Please log in again.',
+            },
+        });
+    },
+
     goToLogin: () => set({ authError: null, view: 'login' }),
     goToRegister: () => set({ authError: null, view: 'register' }),
 }));

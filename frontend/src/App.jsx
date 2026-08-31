@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import useTestStore from './store/testStore';
+import { setUnauthorizedHandler } from './services/api';
 import HomePage from './pages/HomePage';
 import TestSetupPage from './pages/TestSetupPage';
 import TestScreenPage from './pages/TestScreenPage';
@@ -29,6 +30,8 @@ function App() {
 
     useEffect(() => {
         initAuth();
+        setUnauthorizedHandler(() => useTestStore.getState().handleUnauthorized());
+        return () => setUnauthorizedHandler(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

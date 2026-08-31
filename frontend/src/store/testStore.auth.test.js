@@ -240,6 +240,49 @@ describe('useTestStore - logout', () => {
     });
 });
 
+describe('useTestStore - handleUnauthorized', () => {
+    beforeEach(() => {
+        resetAuthState();
+        act(() => {
+            useTestStore.setState({
+                authToken: 'expired-tok',
+                user: { username: 'ivan' },
+                view: 'stats',
+                currentSessionId: 'session-1',
+            });
+        });
+        localStorage.setItem('auth_token', 'expired-tok');
+        localStorage.setItem('auth_username', 'ivan');
+    });
+
+    test('clears auth and sends the user to login with a session-expired message', () => {
+        act(() => { useTestStore.getState().handleUnauthorized(); });
+
+        const state = useTestStore.getState();
+        expect(state.authToken).toBeNull();
+        expect(state.user).toBeNull();
+        expect(state.view).toBe('login');
+        expect(state.authError?.code).toBe('SESSION_EXPIRED');
+        expect(state.authError?.message).toMatch(/session expired/i);
+        expect(localStorage.getItem('auth_token')).toBeNull();
+        expect(localStorage.getItem('auth_username')).toBeNull();
+        expect(mockLogoutUser).not.toHaveBeenCalled();
+    });
+
+    test('mid-quiz: leaves the test view and says progress was not saved', () => {
+        act(() => {
+            useTestStore.setState({ view: 'test', currentSessionId: 'session-1' });
+        });
+
+        act(() => { useTestStore.getState().handleUnauthorized(); });
+
+        const state = useTestStore.getState();
+        expect(state.view).toBe('login');
+        expect(state.currentSessionId).toBeNull();
+        expect(state.authError?.message).toMatch(/not saved/i);
+    });
+});
+
 // ---------------------------------------------------------------------------
 // goToLogin / goToRegister
 // ---------------------------------------------------------------------------

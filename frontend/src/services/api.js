@@ -8,6 +8,28 @@ const apiClient = axios.create({
     }
 });
 
+let unauthorizedHandler = null;
+
+export const setUnauthorizedHandler = (fn) => {
+    unauthorizedHandler = fn;
+};
+
+/**
+ * True when a 401 means the stored token is no longer valid.
+ * Login/register 401s are bad credentials. Logout 401s must not re-enter the handler.
+ */
+export const shouldTreatAsExpiredSession = ({ status, url = '', hasToken }) => {
+    if (status !== 401 || !hasToken) return false;
+    if (
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/logout')
+    ) {
+        return false;
+    }
+    return true;
+};
+
 // Inject auth token from localStorage into every request.
 apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
@@ -45,6 +67,14 @@ apiClient.interceptors.response.use(
                 structuredError.code = `HTTP_${error.response.status}`;
             }
             structuredError.details = backendError;
+
+            if (shouldTreatAsExpiredSession({
+                status: error.response.status,
+                url: error.config?.url || '',
+                hasToken: Boolean(localStorage.getItem('auth_token')),
+            })) {
+                unauthorizedHandler?.();
+            }
         } else if (error.request) {
             // Request was sent but no response was received (network error).
             structuredError.message = 'Could not connect to the server. Check your internet connection.';

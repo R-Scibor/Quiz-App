@@ -21,7 +21,11 @@ const LoginPage = () => {
         >
             <div className="p-8 md:p-12">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Sign In</h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">Welcome back — enter your credentials to continue.</p>
+                <p className={`mb-8 text-sm ${authError?.code === 'SESSION_EXPIRED' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {authError?.code === 'SESSION_EXPIRED'
+                        ? authError.message
+                        : 'Welcome back — enter your credentials to continue.'}
+                </p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
@@ -52,7 +56,7 @@ const LoginPage = () => {
                         />
                     </div>
 
-                    {authError && (
+                    {authError && authError.code !== 'SESSION_EXPIRED' && (
                         <p className="text-red-500 text-sm">{authError.message}</p>
                     )}
 

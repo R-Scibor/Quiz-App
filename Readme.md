@@ -22,7 +22,7 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - [📂 Project Structure](#-project-structure)
 - [✍️ Content Creation](#️-content-creation)
 - [🔌 API Documentation](#-api-documentation)
-- [ Development Plans](#-development-plans)
+- [📝 Development Plans](#-development-plans)
 
 ---
 
@@ -128,22 +128,20 @@ The project is divided into two main parts: `frontend` and the rest of the direc
 ├── ai_grader/        # Vector similarity microservice (FastAPI + sentence-transformers)
 ├── api_v1/           # Django application with API logic, models, and views
 ├── backend_project/  # Main Django project configuration folder
-├── certs/            # SSL certificates for Nginx/PostgreSQL
 ├── docs/             # Project documentation
 ├── frontend/         # React application source code (Vite)
-├── media/            # Media files uploaded by users
+├── media/            # Local quiz JSON (gitignored except example files)
 ├── nginx/            # Nginx server configuration
-├── plans/            # Feature planning documents
 ├── postgres/         # PostgreSQL database configuration
+├── .env.example      # Environment variable template
 ├── .gitignore
-├── build.sh          # Script for building Docker images for production
 ├── docker-compose.yml # Definition of services and Docker container orchestration
 ├── Dockerfile        # Instructions for building the Docker image for the Django application
 ├── Dockerfile.celery # Instructions for building the Docker image for the Celery worker
+├── entrypoint.sh     # Container startup: wait for DB, collect frontend, migrate
 ├── manage.py         # Django command-line tool
 ├── Readme.md         # This file
-├── requirements.txt  # Backend dependencies (Python)
-└── start_dev.bat     # Script for running the development environment (Windows)
+└── requirements.txt  # Backend dependencies (Python)
 ```
 
 ---

@@ -16,7 +16,7 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - [📂 Struktura projektu](#-struktura-projektu)
 - [✍️ Tworzenie Treści](#️-tworzenie-treści)
 - [🔌 Dokumentacja API](#-dokumentacja-api)
-- [� Plany rozwoju](#-plany-rozwoju)
+- [📝 Plany rozwoju](#-plany-rozwoju)
 
 ---
 
@@ -36,7 +36,8 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 
 - **Wybór testu:** Użytkownik może wybrać jeden z wielu dostępnych testów z różnych kategorii.
 - **Limit czasowy:** Każdy quiz ma zdefiniowany limit czasu, który zatrzymuje się po udzieleniu odpowiedzi i wznawia przy następnym pytaniu.
-- **Asynchroniczne ocenianie (AI):** Pytania otwarte są oceniane w tle przez AI, co pozwala użytkownikowi kontynuować test bez oczekiwania na wynik.
+- **Kaskadowe ocenianie:** Pytania otwarte idą przez warstwowy pipeline — podobieństwo wektorowe i regex obsługują większość odpowiedzi lokalnie (bez kosztu i opóźnienia LLM); tylko niejednoznaczne odpowiedzi eskalują do Gemini/Vertex. Typy: `open-text`, `open-cli`, `open-code`.
+- **Asynchroniczne ocenianie (AI):** Pytania otwarte są oceniane w tle przez Celery, co pozwala użytkownikowi kontynuować test bez oczekiwania na wynik.
 - **Zgłaszanie błędów:** Użytkownicy mogą zgłaszać błędy w pytaniach, odpowiedziach lub w ocenie AI.
 - **Formatowanie Markdown:** Pytania i wyjaśnienia obsługują formatowanie tekstu (pogrubienie, kursywa, listy itp.) dla lepszej czytelności.
 - **Pasek postępu:** Wizualna reprezentacja postępu w rozwiązywaniu testu.
@@ -71,7 +72,7 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - **Python:** Język programowania używany po stronie serwera.
 - **PostgreSQL:** Produkcyjna, relacyjna baza danych.
 - **Redis:** Baza danych w pamięci, używana jako broker dla Celery.
-- **Google Gemini API:** Wykorzystywane do oceny pytań otwartych przez AI.
+- **Google Gemini API / Vertex AI:** Ocena niejednoznacznych odpowiedzi i pytań `open-code`. Dostawca wybierany zmienną `LLM_PROVIDER`.
 
 ### Infrastruktura i Narzędzia
 
@@ -91,13 +92,17 @@ Szczegółowe instrukcje dotyczące konfiguracji i uruchomienia projektu — zar
 
 ## 🤖 Konfiguracja AI
 
-Aplikacja korzysta z domyślnego promptu dla modelu AI, który ocenia pytania otwarte. Możesz dostosować ten prompt do własnych potrzeb bezpośrednio z panelu administratora Django.
+Quiz App używa **kaskadowego oceniania** — większość odpowiedzi jest oceniana lokalnie (wektory dla `open-text`, regex dla `open-cli`). Tylko niejednoznaczne odpowiedzi i `open-code` trafiają do LLM.
 
-1.  **Zaloguj się do panelu admina:** Przejdź pod adres `/admin` swojej aplikacji i zaloguj się na konto superużytkownika.
-2.  **Przejdź do Konfiguracji Promptów:** W sekcji `API_V1` znajdź i kliknij "Prompt configurations".
-3.  **Edytuj domyślny prompt:** Zobaczysz domyślny prompt o nazwie `default_prompt`. Kliknij go, aby przejść do edycji.
-4.  **Zmodyfikuj prompt:** W polu "System prompt" możesz zmienić treść polecenia. Prompt używa zmiennych (placeholderów) takich jak `{grading_criteria}` i `{user_answer}`, które są dynamicznie podstawiane podczas oceny. Upewnij się, że zachowasz te zmienne, jeśli chcesz, aby AI korzystało z tych danych.
-5.  **Zapisz zmiany:** Kliknij przycisk "Zapisz". Nowy prompt będzie używany przy wszystkich kolejnych ocenach AI.
+➡️ **[Dokumentacja systemu oceniania](./GRADING.md)**
+
+Prompt Gemini/Vertex dla pytań `open-text` można zmienić w panelu admina Django bez redeployu.
+
+1.  **Zaloguj się do panelu admina:** `/admin`
+2.  **Przejdź do Prompt configurations** w sekcji `API_V1`.
+3.  **Edytuj `default_prompt`.**
+4.  **Zachowaj placeholdery:** `{question_text}`, `{grading_criteria}`, `{max_points}`, `{user_answer}`.
+5.  **Zapisz.** Nowy prompt obowiązuje przy kolejnych ocenach LLM.
 
 ---
 
@@ -107,23 +112,23 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 
 ```
 .
+├── ai_grader/        # Mikroserwis podobieństwa wektorowego (FastAPI + sentence-transformers)
 ├── api_v1/           # Aplikacja Django z logiką API, modelami i widokami
 ├── backend_project/  # Główny folder konfiguracyjny projektu Django
-├── certs/            # Certyfikaty SSL dla Nginx/PostgreSQL
 ├── docs/             # Dokumentacja projektu
 ├── frontend/         # Kod źródłowy aplikacji React (Vite)
-├── media/            # Pliki multimedialne wgrywane przez użytkowników
+├── media/            # Lokalne pliki JSON quizów (gitignorowane poza przykładami)
 ├── nginx/            # Konfiguracja serwera Nginx
 ├── postgres/         # Konfiguracja bazy danych PostgreSQL
+├── .env.example      # Szablon zmiennych środowiskowych
 ├── .gitignore
-├── build.sh          # Skrypt do budowania obrazów Docker na produkcję
 ├── docker-compose.yml # Definicja usług i orkiestracja kontenerów Docker
 ├── Dockerfile        # Instrukcje budowania obrazu Docker dla aplikacji Django
 ├── Dockerfile.celery # Instrukcje budowania obrazu Docker dla workera Celery
+├── entrypoint.sh     # Start kontenera: oczekiwanie na DB, frontend, migracje
 ├── manage.py         # Narzędzie linii komend Django
 ├── Readme.md         # Ten plik
-├── requirements.txt  # Zależności backendu (Python)
-└── start_dev.bat     # Skrypt do uruchamiania środowiska deweloperskiego (Windows)
+└── requirements.txt  # Zależności backendu (Python)
 ```
 
 ---
@@ -133,6 +138,8 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 Chcesz dodać własne pytania lub całe testy do aplikacji? Przygotowaliśmy szczegółowy poradnik, który krok po kroku wyjaśnia, jak tworzyć pliki JSON z quizami i importować je do bazy danych.
 
 ➡️ **[Przeczytaj Poradnik Tworzenia i Importowania Quizów](./PL_QUESTIONS.md)**
+
+➡️ **[Dokumentacja systemu oceniania](./GRADING.md)**
 
 ---
 
@@ -144,16 +151,20 @@ Szczegółowy opis dostępnych endpointów API, ich parametrów oraz przykładow
 
 ---
 
-##  Plany rozwoju
+## 📝 Plany rozwoju
 
 ### Możliwe rozszerzenia (pomysły na przyszłość)
 
 - [ ] **OAuth / Logowanie Społecznościowe:** Logowanie przez Google lub GitHub jako alternatywa dla nazwy użytkownika i hasła.
-- [ ] **Wykresy Statystyk:** Graficzne wizualizacje trendów trafności i aktywności nauki w czasie.
+- [x] **Wykresy Statystyk:** Sparkline trafności, słupki per test i historia sesji — na stronie Statystyk.
 - [ ] **Rankingi:** Porównywanie wyników z innymi użytkownikami w różnych kategoriach.
+- [ ] **Sandboxowane wykonywanie kodu:** Uruchamianie zgłoszonego kodu względem przypadków testowych (`open-code`, v0.3).
+- [ ] **Progi wektorowe per pytanie:** Nadpisanie globalnych progów 0.85/0.30.
+- [ ] **Śledzenie kosztu oceniania:** Model Django logujący użycie LLM.
 
 ### Ukończone
 
+- [x] **Kaskadowe ocenianie:** Typy `open-text`, `open-cli`, `open-code` — wektory, regex albo LLM. Odznaka „Auto-graded” / „Graded by AI”. Ponowienie po timeoutcie.
 - [x] **Powtarzanie z Odstępami (Tryb Nauki):** Algorytm SM-2 z ocenami Łatwe/Normalne/Trudne po każdym pytaniu; Tryb Nauki wybiera zaległe i problematyczne pytania, uzupełniając pozostałe miejsca nowymi.
 - [x] **Statystyki użytkownika:** Sesje, trafność, serie dzienne, średni czas na pytanie i historia ostatnich sesji — wszystko śledzone dla zalogowanego użytkownika.
 - [x] **System uwierzytelniania:** Rejestracja i logowanie za pomocą nazwy użytkownika i hasła przy użyciu tokenów DRF. Niezalogowani użytkownicy zachowują pełny dostęp do quizów.

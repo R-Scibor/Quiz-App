@@ -78,51 +78,19 @@ Once all dependencies are ready, you can clone the repository and configure it f
     cd Quiz-App
     ```
 
-2.  **Configure environment variables in the `.env` file.**
-
-    > **Note:** The following command uses the `nano` editor. If it's not installed, you can add it with `sudo apt-get install nano -y`.
+2.  **Create a `.env` file from the template.**
 
     ```bash
-    nano .env
+    cp .env.example .env
     ```
-    Copy and paste the following content into the file. **Remember to change the sensitive data!**
 
-    ```env
-    # Django Core Settings
-    SECRET_KEY='paste_your_very_secure_key_here'
-    DEBUG=0
-    DJANGO_ALLOWED_HOSTS=your_domain.com,www.your_domain.com
+    Edit `.env` and replace every placeholder. **Do not commit `.env`.**
 
-    # Database Settings - CHANGE THE VALUES BELOW TO YOUR OWN!
-    POSTGRES_DB=quiz_db
-    POSTGRES_USER=quiz_user
-    POSTGRES_PASSWORD='your_super_secure_database_password'
-
-    # This variable is built automatically from the values above.
-    DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-
-    # Celery Settings
-    CELERY_BROKER_URL=redis://redis:6379/0
-    CELERY_RESULT_BACKEND=redis://redis:6379/0
-
-    # AI Grading — choose one provider:
-
-    # Option A: Gemini direct API key (default)
-    LLM_PROVIDER=gemini
-    GEMINI_API_KEY='your_gemini_api_key'
-
-    # Option B: Google Vertex AI via service account
-    # LLM_PROVIDER=vertex
-    # VERTEX_PROJECT_ID=your-gcp-project-id
-    # VERTEX_LOCATION=us-central1
-    # VERTEX_MODEL=gemini-2.5-flash
-    # (place your service-account JSON key at secrets/vertex-sa-key.json)
-    ```
     **Important:**
-    *   Generate a new `SECRET_KEY` with the command: `openssl rand -base64 48`.
-    *   Set your own secure password in `POSTGRES_PASSWORD`.
-    *   In `DJANGO_ALLOWED_HOSTS`, replace `your_domain.com` with your actual domain or public IP address.
-    *   For Vertex AI, create a `secrets/` directory in the project root and place your service-account JSON key there as `vertex-sa-key.json` before starting the containers. See `docs/GRADING.md` for details.
+    *   Generate a new `SECRET_KEY` with: `python -c "import secrets; print(secrets.token_urlsafe(50))"` (or `openssl rand -base64 48`).
+    *   Set a strong `POSTGRES_PASSWORD`. `DATABASE_URL` is built from the other database variables — keep it in sync.
+    *   In `DJANGO_ALLOWED_HOSTS`, use your real domain or public IP.
+    *   Set `LLM_PROVIDER` to `gemini` (needs `GEMINI_API_KEY`) or `vertex` (needs `VERTEX_*` plus `secrets/vertex-sa-key.json`). See `docs/GRADING.md`.
 
 ---
 

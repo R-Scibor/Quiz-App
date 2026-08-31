@@ -10,7 +10,11 @@ Niniejszy dokument stanowi kompletny przewodnik po tworzeniu nowych testów w fo
 - [Struktura Obiektu Pytania](#-struktura-obiektu-pytania)
   - [Pytanie Zamknięte (Jednokrotnego Wyboru)](#pytanie-zamknięte-jednokrotnego-wyboru)
   - [Pytanie Zamknięte (Wielokrotnego Wyboru)](#pytanie-zamknięte-wielokrotnego-wyboru)
-  - [Pytanie Otwarte](#pytanie-otwarte)
+  - [Pytania Otwarte](#pytania-otwarte)
+    - [open-text — język naturalny](#open-text--język-naturalny)
+    - [open-cli — polecenia terminala](#open-cli--polecenia-terminala)
+    - [open-code — programowanie](#open-code--programowanie)
+- [Markdown i bloki kodu w treści pytania](#-markdown-i-bloki-kodu-w-treści-pytania)
 - [Jak Załadować Nowe Testy do Bazy Danych](#-jak-załadować-nowe-testy-do-bazy-danych)
 
 ---
@@ -96,26 +100,88 @@ Użytkownik może wybrać kilka poprawnych odpowiedzi.
 -   `type` (string): Musi mieć wartość `"multiple-choice"`.
 -   `correctAnswers` (array of integers): Tablica zawierająca **indeksy wszystkich poprawnych odpowiedzi**.
 
-### Pytanie Otwarte
+### Pytania Otwarte
 
-Użytkownik musi wpisać odpowiedź tekstową, która jest oceniana przez AI.
+Użytkownik wpisuje odpowiedź. Quiz App obsługuje trzy typy otwarte z różnymi ścieżkami oceniania — pełny opis w **[GRADING.md](./GRADING.md)**.
+
+> **Przestarzałe:** Typ `"open-ended"` jest nadal akceptowany (traktowany jako `"open-text"`) i przy imporcie wypisuje ostrzeżenie. W nowych plikach używaj `"open-text"`.
+
+Wszystkie typy otwarte mają te pola i **pomijają** `options` / `correctAnswers`:
+
+| Pole | Wymagane | Opis |
+|---|---|---|
+| `gradingCriteria` | Tak | Zasady oceniania — treść zależy od typu (patrz niżej) |
+| `maxPoints` | Tak | Liczba całkowita 1–100. Przyznane punkty mogą być ułamkiem tej wartości. |
+
+#### `open-text` — język naturalny
+
+Wyjaśnienia, definicje, opisy. Najpierw podobieństwo wektorowe; niejednoznaczne odpowiedzi idą do LLM.
+
+**`gradingCriteria`:** opis poprawnej odpowiedzi językiem naturalnym (baza porównania semantycznego).
 
 ```json
 {
   "id": 104,
   "questionText": "Wymień i krótko opisz co najmniej trzy skutki Zjazdu Gnieźnieńskiego z 1000 roku.",
   "image": "",
-  "type": "open-ended",
+  "type": "open-text",
   "tags": ["zjazd gnieźnieński", "dyplomacja"],
-  "gradingCriteria": "Odpowiedź musi zawierać co najmniej trzy z następujących skutków, z krótkim wyjaśnieniem: 1. Utworzenie niezależnej polskiej metropolii kościelnej. 2. Umocnienie pozycji międzynarodowej Polski. 3. Symboliczne uznanie suwerenności państwa przez Cesarstwo.",
+  "gradingCriteria": "Odpowiedź musi zawierać co najmniej trzy z: utworzenie niezależnej polskiej metropolii kościelnej, umocnienie pozycji międzynarodowej Polski, symboliczne uznanie suwerenności przez Cesarstwo.",
   "maxPoints": 6
 }
 ```
 
--   `type` (string): Musi mieć wartość `"open-ended"`.
--   `gradingCriteria` (string): **Kluczowe pole.** Dokładny opis, na podstawie którego AI oceni odpowiedź użytkownika. Powinien być precyzyjny i jasno określać, co jest wymagane.
--   `maxPoints` (integer): Maksymalna liczba punktów do zdobycia za to pytanie.
--   Pola `options` i `correctAnswers` **muszą zostać pominięte**.
+#### `open-cli` — polecenia terminala
+
+Oczekiwane polecenie (`kubectl`, `git`, `docker`, `bash`). Dopasowanie regex; brak dopasowania eskaluje do LLM.
+
+**`gradingCriteria`:** wzorzec regex zgodny z Pythonem, dopasowywany do całej odpowiedzi. W JSON ukośniki odwrotne trzeba podwoić (`\\s+`). Regex jest walidowany przy imporcie.
+
+```json
+{
+  "id": 105,
+  "questionText": "Napisz polecenie wypisujące pody w przestrzeni kube-system.",
+  "image": "",
+  "type": "open-cli",
+  "tags": ["kubernetes", "cli"],
+  "gradingCriteria": "kubectl\\s+get\\s+(pods|po)(\\s+(-n\\s+|--namespace(=|\\s+))kube-system|\\s+(--all-namespaces|-A))?",
+  "maxPoints": 1
+}
+```
+
+Używany jest `re.fullmatch` (cała odpowiedź) oraz `re.IGNORECASE`. Import odrzuca wzorce z katastrofalnym backtrackingiem.
+
+#### `open-code` — programowanie
+
+Oczekiwany kod. Zawsze oceniane przez LLM z rubryką kodową; możliwa ocena cząstkowa.
+
+**`gradingCriteria`:** musi zaczynać się od identyfikatora języka, dwukropka i opisu zachowania.
+
+```json
+{
+  "id": 210,
+  "questionText": "Napisz funkcję Pythona `add`, która przyjmuje dwie liczby i zwraca ich sumę.",
+  "image": "",
+  "type": "open-code",
+  "tags": ["python", "functions"],
+  "gradingCriteria": "python: function named 'add' that accepts two numeric arguments and returns their sum; must handle integers and floats",
+  "maxPoints": 3
+}
+```
+
+---
+
+## 📝 Markdown i bloki kodu w treści pytania
+
+Pola `questionText` i `explanation` obsługują **Markdown**, w tym podświetlane bloki kodu. JSON nie pozwala na dosłowne znaki nowej linii — każdą przerwę wiersza zapisz jako `\n`.
+
+Przykład bloku YAML:
+
+```json
+"questionText": "Co konfiguruje ten YAML?\n\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-app\nspec:\n  replicas: 3\n```"
+```
+
+Wewnątrz stringa JSON dosłowny backslash to `\\`.
 
 ---
 

@@ -8,6 +8,25 @@ This document provides a detailed description of the API endpoints available in 
 
 All API endpoints are prefixed with `/api/v1/`.
 
+## Authentication
+
+Most quiz endpoints (`/tests/`, `/questions/`, `/check_answer/`, `/task_result/`, `/report_issue/`) work without a token.
+
+These endpoints require the header `Authorization: Token <token>`:
+
+- `/auth/logout/`
+- `/sessions/start/`
+- `/sessions/<session_uuid>/complete/`
+- `/attempts/`
+- `/stats/`
+- `/stats/tests/`
+- `/study/queue/`
+- `/study/stats/`
+
+Tokens are issued by `/auth/register/` and `/auth/login/`.
+
+Question and answer primary keys are UUIDs, not integers. JSON import files still use a local integer `id` field; that value is not stored as the database PK.
+
 ---
 
 ## Endpoints
@@ -49,7 +68,7 @@ All API endpoints are prefixed with `/api/v1/`.
     ```json
     {
         "error": "DB_LIST_ERROR",
-        "message": "A server error occurred while fetching the list of tests."
+        "message": "Server error while fetching test list."
     }
     ```
 
@@ -68,7 +87,7 @@ All API endpoints are prefixed with `/api/v1/`.
     ```json
     [
         {
-            "id": 101,
+            "id": "c0a80100-0000-4000-8000-000000000101",
             "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
             "questionText": "In which year did the coronation of Bolesław the Brave take place?",
             "image": "https://example.com/link_to_image.png",
@@ -95,7 +114,7 @@ All API endpoints are prefixed with `/api/v1/`.
         ```json
         {
             "error": "NO_QUESTIONS_FOUND",
-            "message": "No questions found for the selected categories in 'mixed' mode."
+            "message": "No questions found for the selected categories in mode 'mixed'."
         }
         ```
 
@@ -105,16 +124,21 @@ All API endpoints are prefixed with `/api/v1/`.
 
 -   **Method:** `POST`
 -   **Endpoint:** `/check_answer/`
--   **Description:** Submits an open-ended question answer for asynchronous evaluation by the AI. This endpoint initiates a background task.
+-   **Description:** Submits an open-ended question answer for asynchronous evaluation. This endpoint enqueues a Celery task. Rate-limited (`ai_grading` throttle).
 -   **Request Body:**
     ```json
     {
         "userAnswer": "The user's written answer.",
         "gradingCriteria": "The criteria from the question object.",
         "questionText": "The text of the question.",
-        "maxPoints": 6
+        "maxPoints": 6,
+        "questionType": "open-text",
+        "forceAI": false
     }
     ```
+    -   `userAnswer`, `gradingCriteria`, `questionText`, `maxPoints` are required.
+    -   `questionType` (optional): `open-text` (default), `open-cli`, or `open-code`. Selects the cascade grading path.
+    -   `forceAI` (optional, default `false`): skip local vector/regex grading and send the answer to the LLM.
 -   **Success Response (202 Accepted):**
     ```json
     {
@@ -125,7 +149,7 @@ All API endpoints are prefixed with `/api/v1/`.
     ```json
     {
         "error": "INCOMPLETE_DATA",
-        "message": "Missing all required fields."
+        "message": "Missing required fields."
     }
     ```
 
@@ -153,8 +177,24 @@ All API endpoints are prefixed with `/api/v1/`.
             "status": "SUCCESS",
             "task_id": "b4c5d6e7-f8g9-1234-5678-90abcdef1234",
             "data": {
-                "evaluation": "The AI's feedback on the answer.",
-                "points": 5
+                "score": 5,
+                "max_points": 6,
+                "feedback": "The AI's feedback on the answer.",
+                "grading_method": "llm",
+                "vector_score": 0.61,
+                "latency_ms": 1450
+            }
+        }
+        ```
+        `grading_method` is one of `vector_pass`, `vector_fail`, `regex_pass`, `llm`, `fallback_llm`.
+    -   If the task failed:
+        ```json
+        {
+            "status": "FAILURE",
+            "task_id": "b4c5d6e7-f8g9-1234-5678-90abcdef1234",
+            "data": {
+                "error": "TASK_FAILED",
+                "message": "Grading task failed unexpectedly."
             }
         }
         ```
@@ -169,23 +209,29 @@ All API endpoints are prefixed with `/api/v1/`.
 -   **Request Body:**
     ```json
     {
-        "question": "question_uuid",
-        "test": "test_uuid",
-        "issue_type": "INCORRECT_QUESTION", // or "INCORRECT_ANSWER", "AI_GRADING_ERROR"
+        "question": "c0a80100-0000-4000-8000-000000000101",
+        "test": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "issue_type": "QUESTION_ERROR",
         "description": "A detailed description of the issue.",
-        "ai_feedback_snapshot": { "evaluation": "...", "points": "..." }, // Required if issue_type is "AI_GRADING_ERROR"
+        "ai_feedback_snapshot": "{\"score\": 2, \"feedback\": \"Partial credit.\"}",
         "user_answer_open": "User's text answer for open questions.",
-        "user_answer_choices": { "selected": [1, 3] } // User's selected options for closed questions.
+        "user_answer_choices": ["Jupiter"]
     }
     ```
+    -   `issue_type` must be `QUESTION_ERROR` or `AI_GRADING_ERROR`.
+    -   `ai_feedback_snapshot` is a string (typically `JSON.stringify` of the grading result). Required when `issue_type` is `AI_GRADING_ERROR`.
+    -   Open questions (`open-text` / `open-cli` / `open-code`): send `user_answer_open`, leave `user_answer_choices` null.
+    -   Closed questions: send `user_answer_choices` as an array of **option text strings** (not integer indices), leave `user_answer_open` null.
 -   **Success Response (201 Created):**
     ```json
     {
-        "question": "question_uuid",
-        "test": "test_uuid",
-        "issue_type": "INCORRECT_QUESTION",
+        "question": "c0a80100-0000-4000-8000-000000000101",
+        "test": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "issue_type": "QUESTION_ERROR",
         "description": "A detailed description of the issue.",
-        // ... other fields
+        "ai_feedback_snapshot": null,
+        "user_answer_open": null,
+        "user_answer_choices": ["Jupiter"]
     }
     ```
 -   **Error Response (400 Bad Request):**
@@ -221,8 +267,7 @@ All API endpoints are prefixed with `/api/v1/`.
 -   **Error Response (400 Bad Request):**
     ```json
     {
-        "error": "USERNAME_TAKEN",
-        "message": "A user with that username already exists."
+        "username": ["Username already taken."]
     }
     ```
 
@@ -265,12 +310,7 @@ All API endpoints are prefixed with `/api/v1/`.
 -   **Authentication:** `Token <token>` header required.
 -   **Description:** Deletes the user's authentication token, invalidating the session.
 -   **Request Body:** None.
--   **Success Response (200 OK):**
-    ```json
-    {
-        "message": "Successfully logged out."
-    }
-    ```
+-   **Success Response (204 No Content):** empty body.
 
 ---
 
@@ -311,12 +351,8 @@ All API endpoints are prefixed with `/api/v1/`.
         "score_possible": 10
     }
     ```
--   **Success Response (200 OK):**
-    ```json
-    {
-        "status": "completed"
-    }
-    ```
+-   **Success Response (200 OK):** empty body.
+-   **Error Response (404 Not Found):** the session does not exist or is not owned by the authenticated user.
 
 ---
 
@@ -330,7 +366,7 @@ All API endpoints are prefixed with `/api/v1/`.
     ```json
     [
         {
-            "question": 101,
+            "question": "c0a80100-0000-4000-8000-000000000101",
             "test": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
             "session": "550e8400-e29b-41d4-a716-446655440000",
             "is_correct": true,
@@ -341,12 +377,7 @@ All API endpoints are prefixed with `/api/v1/`.
     ]
     ```
     *(`difficulty_rating` is optional; valid values: `"easy"`, `"normal"`, `"hard"`.)*
--   **Success Response (201 Created):**
-    ```json
-    {
-        "created": 10
-    }
-    ```
+-   **Success Response (201 Created):** empty body.
 
 ---
 
@@ -365,19 +396,22 @@ All API endpoints are prefixed with `/api/v1/`.
         "current_streak_days": 3,
         "longest_streak_days": 7,
         "avg_time_per_question": 28,
+        "questions_by_type": { "closed": 120, "open": 36 },
+        "study_sessions": 4,
+        "regular_sessions": 8,
         "recent_sessions": [
             {
-                "session_id": "550e8400-e29b-41d4-a716-446655440000",
-                "started_at": "2026-03-27T14:00:00Z",
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "date": "2026-03-27",
                 "total_questions": 10,
-                "correct_count": 7,
                 "score_achieved": 7,
                 "score_possible": 10,
-                "is_study_mode": false
+                "accuracy": 70
             }
         ]
     }
     ```
+    `recent_sessions` is the 20 most recent completed sessions, newest first.
 
 ---
 
@@ -388,14 +422,15 @@ All API endpoints are prefixed with `/api/v1/`.
 -   **Authentication:** `Token <token>` header required.
 -   **Description:** Returns a mixed list of questions for the Study Mode session. Priority order: (1) questions whose SM-2 review date is today or earlier, (2) recently-wrong questions not yet scheduled, (3) never-attempted questions from tests the user has studied before.
 -   **Query Parameters:**
-    -   `limit` (integer, optional): Maximum total questions to return (default: `20`).
+    -   `limit` (integer, optional): Maximum total questions to return (default `20`, cap `50`).
+    -   `test_ids` (string, optional): Comma-separated test UUIDs. Restricts the queue to those tests.
 -   **Success Response (200 OK):**
     ```json
     {
         "count": 15,
         "questions": [
             {
-                "id": 101,
+                "id": "c0a80100-0000-4000-8000-000000000101",
                 "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
                 "questionText": "...",
                 "type": "single-choice",
@@ -408,3 +443,52 @@ All API endpoints are prefixed with `/api/v1/`.
         ]
     }
     ```
+
+---
+
+### 14. Get Study Queue Stats
+
+-   **Method:** `GET`
+-   **Endpoint:** `/study/stats/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Returns counts used by Study Mode setup (due / struggling / new / mastered) plus the tests the user has already studied.
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "due_count": 8,
+        "struggling_count": 3,
+        "new_count": 12,
+        "mastered_count": 5,
+        "total_queued": 20,
+        "studied_tests": [
+            {
+                "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                "title": "Medieval Poland"
+            }
+        ]
+    }
+    ```
+
+---
+
+### 15. Get Per-Test Statistics
+
+-   **Method:** `GET`
+-   **Endpoint:** `/stats/tests/`
+-   **Authentication:** `Token <token>` header required.
+-   **Description:** Returns per-test attempt aggregates for the authenticated user, ordered by attempt count, capped at 20 tests.
+-   **Success Response (200 OK):**
+    ```json
+    [
+        {
+            "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "title": "Medieval Poland",
+            "total_attempts": 40,
+            "points_earned": 28,
+            "points_possible": 40,
+            "accuracy": 70.0,
+            "avg_time_secs": 22
+        }
+    ]
+    ```
+    `points_possible` is `Sum(question.max_points)`. Closed questions typically have `max_points = null`, so this figure (and `accuracy`) can under-count closed-question attempts.

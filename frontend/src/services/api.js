@@ -111,13 +111,11 @@ export const getQuestions = (params) => {
 
 
 /**
- * Submits an open-ended answer for AI grading.
- * @param {object} payload - Request payload.
- * @param {string} payload.questionText - The question text.
+ * Submits an open-ended answer for grading.
+ * @param {object} payload
+ * @param {string} payload.question - Question UUID.
  * @param {string} payload.userAnswer - The user's answer.
- * @param {string} payload.gradingCriteria - Grading criteria for the question.
- * @param {number} payload.maxPoints - Maximum points for the question.
- * @returns {Promise} API response containing the grading result.
+ * @param {boolean} [payload.forceAI] - Skip local cascade, force LLM.
  */
 export const checkOpenAnswer = (payload) => {
     return apiClient.post('/check_answer/', payload);

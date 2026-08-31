@@ -233,14 +233,11 @@ describe('useTestStore - regradeQuestion', () => {
         });
 
         expect(useTestStore.getState().checkingQuestionId).toBe('q1');
-        expect(mockCheckOpenAnswer).toHaveBeenCalledWith(expect.objectContaining({
-            questionText: MOCK_QUESTION.questionText,
+        expect(mockCheckOpenAnswer).toHaveBeenCalledWith({
+            question: 'q1',
             userAnswer: 'DNS stands for Domain Name System',
-            gradingCriteria: MOCK_QUESTION.gradingCriteria,
-            maxPoints: MOCK_QUESTION.maxPoints,
-            questionType: MOCK_QUESTION.type,
             forceAI: true,
-        }));
+        });
         expect(result.task_id).toBe('regrade-1');
     });
 

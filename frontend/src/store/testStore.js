@@ -162,11 +162,8 @@ const useTestStore = create((set, get) => ({
         }));
 
         const payload = {
-            questionText: question.questionText,
+            question: question.id,
             userAnswer: userAnswer,
-            gradingCriteria: question.gradingCriteria,
-            maxPoints: question.maxPoints,
-            questionType: question.type,
             forceAI: forceAI,
         };
 
@@ -223,11 +220,8 @@ const useTestStore = create((set, get) => ({
         if (!question || !userAnswer) return null;
         set({ checkingQuestionId: questionId, error: null });
         const response = await checkOpenAnswerApi({
-            questionText: question.questionText,
+            question: question.id,
             userAnswer,
-            gradingCriteria: question.gradingCriteria,
-            maxPoints: question.maxPoints,
-            questionType: question.type,
             forceAI: true,
         });
         return response.data; // { task_id }

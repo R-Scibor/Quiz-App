@@ -67,3 +67,34 @@ class ExportTests(TestCase):
         self.assertEqual(qdoc["gradingCriteria"], "recursive lookup")
         self.assertEqual(qdoc["maxPoints"], 3)
         self.assertNotIn("options", qdoc)
+
+    def test_export_questions_follow_source_id_not_uuid(self):
+        t = Test.objects.create(title="T")
+        q2 = Question.objects.create(test=t, text="Second", source_id=2)
+        q1 = Question.objects.create(test=t, text="First", source_id=1)
+        doc = test_to_interchange(t)
+        self.assertEqual([qd["id"] for qd in doc["questions"]], [1, 2])
+        self.assertEqual(
+            [qd["question_id"] for qd in doc["questions"]],
+            [str(q1.id), str(q2.id)],
+        )
+
+    def test_export_uses_prefetch_not_n_plus_one(self):
+        t = Test.objects.create(title="T")
+        q1 = Question.objects.create(
+            test=t, text="Q1", question_type=Question.SINGLE_CHOICE, source_id=1
+        )
+        q2 = Question.objects.create(
+            test=t, text="Q2", question_type=Question.SINGLE_CHOICE, source_id=2
+        )
+        Answer.objects.create(question=q1, text="a", is_correct=True)
+        Answer.objects.create(question=q1, text="b", is_correct=False)
+        Answer.objects.create(question=q2, text="c", is_correct=True)
+        Answer.objects.create(question=q2, text="d", is_correct=False)
+        tag = Tag.objects.create(name="t")
+        q1.tags.add(tag)
+        q2.tags.add(tag)
+
+        # categories + questions + answers prefetch + tags prefetch
+        with self.assertNumQueries(4):
+            test_to_interchange(t)

@@ -6,9 +6,10 @@ CLOSED = {Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE}
 
 
 def question_to_interchange(question: Question) -> dict:
-    # UUID PKs make Meta.ordering=['id'] non-insertion; drop it so options
-    # follow creation order (SQLite rowid; importer insert order on Postgres).
-    answers = list(question.answers.order_by())
+    # Prefetch(to_attr=...) for bulk export; otherwise drop UUID Meta.ordering.
+    answers = getattr(question, "prefetched_answers", None)
+    if answers is None:
+        answers = list(question.answers.order_by())
     payload = {
         "id": question.source_id,
         "question_id": str(question.id),
@@ -29,8 +30,12 @@ def question_to_interchange(question: Question) -> dict:
 
 def test_to_interchange(test: Test) -> dict:
     cat = test.categories.order_by("name").first()
-    questions = test.questions.prefetch_related(
-        Prefetch("answers", queryset=Answer.objects.order_by()),
+    questions = test.questions.order_by("source_id").prefetch_related(
+        Prefetch(
+            "answers",
+            queryset=Answer.objects.order_by(),
+            to_attr="prefetched_answers",
+        ),
         "tags",
     ).all()
     return {

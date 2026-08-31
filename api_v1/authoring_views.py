@@ -199,13 +199,29 @@ class AuthoringTestDetailView(AuthoringAPIView):
                 })
             else:
                 test.version = version
+        if "description" in request.data:
+            description = request.data["description"]
+            if description is not None and not isinstance(description, str):
+                errors.append({
+                    "path": "description",
+                    "code": "INVALID_TYPE",
+                    "message": "'description' must be a string.",
+                })
+            else:
+                test.description = description
+        if "category" in request.data:
+            category_name = request.data["category"]
+            if not isinstance(category_name, str):
+                errors.append({
+                    "path": "category",
+                    "code": "INVALID_TYPE",
+                    "message": "'category' must be a string.",
+                })
         if errors:
             return Response(
                 {"error": "VALIDATION_FAILED", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if "description" in request.data:
-            test.description = request.data["description"]
         test.save()
 
         if "category" in request.data:

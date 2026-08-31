@@ -150,6 +150,11 @@ def _validate_question(question: Any, index: int, add) -> None:
                     "open-code gradingCriteria must start with a language prefix (e.g. 'python: ...').",
                 )
 
+    if "id" in question and question["id"] is not None:
+        sid = question["id"]
+        if type(sid) is not int or sid < 1:
+            add(f"{prefix}.id", "INVALID_TYPE", "'id' must be a positive integer or null.")
+
     if "explanation" in question and question["explanation"] is not None and not isinstance(question["explanation"], str):
         add(f"{prefix}.explanation", "INVALID_TYPE", "'explanation' must be a string.")
     if "image" in question and question["image"] is not None and not isinstance(question["image"], str):

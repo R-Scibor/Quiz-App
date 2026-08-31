@@ -128,3 +128,15 @@ class ValidateQuizTests(SimpleTestCase):
         issues = validate_quiz(_quiz(_closed(options=["a", "a"], correctAnswers=[0])))
         self.assertTrue(any(i["code"] == "DUPLICATE_OPTION" for i in issues))
         self.assertTrue(any(i["path"] == "questions[0].options" for i in issues))
+
+    def test_non_integer_id_is_invalid_type(self):
+        issues = validate_quiz(_quiz(_closed(id="abc")))
+        self.assertTrue(
+            any(i["path"] == "questions[0].id" and i["code"] == "INVALID_TYPE" for i in issues)
+        )
+
+    def test_negative_id_is_invalid_type(self):
+        issues = validate_quiz(_quiz(_closed(id=-1)))
+        self.assertTrue(
+            any(i["path"] == "questions[0].id" and i["code"] == "INVALID_TYPE" for i in issues)
+        )

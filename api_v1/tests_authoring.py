@@ -198,6 +198,15 @@ class AuthoringPatchTests(APITestCase):
         self.assertEqual(r.data["error"], "VALIDATION_FAILED")
         self.assertEqual(Test.objects.get(pk=self.test_id).title, "Medieval Poland")
 
+    def test_patch_non_string_category_400(self):
+        r = self.client.patch(
+            f"/api/v1/authoring/tests/{self.test_id}/",
+            {"category": 1},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+
 
 class AuthoringImportTests(APITestCase):
     def setUp(self):
@@ -246,6 +255,13 @@ class AuthoringImportTests(APITestCase):
             }],
         }
         r = self.client.post("/api/v1/authoring/import/", payload, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertEqual(Test.objects.count(), 0)
+
+    def test_import_non_integer_id_400(self):
+        self.payload["questions"][0]["id"] = "abc"
+        r = self.client.post("/api/v1/authoring/import/", self.payload, format="json")
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data["error"], "VALIDATION_FAILED")
         self.assertEqual(Test.objects.count(), 0)

@@ -124,3 +124,45 @@ class AuthoringReadTests(APITestCase):
         r = self.client.get("/api/v1/authoring/tests/00000000-0000-4000-8000-000000000000/export/")
         self.assertEqual(r.status_code, 404)
         self.assertEqual(r.data["error"], "TEST_NOT_FOUND")
+
+
+class AuthoringPatchTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        })
+        self.test_id = result["test"]["test_id"]
+        self.question_id = result["quiz"]["questions"][0]["question_id"]
+
+    def test_patch_scope_and_version(self):
+        r = self.client.patch(
+            f"/api/v1/authoring/tests/{self.test_id}/",
+            {"scope": "Early Piasts", "version": "1.1"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["scope"], "Early Piasts")
+        self.assertEqual(r.data["version"], "1.1")
+        self.assertEqual(len(r.data["questions"]), 1)
+        self.assertEqual(r.data["questions"][0]["question_id"], self.question_id)
+
+    def test_patch_category(self):
+        r = self.client.patch(
+            f"/api/v1/authoring/tests/{self.test_id}/",
+            {"category": "Polish History"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["category"], "Polish History")

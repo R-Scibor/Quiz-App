@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .authoring_schema import AUTHORING_SCHEMA
-from .models import Question, Test
+from .models import Category, Question, Test
 from .quiz_export import question_to_interchange, test_to_interchange
 from .quiz_validation import validate_quiz
 
@@ -114,3 +114,30 @@ class AuthoringQuestionDetailView(AuthoringAPIView):
         except Question.DoesNotExist:
             return Response({"error": "QUESTION_NOT_FOUND", "message": "Question not found."}, status=404)
         return Response(question_to_interchange(question))
+
+
+class AuthoringTestDetailView(AuthoringAPIView):
+    def patch(self, request, pk):
+        try:
+            test = Test.objects.get(pk=pk)
+        except Test.DoesNotExist:
+            return Response({"error": "TEST_NOT_FOUND", "message": "Test not found."}, status=404)
+
+        if "scope" in request.data:
+            test.title = request.data["scope"]
+        if "version" in request.data:
+            test.version = request.data["version"]
+        if "description" in request.data:
+            test.description = request.data["description"]
+        test.save()
+
+        if "category" in request.data:
+            category_name = request.data["category"] or ""
+            if category_name:
+                cat, _ = Category.objects.get_or_create(name=category_name)
+                test.categories.set([cat])
+            else:
+                test.categories.clear()
+
+        test = Test.objects.get(pk=test.pk)
+        return Response(test_to_interchange(test))

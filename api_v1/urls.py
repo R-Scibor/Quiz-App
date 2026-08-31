@@ -4,6 +4,7 @@ from .authoring_views import (
     AuthoringInstructionsView,
     AuthoringQuestionDetailView,
     AuthoringSchemaView,
+    AuthoringTestDetailView,
     AuthoringTestListView,
     AuthoringValidateView,
 )
@@ -38,4 +39,5 @@ urlpatterns = [
     path('authoring/tests/', AuthoringTestListView.as_view(), name='authoring-test-list'),
     path('authoring/tests/<uuid:pk>/export/', AuthoringExportView.as_view(), name='authoring-export'),
     path('authoring/tests/<uuid:pk>/questions/<uuid:question_id>/', AuthoringQuestionDetailView.as_view(), name='authoring-question-detail'),
+    path('authoring/tests/<uuid:pk>/', AuthoringTestDetailView.as_view(), name='authoring-test-detail'),
 ]

@@ -247,10 +247,10 @@ class CheckOpenAnswerViewDispatchTestCase(APITestCase):
     def test_open_question_missing_rubric_returns_400(self):
         incomplete_q = Question.objects.create(
             test=self.test,
-            text="What is a CNAME?",
+            text="Broken open",
             question_type=Question.OPEN_TEXT,
-            grading_criteria=None,
-            max_points=None,
+            grading_criteria='',
+            max_points=3,
         )
         payload = {
             **self.valid_payload,

@@ -124,34 +124,61 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 
 -   **Method:** `POST`
 -   **Endpoint:** `/check_answer/`
--   **Description:** Submits an open-ended question answer for asynchronous evaluation. This endpoint enqueues a Celery task. Rate-limited (`ai_grading` throttle).
+-   **Description:** Submits an open-ended question answer for asynchronous evaluation. This endpoint loads the rubric (`grading_criteria`, `max_points`, question text, and type) from the question row and enqueues a Celery task. Rate-limited (`ai_grading` throttle).
 -   **Request Body:**
     ```json
     {
+        "question": "c0a80100-0000-4000-8000-000000000101",
         "userAnswer": "The user's written answer.",
-        "gradingCriteria": "The criteria from the question object.",
-        "questionText": "The text of the question.",
-        "maxPoints": 6,
-        "questionType": "open-text",
         "forceAI": false
     }
     ```
-    -   `userAnswer`, `gradingCriteria`, `questionText`, `maxPoints` are required.
-    -   `questionType` (optional): `open-text` (default), `open-cli`, or `open-code`. Selects the cascade grading path.
-    -   `forceAI` (optional, default `false`): skip local vector/regex grading and send the answer to the LLM.
+    -   `question` (UUID, required): primary key of the question to grade.
+    -   `userAnswer` (non-empty string, required): the user's written answer.
+    -   `forceAI` (bool, optional, default `false`): skip local vector/regex grading and send the answer to the LLM.
+    -   `gradingCriteria`, `maxPoints`, `questionType`, and `questionText` in the body are ignored if present; the server uses the stored question row.
 -   **Success Response (202 Accepted):**
     ```json
     {
         "task_id": "b4c5d6e7-f8g9-1234-5678-90abcdef1234"
     }
     ```
--   **Error Response (400 Bad Request):**
-    ```json
-    {
-        "error": "INCOMPLETE_DATA",
-        "message": "Missing required fields."
-    }
-    ```
+-   **Error Responses:**
+    -   **400 Bad Request** `INCOMPLETE_DATA` — missing `question` or `userAnswer`.
+        ```json
+        {
+            "error": "INCOMPLETE_DATA",
+            "message": "Fields 'question' and 'userAnswer' are required."
+        }
+        ```
+    -   **400 Bad Request** `INVALID_PARAMETER_FORMAT` — `question` is not a UUID.
+        ```json
+        {
+            "error": "INVALID_PARAMETER_FORMAT",
+            "message": "Field 'question' must be a UUID."
+        }
+        ```
+    -   **404 Not Found** `QUESTION_NOT_FOUND` — no question with that UUID.
+        ```json
+        {
+            "error": "QUESTION_NOT_FOUND",
+            "message": "Question not found."
+        }
+        ```
+    -   **400 Bad Request** `INVALID_QUESTION_TYPE` — the question is closed (not open-ended).
+        ```json
+        {
+            "error": "INVALID_QUESTION_TYPE",
+            "message": "Only open-ended questions can be graded this way."
+        }
+        ```
+    -   **400 Bad Request** `MISSING_GRADING_CONFIG` — open question is missing grading criteria or `max_points`.
+        ```json
+        {
+            "error": "MISSING_GRADING_CONFIG",
+            "message": "This question has no grading criteria or max points."
+        }
+        ```
 
 ---
 

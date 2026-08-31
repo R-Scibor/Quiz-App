@@ -22,6 +22,13 @@ class AuthoringAuthTests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(r.data["error"], "PERMISSION_DENIED")
 
+    def test_validate_invalid_token_401(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Token not-a-real-token")
+        r = self.client.post("/api/v1/authoring/validate/", {"questions": []}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+
 
 class AuthoringValidateTests(APITestCase):
     def setUp(self):

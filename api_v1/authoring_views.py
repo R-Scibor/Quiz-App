@@ -1,6 +1,6 @@
 from django.conf import settings
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,7 +26,7 @@ class AuthoringAPIView(APIView):
     authentication_classes = [TokenAuthentication]
 
     def handle_exception(self, exc):
-        if isinstance(exc, NotAuthenticated):
+        if isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
             return Response(
                 {
                     "error": "AUTHENTICATION_FAILED",

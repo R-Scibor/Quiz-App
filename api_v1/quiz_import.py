@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count
 
@@ -35,7 +36,7 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
     if test_id is not None:
         try:
             test = Test.objects.get(pk=test_id)
-        except Test.DoesNotExist as exc:
+        except (Test.DoesNotExist, ValidationError) as exc:
             raise TestNotFoundError(str(test_id)) from exc
     else:
         matches = list(Test.objects.filter(title=data["scope"]))

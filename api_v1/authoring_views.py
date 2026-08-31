@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated, PermissionDenied
@@ -10,6 +11,12 @@ from rest_framework import status
 from .authoring_schema import AUTHORING_SCHEMA
 from .models import Category, Question, Test
 from .quiz_export import question_to_interchange, test_to_interchange
+from .quiz_import import (
+    ImportConflictError,
+    ImportValidationError,
+    TestNotFoundError,
+    import_quiz,
+)
 from .quiz_validation import validate_quiz
 
 INSTRUCTIONS_PATH = settings.BASE_DIR / "docs" / "AI_QUIZ_INSTRUCTIONS_GENERIC.md"
@@ -60,6 +67,42 @@ class AuthoringValidateView(AuthoringAPIView):
     def post(self, request, *args, **kwargs):
         errors = validate_quiz(request.data)
         return Response({"valid": not errors, "errors": errors}, status=status.HTTP_200_OK)
+
+
+def _parse_dry_run(request) -> bool:
+    if "dry_run" in request.query_params:
+        value = request.query_params.get("dry_run")
+        return str(value).lower() in ("true", "1", "yes")
+    value = request.data.get("dry_run")
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).lower() in ("true", "1", "yes")
+
+
+class AuthoringImportView(AuthoringAPIView):
+    def post(self, request, *args, **kwargs):
+        dry_run = _parse_dry_run(request)
+        test_id = request.data.get("test_id") or None
+        try:
+            result = import_quiz(request.data, test_id=test_id, dry_run=dry_run)
+        except ImportValidationError as exc:
+            return Response(
+                {"error": "VALIDATION_FAILED", "errors": exc.issues},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except (TestNotFoundError, ValidationError):
+            return Response(
+                {"error": "TEST_NOT_FOUND", "message": "Test not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ImportConflictError:
+            return Response(
+                {"error": "IMPORT_CONFLICT", "message": "Import conflict."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class AuthoringTestListView(AuthoringAPIView):

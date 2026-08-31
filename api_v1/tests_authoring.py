@@ -3,6 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from rest_framework import status
 
+from api_v1.models import Test
 from api_v1.quiz_import import import_quiz
 
 
@@ -166,3 +167,50 @@ class AuthoringPatchTests(APITestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["category"], "Polish History")
+
+
+class AuthoringImportTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.payload = {
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        }
+
+    def test_import_creates(self):
+        r = self.client.post("/api/v1/authoring/import/", self.payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data["applied"])
+        self.assertEqual(r.data["quiz"]["scope"], "Medieval Poland")
+
+    def test_import_invalid_400(self):
+        r = self.client.post(
+            "/api/v1/authoring/import/",
+            {"category": "X", "scope": "Y", "questions": []},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertEqual(Test.objects.count(), 0)
+
+    def test_dry_run_query_param(self):
+        r = self.client.post("/api/v1/authoring/import/?dry_run=true", self.payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.data["applied"])
+        self.assertEqual(Test.objects.count(), 0)
+
+    def test_unknown_test_id_404(self):
+        self.payload["test_id"] = "00000000-0000-4000-8000-000000000000"
+        r = self.client.post("/api/v1/authoring/import/", self.payload, format="json")
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "TEST_NOT_FOUND")

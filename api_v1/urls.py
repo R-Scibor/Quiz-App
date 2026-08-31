@@ -1,7 +1,10 @@
 from django.urls import path
 from .authoring_views import (
+    AuthoringExportView,
     AuthoringInstructionsView,
+    AuthoringQuestionDetailView,
     AuthoringSchemaView,
+    AuthoringTestListView,
     AuthoringValidateView,
 )
 from .views import (
@@ -32,4 +35,7 @@ urlpatterns = [
     path('authoring/schema/', AuthoringSchemaView.as_view(), name='authoring-schema'),
     path('authoring/instructions/', AuthoringInstructionsView.as_view(), name='authoring-instructions'),
     path('authoring/validate/', AuthoringValidateView.as_view(), name='authoring-validate'),
+    path('authoring/tests/', AuthoringTestListView.as_view(), name='authoring-test-list'),
+    path('authoring/tests/<uuid:pk>/export/', AuthoringExportView.as_view(), name='authoring-export'),
+    path('authoring/tests/<uuid:pk>/questions/<uuid:question_id>/', AuthoringQuestionDetailView.as_view(), name='authoring-question-detail'),
 ]

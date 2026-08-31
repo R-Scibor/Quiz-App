@@ -3,6 +3,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from rest_framework import status
 
+from api_v1.quiz_import import import_quiz
+
 
 class AuthoringAuthTests(APITestCase):
     def setUp(self):
@@ -74,3 +76,51 @@ class AuthoringValidateTests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertIn("markdown", r.data)
         self.assertIn("active recall", r.data["markdown"])
+
+
+class AuthoringReadTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        })
+        self.test_id = result["test"]["test_id"]
+        self.question_id = result["quiz"]["questions"][0]["question_id"]
+
+    def test_list_tests(self):
+        r = self.client.get("/api/v1/authoring/tests/")
+        self.assertEqual(r.status_code, 200)
+        row = r.data[0]
+        self.assertEqual(row["test_id"], self.test_id)
+        self.assertEqual(row["scope"], "Medieval Poland")
+        self.assertEqual(row["category"], "History")
+        self.assertEqual(row["question_counts"]["total"], 1)
+
+    def test_export(self):
+        r = self.client.get(f"/api/v1/authoring/tests/{self.test_id}/export/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["questions"][0]["question_id"], self.question_id)
+        self.assertEqual(r.data["questions"][0]["id"], 1)
+
+    def test_get_question(self):
+        r = self.client.get(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/{self.question_id}/"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["questionText"], "Coronation year?")
+
+    def test_export_404(self):
+        r = self.client.get("/api/v1/authoring/tests/00000000-0000-4000-8000-000000000000/export/")
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "TEST_NOT_FOUND")

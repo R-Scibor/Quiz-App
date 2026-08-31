@@ -6,7 +6,8 @@ import logging
 from django.conf import settings
 from django.shortcuts import render
 from django.views.generic import View
-from django.db.models import Avg, Case, Count, IntegerField, Q, Sum, When
+from django.db.models import Avg, Case, Count, IntegerField, Q, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -542,7 +543,7 @@ class StatsTestBreakdownView(APIView):
             .annotate(
                 total_attempts=Count('id'),
                 points_earned=Sum('points_awarded'),
-                points_possible=Sum('question__max_points'),
+                points_possible=Sum(Coalesce('question__max_points', Value(1))),
                 avg_time_secs=Avg('time_spent_secs'),
             )
             .order_by('-total_attempts')[:20]

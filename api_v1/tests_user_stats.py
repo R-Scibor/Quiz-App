@@ -19,7 +19,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from api_v1.models import QuizSession
+from api_v1.models import QuizSession, Test, Question, QuestionAttempt
 
 STATS_URL = '/api/v1/stats/'
 
@@ -186,3 +186,76 @@ class UserStatsStreakTestCase(APITestCase):
         self.client.credentials()
         response = self.client.get(STATS_URL)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+STATS_TESTS_URL = '/api/v1/stats/tests/'
+
+
+class StatsTestBreakdownTestCase(APITestCase):
+    """Per-test accuracy must treat closed questions as 1 point when max_points is null."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username='breakdown_user', password='pass123')
+        cls.token, _ = Token.objects.get_or_create(user=cls.user)
+        cls.test = Test.objects.create(title="Closed quiz")
+        cls.closed_questions = [
+            Question.objects.create(
+                test=cls.test,
+                text=f"Closed question {i}",
+                question_type=Question.SINGLE_CHOICE,
+                max_points=None,
+            )
+            for i in range(10)
+        ]
+        cls.open_question = Question.objects.create(
+            test=cls.test,
+            text="Open question",
+            question_type=Question.OPEN_TEXT,
+            grading_criteria="Mention X",
+            max_points=6,
+        )
+
+    def setUp(self):
+        QuestionAttempt.objects.filter(user=self.user).delete()
+        QuizSession.objects.filter(user=self.user).delete()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        self.session = QuizSession.objects.create(user=self.user)
+
+    def _attempt(self, question, points, is_correct):
+        QuestionAttempt.objects.create(
+            user=self.user,
+            question=question,
+            test=self.test,
+            session=self.session,
+            is_correct=is_correct,
+            points_awarded=points,
+        )
+
+    def test_closed_only_attempts_count_null_max_points_as_one(self):
+        """8/10 correct closed answers → 8/10 pts and 80% (not 8/0 and 0%)."""
+        for i, q in enumerate(self.closed_questions):
+            correct = i < 8
+            self._attempt(q, points=1 if correct else 0, is_correct=correct)
+
+        response = self.client.get(STATS_TESTS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        row = response.data[0]
+        self.assertEqual(row['title'], "Closed quiz")
+        self.assertEqual(row['total_attempts'], 10)
+        self.assertEqual(row['points_earned'], 8)
+        self.assertEqual(row['points_possible'], 10)
+        self.assertEqual(row['accuracy'], 80.0)
+
+    def test_mixed_closed_and_open_does_not_exceed_100_when_all_correct(self):
+        """Closed 1pt + open 6pt, all correct → 7/7 100%, not 7/6 >100%."""
+        self._attempt(self.closed_questions[0], points=1, is_correct=True)
+        self._attempt(self.open_question, points=6, is_correct=True)
+
+        response = self.client.get(STATS_TESTS_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        row = response.data[0]
+        self.assertEqual(row['points_earned'], 7)
+        self.assertEqual(row['points_possible'], 7)
+        self.assertEqual(row['accuracy'], 100.0)

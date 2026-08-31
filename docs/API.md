@@ -491,4 +491,4 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
         }
     ]
     ```
-    `points_possible` is `Sum(question.max_points)`. Closed questions typically have `max_points = null`, so this figure (and `accuracy`) can under-count closed-question attempts.
+    `points_possible` is `Sum(Coalesce(question.max_points, 1))` so closed questions without `max_points` count as 1 point each, matching session scoring.

@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from api_v1.models import Answer, Category, Question, QuestionAttempt, QuizSession, Tag, Test
 from api_v1.quiz_export import question_to_interchange, test_to_interchange
-from api_v1.quiz_import import ImportValidationError, import_quiz
+from api_v1.quiz_import import ImportConflictError, ImportValidationError, import_quiz
 
 
 class SourceIdConstraintTests(TestCase):
@@ -205,3 +205,53 @@ class ImportQuizTests(TestCase):
         from api_v1.quiz_import import TestNotFoundError
         with self.assertRaises(TestNotFoundError):
             import_quiz(_sample(), test_id=uuid.uuid4())
+
+    def test_match_does_not_reuse_already_bound_row(self):
+        def _closed(qid, text):
+            return {
+                "id": qid,
+                "questionText": text,
+                "type": "single-choice",
+                "options": ["3", "4"],
+                "correctAnswers": [1],
+            }
+
+        initial = {
+            "category": "Math",
+            "scope": "Arithmetic",
+            "version": "1.0",
+            "questions": [_closed(1, "What is 2+2?")],
+        }
+        first = import_quiz(initial)
+        original_id = Question.objects.get(source_id=1, test_id=first["test"]["test_id"]).id
+        payload = {
+            "category": "Math",
+            "scope": "Arithmetic",
+            "version": "1.0",
+            "questions": [
+                _closed(1, "What is 2+2? (integer)"),
+                _closed(2, "What is 2+2?"),
+            ],
+        }
+        import_quiz(payload)
+        q1 = Question.objects.get(source_id=1)
+        q2 = Question.objects.get(source_id=2)
+        self.assertNotEqual(q1.id, q2.id)
+        self.assertEqual(q1.id, original_id)
+        self.assertEqual(q1.text, "What is 2+2? (integer)")
+        self.assertEqual(q2.text, "What is 2+2?")
+        self.assertEqual(Question.objects.filter(test_id=first["test"]["test_id"]).count(), 2)
+
+    def test_identical_reimport_is_unchanged(self):
+        import_quiz(_sample())
+        second = import_quiz(_sample())
+        self.assertEqual(second["questions"]["unchanged"], 2)
+        for item in second["questions"]["updated"]:
+            self.assertNotIn("options", item["fields"])
+            self.assertNotIn("correctAnswers", item["fields"])
+
+    def test_ambiguous_title_raises(self):
+        Test.objects.create(title="Medieval Poland")
+        Test.objects.create(title="Medieval Poland")
+        with self.assertRaises(ImportConflictError):
+            import_quiz(_sample())

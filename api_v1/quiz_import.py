@@ -38,7 +38,10 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
         except Test.DoesNotExist as exc:
             raise TestNotFoundError(str(test_id)) from exc
     else:
-        test = Test.objects.filter(title=data["scope"]).first()
+        matches = list(Test.objects.filter(title=data["scope"]))
+        if len(matches) > 1:
+            raise ImportConflictError("IMPORT_CONFLICT")
+        test = matches[0] if matches else None
 
     action = "update" if test is not None else "create"
     metadata_changes = {}
@@ -69,6 +72,8 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
         if match is None:
             planned.append(("create", None, qdata, ["questionText"]))
         else:
+            if match.pk in matched_pks:
+                raise ImportConflictError("IMPORT_CONFLICT")
             matched_pks.add(match.pk)
             fields = _changed_fields(match, qdata)
             planned.append(("update" if fields else "unchanged", match, qdata, fields))
@@ -154,13 +159,16 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
             pairs: list[tuple] = []
             for qdata in incoming:
                 match = _resolve(qdata, existing_by_id, existing_by_source, existing_by_text)
+                if match is not None and match.pk in keep:
+                    raise ImportConflictError("IMPORT_CONFLICT")
                 pairs.append((match, qdata))
                 if match is not None:
                     keep.add(match.pk)
 
-            for q in test.questions.annotate(attempt_count=Count("attempts")):
-                if q.pk not in keep and q.attempt_count == 0:
-                    q.delete()
+            locked = test.questions.select_for_update()
+            list(locked)
+            unmatched = locked.exclude(pk__in=keep) if keep else locked
+            unmatched.filter(attempts__isnull=True).delete()
 
             _release_unique_slots(pairs)
 
@@ -202,17 +210,33 @@ def _index_questions(test: Test | None):
     return existing_by_id, existing_by_source, existing_by_text
 
 
+def _consume(question: Question, existing_by_id, existing_by_source, existing_by_text) -> None:
+    existing_by_id.pop(str(question.id), None)
+    if question.source_id is not None:
+        bound = existing_by_source.get(question.source_id)
+        if bound is not None and bound.pk == question.pk:
+            existing_by_source.pop(question.source_id, None)
+    bound_text = existing_by_text.get(question.text)
+    if bound_text is not None and bound_text.pk == question.pk:
+        existing_by_text.pop(question.text, None)
+
+
 def _resolve(qdata, existing_by_id, existing_by_source, existing_by_text):
+    match = None
     qid = _qid_key(qdata.get("question_id"))
     if qid and qid in existing_by_id:
-        return existing_by_id[qid]
-    sid = qdata.get("id")
-    if isinstance(sid, int) and sid in existing_by_source:
-        return existing_by_source[sid]
-    text = qdata.get("questionText")
-    if text in existing_by_text:
-        return existing_by_text[text]
-    return None
+        match = existing_by_id[qid]
+    else:
+        sid = qdata.get("id")
+        if isinstance(sid, int) and sid in existing_by_source:
+            match = existing_by_source[sid]
+        else:
+            text = qdata.get("questionText")
+            if text in existing_by_text:
+                match = existing_by_text[text]
+    if match is not None:
+        _consume(match, existing_by_id, existing_by_source, existing_by_text)
+    return match
 
 
 def _changed_fields(question: Question, qdata: dict) -> list[str]:
@@ -237,7 +261,9 @@ def _changed_fields(question: Question, qdata: dict) -> list[str]:
     if sorted(existing_tags) != sorted(incoming_tags):
         fields.append("tags")
     if ntype in CLOSED:
-        answers = list(question.answers.order_by())
+        answers = getattr(question, "prefetched_answers", None)
+        if answers is None:
+            answers = list(question.answers.order_by())
         if [a.text for a in answers] != list(qdata.get("options") or []):
             fields.append("options")
         existing_correct = [i for i, a in enumerate(answers) if a.is_correct]

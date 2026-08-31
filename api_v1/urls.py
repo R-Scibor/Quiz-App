@@ -1,4 +1,9 @@
 from django.urls import path
+from .authoring_views import (
+    AuthoringInstructionsView,
+    AuthoringSchemaView,
+    AuthoringValidateView,
+)
 from .views import (
     TestListView, QuestionListView, CheckOpenAnswerView, GetTaskResultView,
     ReportIssueView, RegisterView, LoginView, LogoutView,
@@ -24,4 +29,7 @@ urlpatterns = [
     path('stats/tests/', StatsTestBreakdownView.as_view(), name='stats-tests'),
     path('study/queue/', StudyQueueView.as_view(), name='study-queue'),
     path('study/stats/', StudyStatsView.as_view(), name='study-stats'),
+    path('authoring/schema/', AuthoringSchemaView.as_view(), name='authoring-schema'),
+    path('authoring/instructions/', AuthoringInstructionsView.as_view(), name='authoring-instructions'),
+    path('authoring/validate/', AuthoringValidateView.as_view(), name='authoring-validate'),
 ]

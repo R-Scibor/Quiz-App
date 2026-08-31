@@ -288,22 +288,21 @@ class CascadeRoutingTestCase(unittest.TestCase):
 
 
 class ImportQuizzesValidationTestCase(unittest.TestCase):
-    """Tests for open-cli regex and open-code language prefix validation in import command."""
-
-    def setUp(self):
-        from api_v1.management.commands.import_quizzes import Command
-        self.cmd = Command()
+    """Tests for open-cli regex and open-code language prefix validation."""
 
     def test_valid_regex_passes(self):
-        self.assertIsNone(self.cmd._validate_regex(r"ls\s+-la?\s*/\w+"))
+        from api_v1.quiz_validation import _validate_regex
+        self.assertIsNone(_validate_regex(r"ls\s+-la?\s*/\w+"))
 
     def test_invalid_regex_fails(self):
-        error = self.cmd._validate_regex(r"[invalid")
+        from api_v1.quiz_validation import _validate_regex
+        error = _validate_regex(r"[invalid")
         self.assertIsNotNone(error)
         self.assertIn("Invalid regex", error)
 
     def test_catastrophic_regex_rejected(self):
-        error = self.cmd._validate_regex(r"(a+)+")
+        from api_v1.quiz_validation import _validate_regex
+        error = _validate_regex(r"(a+)+")
         self.assertIsNotNone(error)
 
     def test_valid_code_criteria_with_prefix(self):

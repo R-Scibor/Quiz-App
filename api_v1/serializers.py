@@ -57,7 +57,7 @@ class TestMetadataSerializer(serializers.ModelSerializer):
         fields = ['category', 'scope', 'version', 'test_id', 'question_counts']
 
     def get_version(self, obj):
-        return "2.0-db"
+        return obj.version
 
     def get_question_counts(self, obj):
         if hasattr(obj, 'open_questions_count'):

@@ -83,6 +83,13 @@ class QuizAPITests(APITestCase):
         self.assertEqual(biologia['question_counts']['closed'], 2)
         self.assertEqual(biologia['question_counts']['open'], 0)
 
+    def test_list_tests_includes_model_version(self):
+        self.test_historia.version = "9.9-test"
+        self.test_historia.save(update_fields=["version"])
+        response = self.client.get("/api/v1/tests/")
+        by_scope = {item["scope"]: item for item in response.json()}
+        self.assertEqual(by_scope["Historia"]["version"], "9.9-test")
+
     # --- QuestionListView ---
 
     def test_get_questions_missing_params(self):

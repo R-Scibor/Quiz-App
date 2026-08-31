@@ -31,6 +31,7 @@ class Tag(models.Model):
 class Test(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique UUID identifier for the test.")
     title = models.CharField(max_length=255, help_text="Test title.")
+    version = models.CharField(max_length=32, default="1.0", help_text="Quiz document version.")
     description = models.TextField(blank=True, null=True, help_text="Optional test description.")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Date and time the test was created.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Date and time of last update.")
@@ -85,13 +86,21 @@ class Question(models.Model):
     )
 
     tags = models.ManyToManyField(Tag, related_name="questions", blank=True, help_text="Tags associated with this question.")
+    source_id = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="File-local integer id from quiz JSON.",
+    )
 
     class Meta:
         verbose_name = "Question"
         verbose_name_plural = "Questions"
         ordering = ['id']
         indexes = [models.Index(fields=['test'], name='question_test_id_idx')]
-        constraints = [models.UniqueConstraint(fields=['test', 'text'], name='unique_question_text_in_test')]
+        constraints = [
+            models.UniqueConstraint(fields=['test', 'text'], name='unique_question_text_in_test'),
+            models.UniqueConstraint(fields=['test', 'source_id'], name='unique_source_id_in_test'),
+        ]
 
     def __str__(self):
         return f"{self.text[:80]}..." if len(self.text) > 80 else self.text

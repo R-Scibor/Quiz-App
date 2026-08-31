@@ -2,6 +2,7 @@ import os
 import json
 import random
 import logging
+import uuid
 
 from django.conf import settings
 from django.shortcuts import render
@@ -173,18 +174,60 @@ class CheckOpenAnswerView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'ai_grading'
 
+    OPEN_TYPES = {
+        Question.OPEN_TEXT,
+        Question.OPEN_CLI,
+        Question.OPEN_CODE,
+        Question.OPEN_ENDED,
+    }
+
     def post(self, request, *args, **kwargs):
+        question_id = request.data.get('question')
         user_answer = request.data.get('userAnswer')
-        grading_criteria = request.data.get('gradingCriteria')
-        question_text = request.data.get('questionText')
-        max_points = request.data.get('maxPoints')
-        question_type = request.data.get('questionType', 'open-text')
         force_llm = bool(request.data.get('forceAI', False))
 
-        if not all([user_answer, grading_criteria, question_text, max_points]):
-            return Response({"error": "INCOMPLETE_DATA", "message": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
+        if not question_id or not user_answer:
+            return Response(
+                {"error": "INCOMPLETE_DATA", "message": "Fields 'question' and 'userAnswer' are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        task = generate_ai_answer.delay(user_answer, grading_criteria, question_text, max_points, question_type, force_llm) # type: ignore
+        try:
+            uuid.UUID(str(question_id))
+        except (ValueError, TypeError, AttributeError):
+            return Response(
+                {"error": "INVALID_PARAMETER_FORMAT", "message": "Field 'question' must be a UUID."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            question = Question.objects.get(pk=question_id)
+        except Question.DoesNotExist:
+            return Response(
+                {"error": "QUESTION_NOT_FOUND", "message": "Question not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if question.question_type not in self.OPEN_TYPES:
+            return Response(
+                {"error": "INVALID_QUESTION_TYPE", "message": "Only open-ended questions can be graded this way."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not question.grading_criteria or not question.max_points:
+            return Response(
+                {"error": "MISSING_GRADING_CONFIG", "message": "This question has no grading criteria or max points."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = generate_ai_answer.delay(
+            user_answer,
+            question.grading_criteria,
+            question.text,
+            question.max_points,
+            question.question_type,
+            force_llm,
+        )
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
 class GetTaskResultView(APIView):

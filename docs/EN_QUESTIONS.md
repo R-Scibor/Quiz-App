@@ -66,7 +66,7 @@ The user can select only one correct answer.
 }
 ```
 
--   `id` (integer): A unique identifier for the question within the file (currently unused, but required for consistency).
+-   `id` (integer): A unique identifier for the question within the file. Stored in the database as `source_id` (not as the question UUID). Re-imports use this value to update the same row instead of creating a new question.
 -   `questionText` (string): The content of the question.
 -   `image` (string, optional): A URL link to an image that will be displayed with the question. Can be an empty string `""`.
 -   `type` (string): Must be `"single-choice"`.
@@ -277,8 +277,11 @@ Once the files are on the server, we need to tell Django to read them and add th
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests/my_new_quiz.json
     ```
-    **Clearing the database:**
-    If you want to completely clear the database and import everything from scratch, use the `--clean` flag:
+    **Re-import (safe upsert):**
+    Running the command again does **not** wipe question UUIDs. Each JSON `id` is stored as `source_id`; the importer matches existing questions by `question_id`, then `source_id`, then exact question text, and updates in place. Questions that already have learner attempts are **not deleted** if they are omitted from the file.
+
+    **Clearing the database (`--clean`):**
+    `--clean` still wipes the **whole** catalog (tests, categories, tags) before import. It is **CLI-only** — the staff authoring HTTP import has no equivalent wipe flag.
     ```bash
     docker compose exec web python manage.py import_quizzes media/tests --clean
     ```

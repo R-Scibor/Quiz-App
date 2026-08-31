@@ -23,9 +23,11 @@ These endpoints require the header `Authorization: Token <token>`:
 - `/study/queue/`
 - `/study/stats/`
 
+All `/authoring/*` endpoints require the same `Authorization: Token <token>` header **and** the authenticated user must have `is_staff=True`. Missing or invalid tokens receive `401 AUTHENTICATION_FAILED`. Non-staff tokens receive `403 PERMISSION_DENIED`.
+
 Tokens are issued by `/auth/register/` and `/auth/login/`.
 
-Question and answer primary keys are UUIDs, not integers. JSON import files still use a local integer `id` field; that value is not stored as the database PK.
+Question and answer primary keys are UUIDs, not integers. JSON import files still use a local integer `id` field; that value is stored as `source_id`, not as the database PK.
 
 ---
 
@@ -519,3 +521,226 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
     ]
     ```
     `points_possible` is `Sum(Coalesce(question.max_points, 1))` so closed questions without `max_points` count as 1 point each, matching session scoring.
+
+---
+
+## Authoring
+
+Staff-only endpoints for reading, validating, and importing interchange JSON. Every path below is still prefixed with `/api/v1/` and requires `Authorization: Token <token>` plus `is_staff`.
+
+Import **upserts** questions in this order: `question_id` (UUID), then integer `id` (`source_id`), then exact `questionText`. Questions that already have attempts are never deleted if they are omitted from the file; they appear in `questions.blocked_deletes` and `warnings`.
+
+### 16. Get Authoring Schema
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/schema/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Returns the interchange JSON Schema (`schema_version`, `json_schema`, `examples`) used by validate/import.
+-   **Success Response (200 OK):** JSON object with `schema_version` (currently `1`), a Draft 2020-12 `json_schema`, and per-type `examples`.
+
+---
+
+### 17. Get Authoring Instructions
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/instructions/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Returns the generic quiz-authoring markdown instructions.
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "markdown": "# ..."
+    }
+    ```
+
+---
+
+### 18. Validate Interchange JSON
+
+-   **Method:** `POST`
+-   **Endpoint:** `/authoring/validate/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Validates a quiz payload without writing to the database. **Always returns 200**, even when the payload is invalid.
+-   **Request Body:** Interchange JSON (`category`, `scope`, `questions`, optional `version` / `description` / per-question fields).
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "valid": true,
+        "errors": []
+    }
+    ```
+    Invalid payload example:
+    ```json
+    {
+        "valid": false,
+        "errors": [
+            {
+                "path": "questions",
+                "code": "EMPTY_QUESTIONS",
+                "message": "'questions' must not be empty."
+            }
+        ]
+    }
+    ```
+
+---
+
+### 19. List Tests (Authoring)
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/tests/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Lists all tests with authoring metadata (includes `description` and `updated_at`, which the public `/tests/` list does not).
+-   **Success Response (200 OK):**
+    ```json
+    [
+        {
+            "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "description": "",
+            "question_counts": {
+                "closed": 15,
+                "open": 5,
+                "total": 20
+            },
+            "updated_at": "2026-08-31T12:00:00+00:00"
+        }
+    ]
+    ```
+
+---
+
+### 20. Export a Test
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/tests/<uuid>/export/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Returns the full interchange JSON for one test. Each question includes both `question_id` (database UUID) and `id` (integer `source_id` from the original file).
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "category": "History",
+        "scope": "Medieval Poland",
+        "version": "1.0",
+        "description": "",
+        "questions": [
+            {
+                "id": 101,
+                "question_id": "c0a80100-0000-4000-8000-000000000101",
+                "questionText": "In which year did the coronation of Bolesław the Brave take place?",
+                "image": "https://example.com/link_to_image.png",
+                "type": "single-choice",
+                "tags": ["rulers", "dates", "Poland"],
+                "explanation": "The coronation took place in 1025, just before his death.",
+                "options": ["1000", "966", "1138", "1025"],
+                "correctAnswers": [3]
+            }
+        ]
+    }
+    ```
+-   **Error Response (404 Not Found)** `TEST_NOT_FOUND`.
+
+---
+
+### 21. Get a Single Question
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/tests/<uuid>/questions/<uuid>/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Returns interchange JSON for one question belonging to the given test (`id` = `source_id`, `question_id` = UUID).
+-   **Error Responses:**
+    -   **404** `TEST_NOT_FOUND` — no test with that UUID.
+    -   **404** `QUESTION_NOT_FOUND` — the question UUID is missing or not on that test.
+
+---
+
+### 22. Patch Test Metadata
+
+-   **Method:** `PATCH`
+-   **Endpoint:** `/authoring/tests/<uuid>/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Updates **metadata only**. Accepted fields: `category`, `scope`, `version`, `description`. Question bodies are not edited here; use import for that. Returns the same interchange JSON as export.
+-   **Request Body (any subset):**
+    ```json
+    {
+        "category": "Polish History",
+        "scope": "Early Piasts",
+        "version": "1.1",
+        "description": "Updated description."
+    }
+    ```
+-   **Success Response (200 OK):** interchange JSON for the test (includes `questions`).
+-   **Error Response (404 Not Found)** `TEST_NOT_FOUND`.
+
+---
+
+### 23. Import a Quiz
+
+-   **Method:** `POST`
+-   **Endpoint:** `/authoring/import/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Creates or updates a test from interchange JSON. Matching order for each question: `question_id`, then integer `id` (`source_id`), then exact `questionText`. Omitted questions without attempts are deleted; omitted questions **with attempts are kept**.
+-   **Query / body:**
+    -   Optional `test_id` in the JSON body targets an existing test by UUID (otherwise the test is resolved by `scope` title).
+    -   Optional `dry_run` as a query parameter (`?dry_run=true`) or a body field. Accepted truthy values: `true`, `1`, `yes`.
+-   **Success Response (200 OK):**
+    ```json
+    {
+        "applied": true,
+        "dry_run": false,
+        "test": {
+            "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "action": "create",
+            "metadata_changes": {
+                "scope": {"from": null, "to": "Medieval Poland"}
+            }
+        },
+        "questions": {
+            "created": [{"source_id": 101, "questionText": "..."}],
+            "updated": [],
+            "unchanged": 0,
+            "would_delete": [],
+            "blocked_deletes": []
+        },
+        "warnings": [],
+        "quiz": {
+            "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "description": "",
+            "questions": []
+        }
+    }
+    ```
+    `applied` is `false` when `dry_run` is set (no writes). `quiz` is the interchange snapshot after a real import.
+-   **Error Responses:**
+    -   **400 Bad Request** `VALIDATION_FAILED` — payload failed schema/content checks (no writes).
+        ```json
+        {
+            "error": "VALIDATION_FAILED",
+            "errors": [
+                {"path": "questions", "code": "EMPTY_QUESTIONS", "message": "..."}
+            ]
+        }
+        ```
+    -   **404 Not Found** `TEST_NOT_FOUND` — `test_id` does not exist.
+    -   **409 Conflict** `IMPORT_CONFLICT` — ambiguous title match, or two incoming questions resolved to the same existing row.
+
+---
+
+### Authoring error codes
+
+| Code | HTTP | When |
+|---|---|---|
+| `AUTHENTICATION_FAILED` | 401 | Missing or invalid token |
+| `PERMISSION_DENIED` | 403 | Authenticated but not staff |
+| `VALIDATION_FAILED` | 400 | Import payload failed validation |
+| `TEST_NOT_FOUND` | 404 | Unknown test UUID |
+| `QUESTION_NOT_FOUND` | 404 | Unknown question UUID (or not on that test) |
+| `IMPORT_CONFLICT` | 409 | Import could not uniquely match a test or question |
+
+Error bodies are `{ "error": "<CODE>", "message": "..." }` except `VALIDATION_FAILED`, which returns `{ "error": "VALIDATION_FAILED", "errors": [ ... ] }`.

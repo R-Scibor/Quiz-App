@@ -1,8 +1,10 @@
+from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.test import TestCase
 
-from api_v1.models import Answer, Category, Tag, Test, Question
+from api_v1.models import Answer, Category, Question, QuestionAttempt, QuizSession, Tag, Test
 from api_v1.quiz_export import question_to_interchange, test_to_interchange
+from api_v1.quiz_import import ImportValidationError, import_quiz
 
 
 class SourceIdConstraintTests(TestCase):
@@ -98,3 +100,108 @@ class ExportTests(TestCase):
         # categories + questions + answers prefetch + tags prefetch
         with self.assertNumQueries(4):
             test_to_interchange(t)
+
+
+def _sample(scope="Medieval Poland"):
+    return {
+        "category": "History",
+        "scope": scope,
+        "version": "1.0",
+        "description": "from file",
+        "questions": [
+            {
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+                "tags": ["dates"],
+                "image": "",
+                "explanation": "1025",
+            },
+            {
+                "id": 2,
+                "questionText": "Explain the baptism of Poland.",
+                "type": "open-text",
+                "gradingCriteria": "Must mention 966.",
+                "maxPoints": 3,
+                "tags": ["baptism"],
+            },
+        ],
+    }
+
+
+class ImportQuizTests(TestCase):
+    def test_create_assigns_uuids_and_source_id(self):
+        result = import_quiz(_sample())
+        self.assertTrue(result["applied"])
+        self.assertEqual(result["test"]["action"], "create")
+        quiz = result["quiz"]
+        self.assertEqual(len(quiz["questions"]), 2)
+        self.assertEqual(quiz["questions"][0]["id"], 1)
+        self.assertTrue(quiz["questions"][0]["question_id"])
+        t = Test.objects.get(title="Medieval Poland")
+        self.assertEqual(t.version, "1.0")
+        self.assertEqual(t.questions.get(source_id=1).text, "Coronation year?")
+
+    def test_second_import_same_source_id_preserves_question_uuid(self):
+        first = import_quiz(_sample())
+        qid = first["quiz"]["questions"][0]["question_id"]
+        payload = _sample()
+        payload["questions"][0]["explanation"] = "Updated"
+        second = import_quiz(payload)
+        self.assertEqual(second["quiz"]["questions"][0]["question_id"], qid)
+        self.assertEqual(Question.objects.get(id=qid).explanation, "Updated")
+        self.assertEqual(Question.objects.filter(test_id=first["test"]["test_id"]).count(), 2)
+
+    def test_match_by_text_when_id_missing_then_backfill_source_id(self):
+        import_quiz(_sample())
+        payload = _sample()
+        payload["questions"][0]["id"] = 99  # same text, new source_id → match by text
+        result = import_quiz(payload)
+        q = Question.objects.get(text="Coronation year?")
+        self.assertEqual(q.source_id, 99)
+        self.assertIn("source_id", result["questions"]["updated"][0]["fields"])
+
+    def test_does_not_delete_question_with_attempts(self):
+        first = import_quiz(_sample())
+        t = Test.objects.get(id=first["test"]["test_id"])
+        q = t.questions.get(source_id=2)
+        user = User.objects.create_user("u", password="p")
+        session = QuizSession.objects.create(user=user)
+        QuestionAttempt.objects.create(
+            user=user, question=q, test=t, session=session, is_correct=True
+        )
+        payload = _sample()
+        payload["questions"] = [payload["questions"][0]]
+        result = import_quiz(payload)
+        self.assertTrue(Question.objects.filter(id=q.id).exists())
+        self.assertEqual(len(result["questions"]["blocked_deletes"]), 1)
+        self.assertEqual(result["questions"]["blocked_deletes"][0]["reason"], "has_attempts")
+
+    def test_deletes_question_without_attempts_when_omitted(self):
+        first = import_quiz(_sample())
+        t = Test.objects.get(id=first["test"]["test_id"])
+        q = t.questions.get(source_id=2)
+        payload = _sample()
+        payload["questions"] = [payload["questions"][0]]
+        import_quiz(payload)
+        self.assertFalse(Question.objects.filter(id=q.id).exists())
+
+    def test_dry_run_writes_nothing(self):
+        result = import_quiz(_sample(), dry_run=True)
+        self.assertFalse(result["applied"])
+        self.assertTrue(result["dry_run"])
+        self.assertEqual(Test.objects.count(), 0)
+        self.assertIsNone(result["quiz"])
+
+    def test_invalid_json_raises_before_write(self):
+        with self.assertRaises(ImportValidationError):
+            import_quiz({"category": "X", "scope": "Y", "questions": []})
+        self.assertEqual(Test.objects.count(), 0)
+
+    def test_unknown_test_id_raises(self):
+        import uuid
+        from api_v1.quiz_import import TestNotFoundError
+        with self.assertRaises(TestNotFoundError):
+            import_quiz(_sample(), test_id=uuid.uuid4())

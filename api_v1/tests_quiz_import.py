@@ -1,4 +1,9 @@
+import json
+import tempfile
+from pathlib import Path
+
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase
 
@@ -255,3 +260,24 @@ class ImportQuizTests(TestCase):
         Test.objects.create(title="Medieval Poland")
         with self.assertRaises(ImportConflictError):
             import_quiz(_sample())
+
+
+class ImportCommandTests(TestCase):
+    def test_reimport_preserves_question_uuid(self):
+        payload = _sample()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "q.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            call_command("import_quizzes", str(path))
+            qid = Question.objects.get(source_id=1).id
+            payload["questions"][0]["explanation"] = "changed via CLI"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            call_command("import_quizzes", str(path))
+            self.assertEqual(Question.objects.get(source_id=1).id, qid)
+            self.assertEqual(Question.objects.get(source_id=1).explanation, "changed via CLI")
+
+    def test_validate_quiz_json_accepts_valid_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "q.json"
+            path.write_text(json.dumps(_sample()), encoding="utf-8")
+            call_command("validate_quiz_json", str(path))

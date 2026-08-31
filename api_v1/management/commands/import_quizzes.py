@@ -1,19 +1,17 @@
 import json
-import re
-import signal
 from pathlib import Path
+
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 from tqdm import tqdm
 
-# Poprawny import modeli z ich właściwej lokalizacji
-from api_v1.models import Category, Tag, Test, Question, Answer
-from api_v1.management.commands.validate_quiz_json import Command as ValidateQuizCommand
+from api_v1.models import Answer, Category, Tag, Test
+from api_v1.quiz_import import ImportConflictError, ImportValidationError, import_quiz
+from api_v1.quiz_validation import validate_quiz
+
 
 class Command(BaseCommand):
     """
     Komenda Django do importowania quizów z plików JSON wraz z pełną weryfikacją.
-    Obsługuje pytania zamknięte, otwarte oraz linki do obrazków.
     """
     help = 'Importuje testy i pytania (w tym otwarte i z obrazkami) z plików JSON i weryfikuje poprawność importu.'
 
@@ -51,117 +49,34 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Brak plików JSON do zaimportowania."))
             return
 
-        self.imported_files = []  # Initialize the list here
+        self.imported_files = []
         for file_path in tqdm(json_files_to_import, desc="Importowanie quizów"):
-            imported = False
-            # Uruchamiamy walidację dla każdego pliku
-            validator = ValidateQuizCommand()
-            validation_errors = validator.validate_quiz_data(self.load_json(file_path))
+            try:
+                data = self.load_json(file_path)
+            except CommandError as e:
+                self.stdout.write(self.style.ERROR(f"\n{e}. Pomijanie."))
+                continue
 
-            if validation_errors:
+            issues = validate_quiz(data)
+            if issues:
                 self.stdout.write(self.style.ERROR(f"\nBłąd walidacji pliku '{file_path.name}'. Pomijanie importu."))
-                for error in validation_errors:
-                    self.stdout.write(self.style.ERROR(f"- {error}"))
-            else:
-                try:
-                    self.stdout.write(self.style.SUCCESS(f"\nPlik '{file_path.name}' przeszedł walidację. Rozpoczynanie importu..."))
-                    self.import_quiz_from_file(file_path)
-                    imported = True
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f"\nBłąd podczas importu pliku '{file_path.name}': {e}. Pomijanie."))
+                for issue in issues:
+                    self.stdout.write(self.style.ERROR(f"- {issue['path']}: {issue['message']}"))
+                continue
 
-            if imported:
+            try:
+                self.stdout.write(self.style.SUCCESS(f"\nPlik '{file_path.name}' przeszedł walidację. Rozpoczynanie importu..."))
+                import_quiz(data)
                 self.imported_files.append(file_path)
+            except ImportValidationError as e:
+                self.stdout.write(self.style.ERROR(f"\nBłąd walidacji pliku '{file_path.name}'. Pomijanie importu."))
+                for issue in e.issues:
+                    self.stdout.write(self.style.ERROR(f"- {issue['path']}: {issue['message']}"))
+            except ImportConflictError as e:
+                self.stdout.write(self.style.ERROR(f"\nBłąd podczas importu pliku '{file_path.name}': {e}. Pomijanie."))
 
         self.stdout.write(self.style.SUCCESS("\nImport zakończony. Rozpoczynanie weryfikacji..."))
         self.verify_import(self.imported_files, len(json_files_to_import))
-
-    def import_quiz_from_file(self, file_path: Path):
-        try:
-            with file_path.open('r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            test_title = data.get('scope', file_path.stem)
-            category_name = data.get('category')
-
-            with transaction.atomic():
-                category_obj = None
-                if category_name:
-                    category_obj, _ = Category.objects.get_or_create(name=category_name)
-
-                test_obj, created = Test.objects.update_or_create(
-                    title=test_title,
-                    defaults={'description': data.get('description', f"Test importowany z pliku {file_path.name}.")}
-                )
-                if category_obj:
-                    test_obj.categories.set([category_obj])
-
-                if not created:
-                    test_obj.questions.all().delete()
-
-                tags_cache = {}
-                for q_data in data.get('questions', []):
-                    q_text = q_data.get('questionText')
-                    if not q_text: continue
-                    
-                    q_type = q_data.get('type', 'single-choice')
-                    # Normalise legacy open / open-ended → open-text
-                    if q_type in ('open', 'open-ended'):
-                        self.stdout.write(self.style.WARNING(
-                            f"  DEPRECATION: type '{q_type}' in question '{q_text[:40]}...' — treated as 'open-text'."
-                        ))
-                        q_type = Question.OPEN_TEXT
-                    valid_types = [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE,
-                                   Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
-                    if q_type not in valid_types:
-                        self.stdout.write(self.style.WARNING(
-                            f"  Unknown type '{q_type}' — defaulting to single-choice."
-                        ))
-                        q_type = Question.SINGLE_CHOICE
-
-                    grading_criteria = q_data.get('gradingCriteria')
-                    if q_type == Question.OPEN_CLI and grading_criteria:
-                        error = self._validate_regex(grading_criteria)
-                        if error:
-                            raise ValueError(
-                                f"Invalid gradingCriteria regex for open-cli question '{q_text[:40]}': {error}"
-                            )
-                    if q_type == Question.OPEN_CODE and grading_criteria:
-                        if ':' not in grading_criteria:
-                            raise ValueError(
-                                f"open-code gradingCriteria must start with a language prefix "
-                                f"(e.g. 'python: ...') for question '{q_text[:40]}'."
-                            )
-
-                    question_obj = Question.objects.create(
-                        test=test_obj,
-                        text=q_text,
-                        image=q_data.get('image'), # <-- TUTAJ ZMIANA: Dodajemy import obrazka
-                        explanation=q_data.get('explanation', ''),
-                        question_type=q_type,
-                        grading_criteria=grading_criteria,
-                        max_points=q_data.get('maxPoints')
-                    )
-
-                    tags_to_assign = []
-                    for tag_name in q_data.get('tags', []):
-                        tag_obj = tags_cache.get(tag_name)
-                        if not tag_obj:
-                            tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
-                            tags_cache[tag_name] = tag_obj
-                        tags_to_assign.append(tag_obj)
-                    if tags_to_assign:
-                        question_obj.tags.set(tags_to_assign)
-
-                    if q_type in [Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]:
-                        correct_indices = q_data.get('correctAnswers', [])
-                        for i, opt_text in enumerate(q_data.get('options', [])):
-                            Answer.objects.create(question=question_obj, text=opt_text, is_correct=(i in correct_indices))
-
-        except json.JSONDecodeError:
-            self.stderr.write(self.style.ERROR(f"Błąd: Plik '{file_path.name}' zawiera nieprawidłowy JSON."))
-        except Exception as e:
-            self.stderr.write(self.style.ERROR(f"Nieoczekiwany błąd importu pliku '{file_path.name}': {e}"))
 
     def load_json(self, file_path: Path):
         try:
@@ -169,28 +84,6 @@ class Command(BaseCommand):
                 return json.load(f)
         except json.JSONDecodeError as e:
             raise CommandError(f"Błąd dekodowania JSON w pliku '{file_path}': {e}")
-
-    def _validate_regex(self, pattern: str) -> str | None:
-        """Returns an error string if pattern is invalid or looks catastrophic, else None."""
-        # Heuristic: reject nested quantifiers that cause catastrophic backtracking
-        catastrophic_patterns = [r'\(.*\+.*\)\+', r'\(.*\*.*\)\*', r'\(.*\|.*\)\+', r'\(.*\|.*\)\*']
-        for cp in catastrophic_patterns:
-            if re.search(cp, pattern):
-                return f"Pattern looks catastrophically backtracking: {pattern!r}"
-        try:
-            def _timeout(signum, frame):
-                raise TimeoutError
-            signal.signal(signal.SIGALRM, _timeout)
-            signal.alarm(1)
-            try:
-                re.compile(pattern)
-            finally:
-                signal.alarm(0)
-        except TimeoutError:
-            return f"Regex compilation timed out: {pattern!r}"
-        except re.error as e:
-            return f"Invalid regex: {e}"
-        return None
 
     def verify_import(self, imported_files: list, total_files: int):
         self.stdout.write("=" * 70)
@@ -222,24 +115,25 @@ class Command(BaseCommand):
 
                     total_q_db += q_in_db
                     total_a_db += a_in_db
-                    
+
                     has_error = False
                     if q_in_json != q_in_db:
                         self.stdout.write(self.style.ERROR(f"BŁĄD: '{test_title}' -> Niezgodność pytań! JSON: {q_in_json}, DB: {q_in_db}"))
                         has_error = True
-                    
+
                     if a_in_json != a_in_db:
                         self.stdout.write(self.style.ERROR(f"BŁĄD: '{test_title}' -> Niezgodność odpowiedzi! JSON: {a_in_json}, DB: {a_in_db}"))
                         has_error = True
 
-                    if has_error: all_ok = False
+                    if has_error:
+                        all_ok = False
                 except Test.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f"BŁĄD: Nie znaleziono w DB testu '{test_title}' dla pliku {file_path.name}"))
                     all_ok = False
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Krytyczny błąd weryfikacji pliku '{file_path.name}': {e}"))
                 all_ok = False
-        
+
         self.stdout.write("-" * 70)
         self.stdout.write(f"Próbowano zaimportować łącznie {total_files} plików.")
         self.stdout.write(f"Pominięto {total_files - len(imported_files)} plików z powodu błędów walidacji lub importu.")

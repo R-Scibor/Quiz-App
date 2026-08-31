@@ -72,6 +72,26 @@ class AuthoringValidateTests(APITestCase):
         self.assertEqual(r.data["schema_version"], 1)
         self.assertIn("single-choice", r.data["examples"])
 
+    def test_schema_accepts_export_documents(self):
+        r = self.client.get("/api/v1/authoring/schema/")
+        schema = r.data["json_schema"]
+        self.assertTrue(
+            schema.get("additionalProperties") is True or "test_id" in schema["properties"]
+        )
+        test_id = schema["properties"].get("test_id", {})
+        self.assertEqual(test_id.get("type"), "string")
+        question = schema["$defs"]["question"]
+        self.assertNotIn("id", question.get("required", []))
+        id_schema = question["properties"]["id"]
+        id_types = id_schema.get("type")
+        if isinstance(id_types, list):
+            self.assertIn("null", id_types)
+            self.assertIn("integer", id_types)
+        else:
+            self.assertEqual(id_schema.get("type"), ["integer", "null"])
+        self.assertIn("question_id", question["properties"])
+        self.assertEqual(question["properties"]["question_id"].get("type"), "string")
+
     def test_instructions_returns_markdown(self):
         r = self.client.get("/api/v1/authoring/instructions/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -168,6 +188,16 @@ class AuthoringPatchTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["category"], "Polish History")
 
+    def test_patch_null_scope_400(self):
+        r = self.client.patch(
+            f"/api/v1/authoring/tests/{self.test_id}/",
+            {"scope": None},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertEqual(Test.objects.get(pk=self.test_id).title, "Medieval Poland")
+
 
 class AuthoringImportTests(APITestCase):
     def setUp(self):
@@ -199,6 +229,23 @@ class AuthoringImportTests(APITestCase):
             {"category": "X", "scope": "Y", "questions": []},
             format="json",
         )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertEqual(Test.objects.count(), 0)
+
+    def test_import_null_scope_400(self):
+        payload = {
+            "category": "X",
+            "scope": None,
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        }
+        r = self.client.post("/api/v1/authoring/import/", payload, format="json")
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data["error"], "VALIDATION_FAILED")
         self.assertEqual(Test.objects.count(), 0)

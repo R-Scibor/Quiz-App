@@ -166,10 +166,44 @@ class AuthoringTestDetailView(AuthoringAPIView):
         except Test.DoesNotExist:
             return Response({"error": "TEST_NOT_FOUND", "message": "Test not found."}, status=404)
 
+        errors = []
         if "scope" in request.data:
-            test.title = request.data["scope"]
+            scope = request.data["scope"]
+            if not isinstance(scope, str) or not scope.strip():
+                errors.append({
+                    "path": "scope",
+                    "code": "INVALID_TYPE",
+                    "message": "'scope' must be a non-empty string.",
+                })
+            elif len(scope) > 255:
+                errors.append({
+                    "path": "scope",
+                    "code": "INVALID_TYPE",
+                    "message": "'scope' must be at most 255 characters.",
+                })
+            else:
+                test.title = scope
         if "version" in request.data:
-            test.version = request.data["version"]
+            version = request.data["version"]
+            if not isinstance(version, str):
+                errors.append({
+                    "path": "version",
+                    "code": "INVALID_TYPE",
+                    "message": "'version' must be a string.",
+                })
+            elif len(version) > 32:
+                errors.append({
+                    "path": "version",
+                    "code": "INVALID_TYPE",
+                    "message": "'version' must be at most 32 characters.",
+                })
+            else:
+                test.version = version
+        if errors:
+            return Response(
+                {"error": "VALIDATION_FAILED", "errors": errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if "description" in request.data:
             test.description = request.data["description"]
         test.save()

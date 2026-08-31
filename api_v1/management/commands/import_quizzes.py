@@ -117,13 +117,23 @@ class Command(BaseCommand):
                     total_a_db += a_in_db
 
                     has_error = False
-                    if q_in_json != q_in_db:
+                    if q_in_db < q_in_json:
                         self.stdout.write(self.style.ERROR(f"BŁĄD: '{test_title}' -> Niezgodność pytań! JSON: {q_in_json}, DB: {q_in_db}"))
                         has_error = True
+                    elif q_in_db > q_in_json:
+                        self.stdout.write(self.style.WARNING(
+                            f"OSTRZEŻENIE: '{test_title}' -> Więcej pytań w DB niż w JSON "
+                            f"(JSON: {q_in_json}, DB: {q_in_db}). Możliwe zablokowane usunięcia."
+                        ))
 
-                    if a_in_json != a_in_db:
+                    if a_in_db < a_in_json:
                         self.stdout.write(self.style.ERROR(f"BŁĄD: '{test_title}' -> Niezgodność odpowiedzi! JSON: {a_in_json}, DB: {a_in_db}"))
                         has_error = True
+                    elif a_in_db > a_in_json:
+                        self.stdout.write(self.style.WARNING(
+                            f"OSTRZEŻENIE: '{test_title}' -> Więcej odpowiedzi w DB niż w JSON "
+                            f"(JSON: {a_in_json}, DB: {a_in_db}). Możliwe zablokowane usunięcia."
+                        ))
 
                     if has_error:
                         all_ok = False
@@ -145,7 +155,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  - Łączna liczba odpowiedzi w JSON: {total_a_json} | w DB: {total_a_db}")
         self.stdout.write("-" * 70)
 
-        if all_ok and total_q_json == total_q_db and total_a_json == total_a_db:
+        if all_ok and total_q_db >= total_q_json and total_a_db >= total_a_json:
             self.stdout.write(self.style.SUCCESS("\nWERDYKT: Pełna zgodność. Wszystkie dane wyglądają na poprawnie zaimportowane."))
         else:
             self.stdout.write(self.style.ERROR("\nWERDYKT: Wykryto rozbieżności. Sprawdź powyższe komunikaty o błędach."))

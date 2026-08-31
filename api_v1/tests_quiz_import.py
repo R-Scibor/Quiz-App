@@ -1,5 +1,6 @@
 import json
 import tempfile
+from io import StringIO
 from pathlib import Path
 
 from django.contrib.auth.models import User
@@ -281,3 +282,25 @@ class ImportCommandTests(TestCase):
             path = Path(tmp) / "q.json"
             path.write_text(json.dumps(_sample()), encoding="utf-8")
             call_command("validate_quiz_json", str(path))
+
+    def test_verify_import_warns_when_blocked_deletes_leave_extra_questions(self):
+        payload = _sample()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "q.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            call_command("import_quizzes", str(path))
+            t = Test.objects.get(title="Medieval Poland")
+            q = t.questions.get(source_id=2)
+            user = User.objects.create_user("u", password="p")
+            session = QuizSession.objects.create(user=user)
+            QuestionAttempt.objects.create(
+                user=user, question=q, test=t, session=session, is_correct=True
+            )
+            payload["questions"] = [payload["questions"][0]]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            stdout = StringIO()
+            call_command("import_quizzes", str(path), stdout=stdout)
+            report = stdout.getvalue()
+            self.assertNotIn("BŁĄD:", report)
+            self.assertIn("WERDYKT: Pełna zgodność", report)
+            self.assertEqual(t.questions.count(), 2)

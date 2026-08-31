@@ -29,6 +29,10 @@ def validate_quiz(data: Any) -> list[dict]:
     for field in ("scope", "category", "questions"):
         if field not in data:
             add(field, "MISSING_FIELD", f"Missing '{field}'.")
+        elif field in ("scope", "category"):
+            value = data[field]
+            if not isinstance(value, str) or not value.strip():
+                add(field, "INVALID_TYPE", f"'{field}' must be a non-empty string.")
 
     if "questions" in data:
         if not isinstance(data["questions"], list):
@@ -78,9 +82,15 @@ def _validate_question(question: Any, index: int, add) -> None:
     for field in ("questionText", "type"):
         if field not in question:
             add(f"{prefix}.{field}", "MISSING_FIELD", f"Missing '{field}'.")
+        else:
+            value = question[field]
+            if not isinstance(value, str) or not value.strip():
+                add(f"{prefix}.{field}", "INVALID_TYPE", f"'{field}' must be a non-empty string.")
 
     q_type = question.get("type")
-    if q_type is not None and q_type not in ALL_TYPES:
+    if not isinstance(q_type, str):
+        return
+    if q_type not in ALL_TYPES:
         add(f"{prefix}.type", "INVALID_QUESTION_TYPE", f"Invalid question type '{q_type}'.")
         return
 
@@ -95,6 +105,8 @@ def _validate_question(question: Any, index: int, add) -> None:
             correct = question["correctAnswers"]
             if not isinstance(options, list) or len(options) < 2:
                 add(f"{prefix}.options", "INVALID_TYPE", "'options' must be a list of at least 2 items.")
+            elif len(options) != len(set(options)):
+                add(f"{prefix}.options", "DUPLICATE_OPTION", "Duplicate option texts are not allowed.")
             if not isinstance(correct, list) or not correct:
                 add(f"{prefix}.correctAnswers", "INVALID_CORRECT_ANSWERS", "'correctAnswers' must be a non-empty list.")
             else:

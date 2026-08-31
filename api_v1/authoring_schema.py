@@ -4,8 +4,9 @@ AUTHORING_SCHEMA = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "required": ["category", "scope", "questions"],
-        "additionalProperties": False,
+        "additionalProperties": True,
         "properties": {
+            "test_id": {"type": "string", "format": "uuid"},
             "category": {"type": "string", "minLength": 1},
             "scope": {"type": "string", "minLength": 1},
             "version": {"type": "string"},
@@ -19,9 +20,11 @@ AUTHORING_SCHEMA = {
         "$defs": {
             "question": {
                 "type": "object",
-                "required": ["id", "questionText", "type"],
+                "required": ["questionText", "type"],
+                "additionalProperties": True,
                 "properties": {
-                    "id": {"type": "integer"},
+                    "id": {"type": ["integer", "null"]},
+                    "question_id": {"type": "string", "format": "uuid"},
                     "questionText": {"type": "string", "minLength": 1},
                     "image": {"type": "string"},
                     "type": {

@@ -108,3 +108,23 @@ class ValidateQuizTests(SimpleTestCase):
         del data["category"]
         issues = validate_quiz(data)
         self.assertEqual(set(issues[0].keys()), {"path", "code", "message"})
+
+    def test_null_scope_is_invalid_type(self):
+        issues = validate_quiz(_quiz(_closed(), scope=None))
+        self.assertTrue(
+            any(i["path"] == "scope" and i["code"] == "INVALID_TYPE" for i in issues)
+        )
+
+    def test_null_type_is_invalid_type(self):
+        issues = validate_quiz(_quiz(_closed(type=None)))
+        self.assertTrue(
+            any(
+                i["path"] == "questions[0].type" and i["code"] == "INVALID_TYPE"
+                for i in issues
+            )
+        )
+
+    def test_duplicate_option_texts(self):
+        issues = validate_quiz(_quiz(_closed(options=["a", "a"], correctAnswers=[0])))
+        self.assertTrue(any(i["code"] == "DUPLICATE_OPTION" for i in issues))
+        self.assertTrue(any(i["path"] == "questions[0].options" for i in issues))

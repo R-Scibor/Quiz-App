@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from api_v1.models import PromptConfiguration
+from api_v1.models import PromptConfiguration, Test, Question
 
 
 class ParseLlmJsonTestCase(unittest.TestCase):
@@ -185,38 +185,80 @@ class CheckOpenAnswerViewDispatchTestCase(APITestCase):
 
     URL = '/api/v1/check_answer/'
 
-    VALID_PAYLOAD = {
-        'userAnswer': 'DNS maps names to IP addresses.',
-        'gradingCriteria': 'Must mention name-to-IP mapping.',
-        'questionText': 'What does DNS do?',
-        'maxPoints': 3,
-        'questionType': 'open-text',
-    }
+    @classmethod
+    def setUpTestData(cls):
+        cls.test = Test.objects.create(title="Grading contract test")
+        cls.open_q = Question.objects.create(
+            test=cls.test,
+            text="What does DNS do?",
+            question_type=Question.OPEN_TEXT,
+            grading_criteria="Must mention name-to-IP mapping.",
+            max_points=3,
+        )
+        cls.closed_q = Question.objects.create(
+            test=cls.test,
+            text="DNS stands for?",
+            question_type=Question.SINGLE_CHOICE,
+            max_points=None,
+        )
+
+    @property
+    def valid_payload(self):
+        return {
+            'question': str(self.open_q.id),
+            'userAnswer': 'DNS maps names to IP addresses.',
+            'forceAI': False,
+        }
 
     # -------------------------------------------------------------------------
     # Validation
     # -------------------------------------------------------------------------
 
-    def test_missing_userAnswer_returns_400_incomplete_data(self):
-        payload = {k: v for k, v in self.VALID_PAYLOAD.items() if k != 'userAnswer'}
+    def test_missing_question_returns_400_incomplete_data(self):
+        payload = {k: v for k, v in self.valid_payload.items() if k != 'question'}
         response = self.client.post(self.URL, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'INCOMPLETE_DATA')
 
-    def test_missing_gradingCriteria_returns_400(self):
-        payload = {k: v for k, v in self.VALID_PAYLOAD.items() if k != 'gradingCriteria'}
+    def test_missing_userAnswer_returns_400_incomplete_data(self):
+        payload = {k: v for k, v in self.valid_payload.items() if k != 'userAnswer'}
         response = self.client.post(self.URL, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INCOMPLETE_DATA')
 
-    def test_missing_questionText_returns_400(self):
-        payload = {k: v for k, v in self.VALID_PAYLOAD.items() if k != 'questionText'}
+    def test_unknown_question_returns_404(self):
+        payload = {
+            **self.valid_payload,
+            'question': '00000000-0000-0000-0000-000000000000',
+        }
         response = self.client.post(self.URL, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data['error'], 'QUESTION_NOT_FOUND')
 
-    def test_missing_maxPoints_returns_400(self):
-        payload = {k: v for k, v in self.VALID_PAYLOAD.items() if k != 'maxPoints'}
+    def test_closed_question_returns_400_invalid_type(self):
+        payload = {
+            **self.valid_payload,
+            'question': str(self.closed_q.id),
+        }
         response = self.client.post(self.URL, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INVALID_QUESTION_TYPE')
+
+    def test_open_question_missing_rubric_returns_400(self):
+        incomplete_q = Question.objects.create(
+            test=self.test,
+            text="What is a CNAME?",
+            question_type=Question.OPEN_TEXT,
+            grading_criteria=None,
+            max_points=None,
+        )
+        payload = {
+            **self.valid_payload,
+            'question': str(incomplete_q.id),
+        }
+        response = self.client.post(self.URL, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'MISSING_GRADING_CONFIG')
 
     # -------------------------------------------------------------------------
     # Dispatch
@@ -228,22 +270,30 @@ class CheckOpenAnswerViewDispatchTestCase(APITestCase):
         mock_delay_result.id = 'fake-task-id-abc'
         mock_task.delay.return_value = mock_delay_result
 
-        response = self.client.post(self.URL, self.VALID_PAYLOAD, format='json')
+        response = self.client.post(self.URL, self.valid_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         self.assertEqual(response.data['task_id'], 'fake-task-id-abc')
 
     @patch('api_v1.views.generate_ai_answer')
-    def test_valid_payload_calls_delay_with_correct_args(self, mock_task):
+    def test_delay_uses_database_fields_not_client_overrides(self, mock_task):
         mock_delay_result = MagicMock()
         mock_delay_result.id = 'task-123'
         mock_task.delay.return_value = mock_delay_result
 
-        self.client.post(self.URL, self.VALID_PAYLOAD, format='json')
+        payload = {
+            **self.valid_payload,
+            'gradingCriteria': 'CLIENT OVERRIDE — ignore this rubric.',
+            'maxPoints': 99,
+            'questionType': 'open-code',
+            'questionText': 'CLIENT OVERRIDE — ignore this prompt.',
+            'forceAI': True,
+        }
+        self.client.post(self.URL, payload, format='json')
         mock_task.delay.assert_called_once_with(
-            'DNS maps names to IP addresses.',  # userAnswer
-            'Must mention name-to-IP mapping.',  # gradingCriteria
-            'What does DNS do?',                 # questionText
-            3,                                   # maxPoints
-            'open-text',                         # questionType
-            False,                               # forceAI
+            'DNS maps names to IP addresses.',
+            self.open_q.grading_criteria,
+            self.open_q.text,
+            self.open_q.max_points,
+            self.open_q.question_type,
+            True,
         )

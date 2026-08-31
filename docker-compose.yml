@@ -57,12 +57,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-    labels:
-      - "oversight.visible=true"
-      - "oversight.name=Quiz App"
-      - "oversight.domain=quiz.home"
-      - "oversight.link=http://quiz.home"
-      - "oversight.icon=https://github.com/R-Scibor/Quiz-App/blob/main/frontend/public/icon.png"
 
   ai_grader:
     build:

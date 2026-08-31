@@ -97,3 +97,7 @@ yarn-error.log*
 
 # Internal docs (not for public repo)
 /docs/internal/
+
+# Homelab-only Compose labels (Oversight dashboard)
+docker-compose.override.yml
+

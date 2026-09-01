@@ -51,8 +51,11 @@ def shuffle_options(data):
 
 
 def compute_next_sr(rating, is_correct, prev_ease, prev_interval, prev_reps):
-    """SM-2 algorithm. Returns (interval_days, ease_factor, next_review_date, repetitions)."""
-    q = {'easy': 5, 'normal': 3, 'hard': 1}.get(rating, 3)
+    """SM-2 algorithm. Returns (interval_days, ease_factor, next_review_date, repetitions).
+
+    Quality mapping: easy=5, normal=4, hard=3. Incorrect answers cap quality at 1 (fail).
+    """
+    q = {'easy': 5, 'normal': 4, 'hard': 3}.get(rating, 4)
     if not is_correct:
         q = min(q, 1)
 
@@ -90,12 +93,58 @@ def _build_study_buckets(user):
         qid for qid, a in latest_map.items()
         if a.sr_next_review and a.sr_next_review <= today
     ]
+    # Struggling = latest miss that has no SM-2 date yet (docs: "not yet scheduled").
     struggling_ids = [
         qid for qid, a in latest_map.items()
-        if not a.is_correct and qid not in due_ids
+        if not a.is_correct and a.sr_next_review is None
     ]
     studied_test_ids = list({a.test_id for a in all_attempts})
     return latest_map, due_ids, struggling_ids, studied_test_ids
+
+
+def _filter_study_buckets(latest_map, due_ids, struggling_ids, studied_test_ids, test_id_filter):
+    """Restrict buckets to the given test UUID strings. test_id_filter is a set of str."""
+    if not test_id_filter:
+        return latest_map, due_ids, struggling_ids, studied_test_ids
+    latest_map = {
+        qid: a for qid, a in latest_map.items()
+        if str(a.test_id) in test_id_filter
+    }
+    today = date.today()
+    due_ids = [
+        qid for qid, a in latest_map.items()
+        if a.sr_next_review and a.sr_next_review <= today
+    ]
+    struggling_ids = [
+        qid for qid, a in latest_map.items()
+        if not a.is_correct and a.sr_next_review is None
+    ]
+    return latest_map, due_ids, struggling_ids, list(test_id_filter)
+
+
+def _compose_study_ids(due_ids, struggling_ids, new_ids, limit):
+    """Due first, mix struggling with new, then fill any leftover from either pool."""
+    due = list(due_ids)
+    struggling = list(struggling_ids)
+    new = list(new_ids)
+    random.shuffle(due)
+    random.shuffle(struggling)
+    selected = due[:limit]
+    remaining = limit - len(selected)
+    take_struggling = 0
+    if remaining > 0 and struggling:
+        if new:
+            take_struggling = min(len(struggling), max(1, remaining // 2))
+        else:
+            take_struggling = min(len(struggling), remaining)
+        selected += struggling[:take_struggling]
+        remaining = limit - len(selected)
+    if remaining > 0:
+        selected += new[:remaining]
+        remaining = limit - len(selected)
+    if remaining > 0:
+        selected += struggling[take_struggling:take_struggling + remaining]
+    return selected
 
 
 class ReactAppView(View):
@@ -347,16 +396,15 @@ class AttemptCreateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        from django.db.models import Max
         for data in serializer.validated_data:
             attempt = QuestionAttempt(user=request.user, **data)
+            prev = (
+                QuestionAttempt.objects
+                .filter(user=request.user, question=attempt.question)
+                .order_by('-answered_at')
+                .first()
+            )
             if attempt.difficulty_rating:
-                prev = (
-                    QuestionAttempt.objects
-                    .filter(user=request.user, question=attempt.question)
-                    .order_by('-answered_at')
-                    .first()
-                )
                 prev_ease = prev.sr_ease_factor if prev else 2.5
                 prev_interval = prev.sr_interval if prev else 1
                 prev_reps = prev.sr_repetitions if prev else 0
@@ -368,6 +416,12 @@ class AttemptCreateView(APIView):
                 attempt.sr_ease_factor = ease
                 attempt.sr_next_review = next_review
                 attempt.sr_repetitions = reps
+            elif prev:
+                # Keep the existing schedule; an unrated row must not reset SM-2.
+                attempt.sr_interval = prev.sr_interval
+                attempt.sr_ease_factor = prev.sr_ease_factor
+                attempt.sr_next_review = prev.sr_next_review
+                attempt.sr_repetitions = prev.sr_repetitions
             attempt.save()
 
         return Response(status=status.HTTP_201_CREATED)
@@ -384,55 +438,25 @@ class StudyQueueView(APIView):
         raw_ids = request.query_params.get('test_ids', '')
         test_id_filter = {tid.strip() for tid in raw_ids.split(',') if tid.strip()} or None
 
-        latest_map, due_ids, struggling_ids, studied_test_ids = _build_study_buckets(user)
-
-        # Apply topic filter to all buckets
-        if test_id_filter:
-            latest_map = {
-                qid: a for qid, a in latest_map.items()
-                if str(a.test_id) in test_id_filter
-            }
-            due_ids = [
-                qid for qid, a in latest_map.items()
-                if a.sr_next_review and a.sr_next_review <= date.today()
-            ]
-            struggling_ids = [
-                qid for qid, a in latest_map.items()
-                if not a.is_correct and qid not in due_ids
-            ]
-            studied_test_ids = list(test_id_filter)
+        latest_map, due_ids, struggling_ids, studied_test_ids = _filter_study_buckets(
+            *_build_study_buckets(user), test_id_filter
+        )
 
         attempted_ids = set(latest_map.keys())
+        new_ids = []
+        if studied_test_ids:
+            new_ids = list(
+                Question.objects.filter(test__in=studied_test_ids)
+                .exclude(id__in=attempted_ids)
+                .order_by('?')
+                .values_list('id', flat=True)[:limit]
+            )
 
-        random.shuffle(due_ids)
-        random.shuffle(struggling_ids)
-
-        # Build the queue: all due + up to half-remaining struggling + fill rest with new
-        selected_ids = list(due_ids)
-        remaining = limit - len(selected_ids)
-
-        if remaining > 0:
-            take_struggling = min(len(struggling_ids), max(1, remaining // 2))
-            selected_ids += struggling_ids[:take_struggling]
-            remaining = limit - len(selected_ids)
-
-        # Fetch rated question objects
-        rated_questions = list(
+        selected_ids = _compose_study_ids(due_ids, struggling_ids, new_ids, limit)
+        all_questions = list(
             Question.objects.filter(id__in=selected_ids)
             .prefetch_related('answers', 'tags')
         )
-
-        # Fill remainder with unrated (new) questions from studied tests
-        new_questions = []
-        if remaining > 0 and studied_test_ids:
-            new_questions = list(
-                Question.objects.filter(test__in=studied_test_ids)
-                .exclude(id__in=attempted_ids)
-                .prefetch_related('answers', 'tags')
-                .order_by('?')[:remaining]
-            )
-
-        all_questions = rated_questions + new_questions
         random.shuffle(all_questions)
 
         serializer = QuestionSerializer(all_questions, many=True)
@@ -450,9 +474,11 @@ class StudyStatsView(APIView):
         latest_map, due_ids, struggling_ids, studied_test_ids = _build_study_buckets(user)
         attempted_ids = set(latest_map.keys())
 
-        new_count = Question.objects.filter(
-            test__in=studied_test_ids
-        ).exclude(id__in=attempted_ids).count()
+        new_count = 0
+        if studied_test_ids:
+            new_count = Question.objects.filter(
+                test__in=studied_test_ids
+            ).exclude(id__in=attempted_ids).count()
 
         mastered_count = sum(
             1 for a in latest_map.values()
@@ -463,7 +489,7 @@ class StudyStatsView(APIView):
             Test.objects.filter(id__in=studied_test_ids).values('id', 'title')
         )
 
-        total = len(due_ids) + len(struggling_ids) + min(new_count, 20)
+        total = len(due_ids) + len(struggling_ids) + new_count
         return Response({
             'due_count': len(due_ids),
             'struggling_count': len(struggling_ids),

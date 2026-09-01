@@ -3,7 +3,7 @@ import useTestStore from '../store/testStore';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
-    const { goToSetup, user, goToStats, goToStudySetup, fetchStudyStats, studyQueueCount } = useTestStore();
+    const { goToSetup, user, goToStats, goToStudySetup, fetchStudyStats, studyQueueCount, studyReviewCount } = useTestStore();
 
     useEffect(() => {
         fetchStudyStats();
@@ -98,9 +98,11 @@ const HomePage = () => {
                                 className="relative btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-primary hover:shadow-primary-hover transition-all duration-300 ease-in-out"
                             >
                                 Study Mode
-                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                                    {studyQueueCount > 9 ? '9+' : studyQueueCount}
-                                </span>
+                                {studyReviewCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                                        {studyReviewCount > 9 ? '9+' : studyReviewCount}
+                                    </span>
+                                )}
                             </motion.button>
                         )}
                     </motion.div>

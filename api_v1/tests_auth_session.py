@@ -275,6 +275,52 @@ class AttemptCreateViewTestCase(APITestCase):
         self.assertEqual(latest.sr_repetitions, 2)
         self.assertEqual(latest.sr_interval, 6)
 
+    def test_unrated_attempt_copies_prior_sr_schedule(self):
+        """An unrated later attempt must not wipe SM-2 fields from a rated one."""
+        self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={'difficulty_rating': 'easy'}),
+            format='json',
+        )
+        rated = QuestionAttempt.objects.get(user=self.user, question=self.question)
+
+        session2 = QuizSession.objects.create(user=self.user)
+        payload2 = self._attempt_payload()
+        payload2['session'] = str(session2.id)
+        self.client.post(self.ATTEMPTS_URL, payload2, format='json')
+
+        latest = QuestionAttempt.objects.filter(
+            user=self.user, question=self.question
+        ).order_by('-answered_at').first()
+        self.assertIsNone(latest.difficulty_rating)
+        self.assertEqual(latest.sr_repetitions, rated.sr_repetitions)
+        self.assertEqual(latest.sr_interval, rated.sr_interval)
+        self.assertEqual(latest.sr_next_review, rated.sr_next_review)
+        self.assertAlmostEqual(latest.sr_ease_factor, rated.sr_ease_factor)
+
+    def test_rated_attempt_after_unrated_copy_continues_sm2(self):
+        """Copied SR on an unrated row is still used as prev for the next rating."""
+        self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={'difficulty_rating': 'easy'}),
+            format='json',
+        )
+        session2 = QuizSession.objects.create(user=self.user)
+        payload2 = self._attempt_payload()
+        payload2['session'] = str(session2.id)
+        self.client.post(self.ATTEMPTS_URL, payload2, format='json')
+
+        session3 = QuizSession.objects.create(user=self.user)
+        payload3 = self._attempt_payload(extra={'difficulty_rating': 'easy'})
+        payload3['session'] = str(session3.id)
+        self.client.post(self.ATTEMPTS_URL, payload3, format='json')
+
+        latest = QuestionAttempt.objects.filter(
+            user=self.user, question=self.question
+        ).order_by('-answered_at').first()
+        self.assertEqual(latest.sr_repetitions, 2)
+        self.assertEqual(latest.sr_interval, 6)
+
     # -------------------------------------------------------------------------
     # Batch attempts
     # -------------------------------------------------------------------------

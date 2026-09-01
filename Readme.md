@@ -54,7 +54,7 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Admin Panel:** An extensive panel for managing quizzes, questions, and categories directly in the Django admin interface.
 - **User Accounts:** Register and log in with a username and password. Anonymous users keep the full quiz experience; statistics and study mode are additive for logged-in users.
 - **Per-User Statistics:** Track questions answered, overall accuracy, current and longest daily streaks, average time per question, and a history of recent sessions.
-- **Spaced Repetition (Study Mode):** After each answer, rate difficulty as Easy / Normal / Hard (optional). The SM-2 algorithm schedules reviews. Study Mode prioritizes due and recently-wrong questions while mixing in new ones.
+- **Spaced Repetition (Study Mode):** After each answer, rate difficulty as Easy / Normal / Hard (optional). Easy/Normal/Hard map to SM-2 quality 5/4/3 (Hard is still a pass; a wrong answer resets the card). Unrated attempts keep the existing schedule. Study Mode prioritizes due reviews, then unscheduled misses, then new questions from tests you have already studied.
 
 ---
 
@@ -178,7 +178,7 @@ A detailed description of the available API endpoints, their parameters, and exa
 ### Completed
 
 - [x] **Cascade Grading System:** Three open-ended question types (`open-text`, `open-cli`, `open-code`) each use the fastest applicable grading method — vector similarity, regex, or Gemini — minimising LLM cost and latency. Results show an "Auto-graded" or "Graded by AI" badge. Retry button on timeout.
-- [x] **Spaced Repetition (Study Mode):** SM-2 algorithm with Easy/Normal/Hard ratings per question; Study Mode draws due and struggling questions, filling remaining slots with new ones.
+- [x] **Spaced Repetition (Study Mode):** SM-2 algorithm with Easy/Normal/Hard (quality 5/4/3); Study Mode draws due reviews, unscheduled misses, then new cards, filling leftover slots.
 - [x] **Per-User Statistics:** Sessions, accuracy, daily streaks, average time per question, and recent session history — all tracked per logged-in user.
 - [x] **Authentication System:** Username + password registration and login using DRF token authentication. Anonymous users retain full quiz access.
 - [x] **Reporting Questions/Answers:** Allows the user to report an error in a question/answer or in the AI evaluation.

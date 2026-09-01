@@ -405,7 +405,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
         }
     ]
     ```
-    *(`difficulty_rating` is optional; valid values: `"easy"`, `"normal"`, `"hard"`.)*
+    *(`difficulty_rating` is optional; valid values: `"easy"`, `"normal"`, `"hard"`. Mapped to SM-2 quality 5 / 4 / 3. Incorrect answers cap quality at 1 and reset the card. An omitted rating copies the previous SM-2 schedule instead of wiping it.)*
 -   **Success Response (201 Created):** empty body.
 
 ---
@@ -449,7 +449,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 -   **Method:** `GET`
 -   **Endpoint:** `/study/queue/`
 -   **Authentication:** `Token <token>` header required.
--   **Description:** Returns a mixed list of questions for the Study Mode session. Priority order: (1) questions whose SM-2 review date is today or earlier, (2) recently-wrong questions not yet scheduled, (3) never-attempted questions from tests the user has studied before.
+-   **Description:** Returns a mixed list of questions for the Study Mode session. Priority order: (1) questions whose SM-2 review date is today or earlier, (2) recently-wrong questions **not yet scheduled** (`sr_next_review` is null), (3) never-attempted questions from tests the user has studied before. Remaining slots after due cards mix struggling with new; leftover struggling fills any unused slots so the response length matches `limit` when enough cards exist. Cap is `50`.
 -   **Query Parameters:**
     -   `limit` (integer, optional): Maximum total questions to return (default `20`, cap `50`).
     -   `test_ids` (string, optional): Comma-separated test UUIDs. Restricts the queue to those tests.
@@ -480,7 +480,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 -   **Method:** `GET`
 -   **Endpoint:** `/study/stats/`
 -   **Authentication:** `Token <token>` header required.
--   **Description:** Returns counts used by Study Mode setup (due / struggling / new / mastered) plus the tests the user has already studied.
+-   **Description:** Returns counts used by Study Mode setup (due / struggling / new / mastered) plus the tests the user has already studied. `struggling_count` is unscheduled latest misses only. `total_queued` is `min(due + struggling + new, 50)` and matches what `/study/queue/?limit=50` can return.
 -   **Success Response (200 OK):**
     ```json
     {

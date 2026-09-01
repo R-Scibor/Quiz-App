@@ -3,6 +3,11 @@ import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi,
 
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
+const loadStudyNumQuestions = () => {
+    const n = parseInt(localStorage.getItem('study_num_questions'), 10);
+    return Number.isFinite(n) && n > 0 ? n : 20;
+};
+
 const useTestStore = create((set, get) => ({
     // State properties
     view: 'home',
@@ -44,9 +49,10 @@ const useTestStore = create((set, get) => ({
 
     // Spaced repetition state
     difficultyRatings: {},   // { questionId: 'easy' | 'normal' | 'hard' }
-    studyQueueCount: null,   // number of due questions for home page badge
+    studyQueueCount: null,   // total_queued — used to show the Study Mode entry
+    studyReviewCount: 0,     // due + struggling — red badge (cards that need review)
     studySetupData: null,    // { due_count, struggling_count, new_count, mastered_count, total_queued, studied_tests }
-    studyNumQuestions: 20,   // persisted session length preference
+    studyNumQuestions: loadStudyNumQuestions(),
     studySelectedTestIds: null, // null = all; array of UUIDs = filtered
 
     // Actions
@@ -403,25 +409,46 @@ const useTestStore = create((set, get) => ({
         if (!get().user) return;
         try {
             const res = await getStudyStats();
-            set({ studyQueueCount: res.data.total_queued, studySetupData: res.data });
+            const data = res.data;
+            set({
+                studyQueueCount: data.total_queued,
+                studyReviewCount: (data.due_count || 0) + (data.struggling_count || 0),
+                studySetupData: data,
+            });
         } catch {
             // Silently ignore — count badge is non-critical
         }
     },
 
     goToStudySetup: async () => {
-        if (!get().studySetupData) await get().fetchStudyStats();
+        await get().fetchStudyStats();
         set({ view: 'study-setup' });
     },
 
-    setStudyConfig: (numQuestions, testIds) => set({
-        studyNumQuestions: numQuestions,
-        studySelectedTestIds: testIds,
-    }),
+    setStudyConfig: (numQuestions, testIds) => {
+        if (Number.isFinite(numQuestions) && numQuestions > 0) {
+            localStorage.setItem('study_num_questions', String(numQuestions));
+        }
+        set({
+            studyNumQuestions: numQuestions,
+            studySelectedTestIds: testIds,
+        });
+    },
 
     startStudyMode: async () => {
         const { studyNumQuestions, studySelectedTestIds } = get();
-        set({ isLoading: true, error: null, score: 0, currentQuestionIndex: 0, userAnswers: {}, questionTimes: {}, difficultyRatings: {}, currentSessionId: null });
+        set({
+            isLoading: true,
+            error: null,
+            score: 0,
+            currentQuestionIndex: 0,
+            userAnswers: {},
+            questionTimes: {},
+            difficultyRatings: {},
+            currentSessionId: null,
+            openQuestionResults: {},
+            checkingQuestionId: null,
+        });
         try {
             const res = await getStudyQueue(studyNumQuestions, studySelectedTestIds);
             const questions = res.data.questions;

@@ -17,9 +17,9 @@ const DifficultyRater = ({ questionId }) => {
     if (!user) return null;
     const current = difficultyRatings[questionId];
     const ratings = [
-        { key: 'easy',   label: 'Easy',   active: 'border-green-500 text-green-500 bg-green-500/10', hover: 'hover:border-green-500 hover:text-green-500' },
-        { key: 'normal', label: 'Normal', active: 'border-yellow-500 text-yellow-500 bg-yellow-500/10', hover: 'hover:border-yellow-500 hover:text-yellow-500' },
-        { key: 'hard',   label: 'Hard',   active: 'border-red-500 text-red-500 bg-red-500/10', hover: 'hover:border-red-500 hover:text-red-500' },
+        { key: 'easy',   label: 'Easy',   title: 'Perfect recall — longer interval', active: 'border-green-500 text-green-500 bg-green-500/10', hover: 'hover:border-green-500 hover:text-green-500' },
+        { key: 'normal', label: 'Normal', title: 'Correct with some effort', active: 'border-yellow-500 text-yellow-500 bg-yellow-500/10', hover: 'hover:border-yellow-500 hover:text-yellow-500' },
+        { key: 'hard',   label: 'Hard',   title: 'Remembered, but difficult — still a pass', active: 'border-red-500 text-red-500 bg-red-500/10', hover: 'hover:border-red-500 hover:text-red-500' },
     ];
     return (
         <div className="flex items-center justify-center gap-2 mt-4">
@@ -28,6 +28,7 @@ const DifficultyRater = ({ questionId }) => {
                 <button
                     key={r.key}
                     onClick={() => rateDifficulty(questionId, r.key)}
+                    title={r.title}
                     className={`text-xs px-3 py-1 rounded-full border transition-all ${
                         current === r.key
                             ? r.active + ' font-semibold'

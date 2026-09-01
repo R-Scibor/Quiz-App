@@ -28,21 +28,20 @@ class ComputeNextSRTestCase(unittest.TestCase):
         _, ease, _, _ = compute_next_sr('easy', True, 2.5, 1, 0)
         self.assertAlmostEqual(ease, 2.6, places=5)
 
-    def test_first_rep_normal_correct_ease_slightly_decreases(self):
-        """Normal rating (q=3): new_ease = 2.5 + 0.1 - 2*(0.08+0.04) = 2.5 - 0.14 = 2.36.
-        NOTE: 'normal' actually decreases ease by 0.14 per rep — this may not match
-        the intuition that 'normal' should be neutral. Document this behavior."""
+    def test_first_rep_normal_correct_ease_unchanged(self):
+        """Normal rating (q=4): delta = 0.1 - 1*(0.08+0.02) = 0 → ease stays 2.5."""
         _, ease, _, _ = compute_next_sr('normal', True, 2.5, 1, 0)
+        self.assertAlmostEqual(ease, 2.5, places=5)
+
+    def test_first_rep_hard_correct_is_a_pass(self):
+        """Hard + correct is q=3 (pass with difficulty): interval=1, reps increment, ease drops."""
+        interval, ease, _, reps = compute_next_sr('hard', True, 2.5, 1, 0)
+        self.assertEqual(interval, 1)
+        self.assertEqual(reps, 1)
         self.assertAlmostEqual(ease, 2.36, places=5)
 
-    def test_first_rep_hard_correct_resets_reps(self):
-        """Hard rating (q=1) causes q<3 → reps reset to 0, interval=1."""
-        interval, _, _, reps = compute_next_sr('hard', True, 2.5, 1, 0)
-        self.assertEqual(interval, 1)
-        self.assertEqual(reps, 0)
-
     def test_first_rep_incorrect_resets_reps(self):
-        """Incorrect answer caps q at min(original_q, 1) → same as hard, reps=0."""
+        """Incorrect answer caps q at min(original_q, 1) → fail: reps=0, interval=1."""
         interval, _, _, reps = compute_next_sr('easy', False, 2.5, 1, 0)
         self.assertEqual(interval, 1)
         self.assertEqual(reps, 0)
@@ -76,11 +75,11 @@ class ComputeNextSRTestCase(unittest.TestCase):
         self.assertEqual(interval, expected_interval)
         self.assertEqual(reps, 3)
 
-    def test_third_rep_hard_correct_resets(self):
-        """Hard+correct at any rep level: q=1 < 3 → reps=0, interval=1."""
+    def test_third_rep_hard_correct_does_not_reset(self):
+        """Hard+correct is still a pass: interval = round(prev_interval * prev_ease), reps increment."""
         interval, _, _, reps = compute_next_sr('hard', True, 2.5, 15, 5)
-        self.assertEqual(interval, 1)
-        self.assertEqual(reps, 0)
+        self.assertEqual(interval, round(15 * 2.5))
+        self.assertEqual(reps, 6)
 
     def test_incorrect_at_high_reps_resets(self):
         """Incorrect answer at high rep count still resets."""
@@ -122,8 +121,8 @@ class ComputeNextSRTestCase(unittest.TestCase):
     # Unknown / default rating
     # -------------------------------------------------------------------------
 
-    def test_unknown_rating_defaults_to_q3_normal(self):
-        """An unrecognised rating string defaults to q=3 (same as 'normal')."""
+    def test_unknown_rating_defaults_to_normal(self):
+        """An unrecognised rating string defaults to the same quality as 'normal' (q=4)."""
         interval_normal, ease_normal, _, reps_normal = compute_next_sr('normal', True, 2.5, 1, 1)
         interval_unk, ease_unk, _, reps_unk = compute_next_sr('bogus_rating', True, 2.5, 1, 1)
         self.assertEqual(interval_normal, interval_unk)

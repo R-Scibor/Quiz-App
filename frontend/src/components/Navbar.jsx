@@ -19,7 +19,7 @@ const MoonIcon = () => (
 
 const Navbar = () => {
     const {
-        user, studyQueueCount, theme, view,
+        user, studyReviewCount, theme, view,
         goToHome, goToStats, goToStudySetup, goToLogin, goToRegister, logout, toggleTheme,
     } = useTestStore();
 
@@ -65,9 +65,9 @@ const Navbar = () => {
                                 className="relative text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Study
-                                {studyQueueCount > 0 && (
+                                {studyReviewCount > 0 && (
                                     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold bg-brand-primary text-white rounded-full px-1">
-                                        {studyQueueCount > 99 ? '99+' : studyQueueCount}
+                                        {studyReviewCount > 99 ? '99+' : studyReviewCount}
                                     </span>
                                 )}
                             </button>

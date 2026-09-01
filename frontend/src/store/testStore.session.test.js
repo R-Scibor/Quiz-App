@@ -20,7 +20,13 @@ vi.mock('../services/api', () => ({
     logoutUser: vi.fn(),
 }));
 
-import { completeSession as mockCompleteSession, submitAttempts as mockSubmitAttempts } from '../services/api';
+import {
+    completeSession as mockCompleteSession,
+    submitAttempts as mockSubmitAttempts,
+    getStudyQueue as mockGetStudyQueue,
+    getStudyStats as mockGetStudyStats,
+    startSession as mockStartSession,
+} from '../services/api';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -397,5 +403,91 @@ describe('_finalizeSession — error handling', () => {
         await expect(
             act(async () => { await useTestStore.getState()._finalizeSession(); })
         ).resolves.not.toThrow();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Study mode
+// ---------------------------------------------------------------------------
+
+describe('startStudyMode', () => {
+    beforeEach(() => {
+        act(() => { useTestStore.getState().resetTest(); });
+        vi.clearAllMocks();
+        mockStartSession.mockResolvedValue({ data: { session_id: 'study-session' } });
+    });
+
+    test('clears leftover openQuestionResults before the new session', async () => {
+        mockGetStudyQueue.mockResolvedValue({
+            data: { count: 1, questions: [CLOSED_Q('fresh')] },
+        });
+        act(() => {
+            useTestStore.setState({
+                user: LOGGED_IN_USER,
+                openQuestionResults: { old: { feedback: 'stale', points_awarded: 1 } },
+            });
+        });
+
+        await act(async () => { await useTestStore.getState().startStudyMode(); });
+
+        expect(useTestStore.getState().openQuestionResults).toEqual({});
+        expect(useTestStore.getState().view).toBe('test');
+    });
+
+    test('sets EMPTY_QUEUE error and stays on the current view when the queue is empty', async () => {
+        mockGetStudyQueue.mockResolvedValue({ data: { count: 0, questions: [] } });
+        act(() => {
+            useTestStore.setState({ user: LOGGED_IN_USER, view: 'study-setup' });
+        });
+
+        await act(async () => { await useTestStore.getState().startStudyMode(); });
+
+        expect(useTestStore.getState().view).toBe('study-setup');
+        expect(useTestStore.getState().error).toEqual({
+            message: 'No questions in your study queue right now.',
+            code: 'EMPTY_QUEUE',
+        });
+        expect(useTestStore.getState().isLoading).toBe(false);
+    });
+});
+
+describe('fetchStudyStats', () => {
+    beforeEach(() => {
+        act(() => { useTestStore.getState().resetTest(); });
+        vi.clearAllMocks();
+    });
+
+    test('stores total_queued and a review badge of due + struggling', async () => {
+        mockGetStudyStats.mockResolvedValue({
+            data: {
+                due_count: 21,
+                struggling_count: 3,
+                new_count: 183,
+                mastered_count: 0,
+                total_queued: 50,
+                studied_tests: [],
+            },
+        });
+        act(() => { useTestStore.setState({ user: LOGGED_IN_USER }); });
+
+        await act(async () => { await useTestStore.getState().fetchStudyStats(); });
+
+        const state = useTestStore.getState();
+        expect(state.studyQueueCount).toBe(50);
+        expect(state.studyReviewCount).toBe(24);
+        expect(state.studySetupData.due_count).toBe(21);
+    });
+});
+
+describe('setStudyConfig persistence', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        act(() => { useTestStore.getState().resetTest(); });
+    });
+
+    test('writes session length to localStorage', () => {
+        act(() => { useTestStore.getState().setStudyConfig(15, null); });
+        expect(localStorage.getItem('study_num_questions')).toBe('15');
+        expect(useTestStore.getState().studyNumQuestions).toBe(15);
     });
 });

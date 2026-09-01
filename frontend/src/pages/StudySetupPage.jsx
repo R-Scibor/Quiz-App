@@ -19,7 +19,7 @@ const ChevronIcon = ({ expanded }) => (
 );
 
 const StudySetupPage = () => {
-    const { studySetupData, studyNumQuestions, startStudyMode, setStudyConfig, isLoading, user } = useTestStore();
+    const { studySetupData, studyNumQuestions, startStudyMode, setStudyConfig, isLoading, user, error } = useTestStore();
 
     const EXCLUDED_KEY = `study_excluded_tests_${user?.username || 'guest'}`;
     const totalQueued = studySetupData?.total_queued ?? 0;
@@ -232,6 +232,10 @@ const StudySetupPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {error?.message && (
+                <p className="text-red-500 text-sm mb-4" role="alert">{error.message}</p>
             )}
 
             {/* Start button */}

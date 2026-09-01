@@ -170,9 +170,9 @@ For `open-code`: begin with the language identifier, then describe the required 
 
 ---
 
-## Spaced Repetition (SR) Tag Strategy
+## Tag Strategy
 
-Tags directly feed the SR study queue. Use them deliberately:
+Tags are stored on each question for filtering and review. Study Mode currently selects by test and SM-2 schedule, not by tag, but consistent tags still matter for authoring and later filtering. Use them deliberately:
 
 - Use **2–5 tags** per question.
 - Include at least one **topic tag** (the concept being tested, e.g., `"tcp-handshake"`, `"file-permissions"`).

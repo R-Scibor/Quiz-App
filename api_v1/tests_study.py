@@ -160,6 +160,17 @@ class StudyModeTestCase(APITestCase):
         self.assertEqual(stats['total_queued'], queue['count'])
         self.assertEqual(queue['count'], 26)
 
+    def test_queue_questions_include_scope(self):
+        self._attempt(self.questions_a[0], is_correct=False, rating=None)
+        response = self.client.get(self.QUEUE_URL, {'limit': 20})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        match = next(
+            item for item in response.data['questions']
+            if item['id'] == str(self.questions_a[0].id)
+        )
+        self.assertEqual(match['scope'], 'Topic A')
+        self.assertEqual(match['test_id'], str(self.test_a.id))
+
     def test_test_ids_filter_restricts_queue(self):
         self._attempt(self.questions_a[0], is_correct=False, rating=None)
         self._attempt(self.questions_b[0], is_correct=False, rating=None)

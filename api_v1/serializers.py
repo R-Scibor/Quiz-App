@@ -21,6 +21,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     maxPoints = serializers.IntegerField(source='max_points')
     image = serializers.URLField()
     test_id = serializers.UUIDField(source='test.id')
+    scope = serializers.CharField(source='test.title')
     tags = serializers.StringRelatedField(many=True)
     options = serializers.SerializerMethodField()
     correctAnswers = serializers.SerializerMethodField()
@@ -28,7 +29,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'test_id', 'questionText', 'image', 'type', 'tags', 'options',
+            'id', 'test_id', 'scope', 'questionText', 'image', 'type', 'tags', 'options',
             'correctAnswers', 'explanation', 'gradingCriteria', 'maxPoints'
         ]
 

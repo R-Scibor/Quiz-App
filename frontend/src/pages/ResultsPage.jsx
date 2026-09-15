@@ -4,7 +4,7 @@ import useTestStore from '../store/testStore';
 const ResultsPage = () => {
     const {
         score, currentQuestions, retryTest, timerEnabled, totalTimeSpent, reviewAnswers,
-        userAnswers, openQuestionResults, availableTests,
+        userAnswers, openQuestionResults, availableTests, studySetupData,
     } = useTestStore();
 
     const totalMaxPoints = useMemo(() => {
@@ -34,13 +34,21 @@ const ResultsPage = () => {
 
     // Per-category breakdown — only computed when quiz spans 2+ distinct tests
     const categoryBreakdown = useMemo(() => {
+        const studiedTests = studySetupData?.studied_tests ?? [];
         const byTest = {};
         currentQuestions.forEach(q => {
-            if (!byTest[q.test_id]) {
-                const meta = availableTests.find(t => t.test_id === q.test_id);
-                byTest[q.test_id] = { title: meta?.scope || 'Unknown', earned: 0, possible: 0 };
+            const testId = String(q.test_id ?? '');
+            if (!byTest[testId]) {
+                const fromCatalog = availableTests.find(t => String(t.test_id) === testId);
+                const fromStudied = studiedTests.find(t => String(t.id) === testId);
+                byTest[testId] = {
+                    testId,
+                    title: q.scope || fromCatalog?.scope || fromStudied?.title || 'Unknown',
+                    earned: 0,
+                    possible: 0,
+                };
             }
-            const entry = byTest[q.test_id];
+            const entry = byTest[testId];
             const maxPts = q.maxPoints || 1;
             entry.possible += maxPts;
             const isOpen = q.type === 'open-text' || q.type === 'open-cli' || q.type === 'open-code';
@@ -59,7 +67,7 @@ const ResultsPage = () => {
             }
         });
         return Object.values(byTest).sort((a, b) => b.possible - a.possible);
-    }, [currentQuestions, userAnswers, openQuestionResults, availableTests]);
+    }, [currentQuestions, userAnswers, openQuestionResults, availableTests, studySetupData]);
 
     const showBreakdown = categoryBreakdown.length >= 2;
 
@@ -138,7 +146,7 @@ const ResultsPage = () => {
                         Per-topic breakdown
                     </h3>
                     <div className="space-y-3">
-                        {categoryBreakdown.map(({ title, earned, possible }) => {
+                        {categoryBreakdown.map(({ testId, title, earned, possible }) => {
                             const pct = possible > 0 ? Math.round((earned / possible) * 100) : 0;
                             const colorClass = pct >= 80
                                 ? 'bg-green-500'
@@ -151,7 +159,7 @@ const ResultsPage = () => {
                                 ? 'text-yellow-600 dark:text-yellow-400'
                                 : 'text-red-600 dark:text-red-400';
                             return (
-                                <div key={title}>
+                                <div key={testId}>
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate mr-3">{title}</span>
                                         <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">

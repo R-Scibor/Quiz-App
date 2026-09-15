@@ -210,7 +210,7 @@ class QuestionListView(APIView):
         elif mode == 'closed':
             questions_queryset = questions_queryset.filter(question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE])
 
-        questions_queryset = questions_queryset.prefetch_related('answers', 'tags')
+        questions_queryset = questions_queryset.select_related('test').prefetch_related('answers', 'tags')
         final_questions = questions_queryset.order_by('?')[:num_questions]
         
         if not final_questions:
@@ -455,6 +455,7 @@ class StudyQueueView(APIView):
         selected_ids = _compose_study_ids(due_ids, struggling_ids, new_ids, limit)
         all_questions = list(
             Question.objects.filter(id__in=selected_ids)
+            .select_related('test')
             .prefetch_related('answers', 'tags')
         )
         random.shuffle(all_questions)

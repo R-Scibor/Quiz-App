@@ -254,7 +254,7 @@ const TestScreenPage = () => {
         // the block container independently of whether a language is specified.
         pre({children, ...props}) {
             return (
-                <pre {...props} style={{ whiteSpace: 'pre', overflowX: 'auto', maxWidth: '100%', margin: '0.75rem 0' }}>
+                <pre {...props} style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxWidth: '100%', minWidth: 0, margin: '0.75rem 0' }}>
                     {children}
                 </pre>
             );
@@ -278,7 +278,7 @@ const TestScreenPage = () => {
                 );
             }
             return (
-                <code className={className} {...props}>
+                <code className={`${className || ''} whitespace-pre-wrap break-all`.trim()} {...props}>
                     {children}
                 </code>
             );
@@ -370,8 +370,11 @@ const TestScreenPage = () => {
                         
                         <ProgressBar />
     
-                        <div className="my-8 min-h-[96px] flex items-center">
-                            <div className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full min-w-0 overflow-x-hidden">
+                        <div className="my-8 min-h-[96px] flex items-center min-w-0">
+                            <div
+                                data-testid="question-stem"
+                                className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-white leading-snug w-full min-w-0 break-words"
+                            >
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.questionText}</ReactMarkdown>
                             </div>
                         </div>
@@ -486,7 +489,7 @@ const TestScreenPage = () => {
                             className="mt-6 md:mt-0 md:absolute md:top-1/2 md:left-full md:-translate-y-1/2 md:ml-8 md:w-80 p-6 bg-gray-200 dark:bg-black/20 border border-gray-300 dark:border-card-border rounded-lg"
                         >
                             <h4 className="font-bold text-gray-800 dark:text-gray-200 text-xl">Explanation:</h4>
-                            <div className="prose prose-sm dark:prose-invert mt-2 text-gray-600 dark:text-gray-300">
+                            <div className="prose prose-sm dark:prose-invert mt-2 text-gray-600 dark:text-gray-300 break-words">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{question.explanation}</ReactMarkdown>
                             </div>
                         </motion.div>

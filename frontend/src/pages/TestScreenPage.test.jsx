@@ -161,4 +161,53 @@ describe('TestScreenPage - quiz solving scenarios', () => {
 
         expect(useTestStore.getState().view).toBe('results');
     });
+
+    test('inline code paths wrap instead of clipping', () => {
+        act(() => {
+            useTestStore.setState({
+                currentQuestions: [{
+                    id: 'q-path',
+                    questionText: 'Write the command to monitor `/var/log/nginx/access.log` live, streaming new lines as they are appended.',
+                    type: 'single-choice',
+                    options: ['A', 'B'],
+                    correctAnswers: [0],
+                }],
+                currentQuestionIndex: 0,
+            });
+        });
+
+        render(<TestScreenPage />);
+
+        const stem = screen.getByTestId('question-stem');
+        expect(stem.className).toMatch(/\bbreak-words\b/);
+        expect(stem.className).not.toMatch(/\boverflow-x-hidden\b/);
+
+        const code = stem.querySelector('code');
+        expect(code).not.toBeNull();
+        expect(code.textContent).toBe('/var/log/nginx/access.log');
+        expect(code.className).toMatch(/\bbreak-all\b/);
+        expect(code.className).toMatch(/\bwhitespace-pre-wrap\b/);
+    });
+
+    test('fenced code blocks wrap long lines instead of clipping', () => {
+        act(() => {
+            useTestStore.setState({
+                currentQuestions: [{
+                    id: 'q-code',
+                    questionText: '```\nkubectl get pods --all-namespaces -o wide --field-selector=status.phase=Running\n```',
+                    type: 'single-choice',
+                    options: ['A', 'B'],
+                    correctAnswers: [0],
+                }],
+                currentQuestionIndex: 0,
+            });
+        });
+
+        render(<TestScreenPage />);
+
+        const pre = document.querySelector('pre');
+        expect(pre).not.toBeNull();
+        expect(pre.style.whiteSpace).toBe('pre-wrap');
+        expect(pre.style.overflowWrap).toBe('anywhere');
+    });
 });

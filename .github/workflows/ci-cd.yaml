@@ -143,7 +143,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/zyrandool/quiz-app${{ matrix.suffix }}
+          images: ghcr.io/r-scibor/quiz-app${{ matrix.suffix }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -206,5 +206,5 @@ jobs:
         run: |
           if [ -x /home/endmin/homelab/ntfy/notify.sh ]; then
             /home/endmin/homelab/ntfy/notify.sh --fail --title "CI fail Quiz-App" "Job 'deploy' failed on ${{ github.ref_name }}" --click "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true
-            python3 /home/endmin/homelab/ntfy/hooks/watch.py --mark-seen Zyrandool/Quiz-App "${{ github.run_id }}" || true
+            python3 /home/endmin/homelab/ntfy/hooks/watch.py --mark-seen R-Scibor/Quiz-App "${{ github.run_id }}" || true
           fi

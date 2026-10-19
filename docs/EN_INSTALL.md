@@ -74,7 +74,7 @@ Once all dependencies are ready, you can clone the repository and configure it f
 
 1.  **Clone the repository from GitHub:**
     ```bash
-    git clone https://github.com/Zyrandool/Quiz-App
+    git clone https://github.com/R-Scibor/Quiz-App
     cd Quiz-App
     ```
 
@@ -109,6 +109,8 @@ With the configuration in place, you can build the Docker images and run all ser
     ```
     You should see a status of `running` or `up` for all services.
 
+    `docker compose up --build` is how you run your own copy. Pushes to `main` on GitHub take a different path: Actions tests the app, builds the web, Celery, and grader images, scans the web image with Trivy, and publishes them to `ghcr.io/r-scibor/`. The homelab checkout fast-forwards and runs `docker compose pull` instead of building again. Certificates are generated only when `certs/server.key` is missing.
+
 ---
 
 ### **Step 6: Prepare Application Data**
@@ -134,7 +136,7 @@ After launching the containers, the database migrations will run automatically. 
 This method is intended for development and testing on a local machine. It uses an SQLite database and requires manual installation of some dependencies.
 
 **Prerequisites:**
-- **Python** (version 3.8 or newer)
+- **Python** 3.11 (the version in the Docker image; Django 5.2 needs 3.10 or newer)
 - **Node.js** and **npm**
 - **Redis** (required for Celery) - [Installation instructions for Windows](https://redis.io/docs/getting-started/installation/install-redis-on-windows/)
 
@@ -142,7 +144,7 @@ This method is intended for development and testing on a local machine. It uses 
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/Zyrandool/Quiz-App
+    git clone https://github.com/R-Scibor/Quiz-App
     cd Quiz-App
     ```
 

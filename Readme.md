@@ -52,7 +52,9 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Dark/Light Mode:** A theme switcher for user comfort.
 - **Responsiveness:** The application is fully responsive and works on mobile and desktop devices.
 - **Admin Panel:** An extensive panel for managing quizzes, questions, and categories directly in the Django admin interface.
-- **User Accounts:** Register and log in with a username and password. Anonymous users keep the full quiz experience; statistics and study mode are additive for logged-in users.
+- **User Accounts:** Register, log in, and change your password. Anonymous users keep the full quiz experience; statistics and study mode are additive for logged-in users.
+- **Closed-answer scoring:** Single- and multiple-choice attempts are scored on the server from the selected option texts. The question list still includes the correct answers so the screen can mark them immediately. Open-attempt points are the grade returned by the background task.
+- **Staff authoring API:** Staff users can validate, import, export, and patch quizzes over `/api/v1/authoring/` without deleting attempt history.
 - **Per-User Statistics:** Track questions answered, overall accuracy, current and longest daily streaks, average time per question, and a history of recent sessions.
 - **Spaced Repetition (Study Mode):** After each answer, rate difficulty as Easy / Normal / Hard (optional). Easy/Normal/Hard map to SM-2 quality 5/4/3 (Hard is still a pass; a wrong answer resets the card). Unrated attempts keep the existing schedule. Study Mode prioritizes due reviews, then unscheduled misses, then new questions from tests you have already studied.
 
@@ -78,12 +80,13 @@ This is an advanced full-stack application for conducting interactive quizzes an
 - **Python:** The programming language used on the server side.
 - **PostgreSQL:** A production-ready, relational database.
 - **Redis:** An in-memory database used as a broker for Celery.
-- **Google Gemini API:** Used for AI-powered evaluation of ambiguous and code open-ended questions.
+- **Google Gemini API or Vertex AI:** Grades ambiguous answers and `open-code` questions. `LLM_PROVIDER` selects `gemini` (the default) or `vertex`.
 - **FastAPI + sentence-transformers:** Lightweight vector similarity microservice (`ai_grader`) for local semantic grading of `open-text` questions.
 
 ### Infrastructure and Tools
 
-- **Docker & Docker Compose:** For containerization and service orchestration.
+- **Docker & Docker Compose:** For containerization and service orchestration. A local copy is built with `docker compose up --build`.
+- **GitHub Actions:** Tests and image builds run on GitHub-hosted runners. The web image must pass a Trivy scan. `main` publishes `ghcr.io/r-scibor/quiz-app`, `quiz-app-celery`, and `quiz-app-grader`. The homelab deploy pulls those images.
 - **Nginx:** A proxy server for handling traffic and serving static files.
 - **Gunicorn:** A WSGI application server for Django.
 
@@ -128,6 +131,7 @@ The project is divided into two main parts: `frontend` and the rest of the direc
 ├── ai_grader/        # Vector similarity microservice (FastAPI + sentence-transformers)
 ├── api_v1/           # Django application with API logic, models, and views
 ├── backend_project/  # Main Django project configuration folder
+├── .github/workflows # CI: test, scan, publish images, deploy
 ├── docs/             # Project documentation
 ├── frontend/         # React application source code (Vite)
 ├── media/            # Local quiz JSON (gitignored except example files)
@@ -166,25 +170,12 @@ A detailed description of the available API endpoints, their parameters, and exa
 
 ## 📝 Development Plans
 
-### Possible Extensions (Future Ideas)
+Optional ideas. They are not missing pieces of the current app.
 
-- [ ] **OAuth / Social Login:** Google or GitHub sign-in as an alternative to username/password.
-- [x] **Statistics Charts:** Accuracy trend sparkline, per-test accuracy bars, and session history — all on the Stats page.
-- [ ] **Leaderboards:** Compare scores with other users across categories.
-- [ ] **Sandboxed Code Execution:** Run submitted code against test cases for reliable `open-code` grading (v0.3).
-- [ ] **Per-Question Vector Thresholds:** Override the global 0.85/0.30 thresholds on a per-question basis for better accuracy.
-- [ ] **Grading Cost Tracking:** Django model to log per-question LLM usage and cost for budget monitoring.
+- **OAuth / social login:** Google or GitHub sign-in as an alternative to username and password.
+- **Leaderboards:** Compare scores with other users across categories.
+- **Sandboxed code execution:** Run submitted code against test cases for `open-code` grading.
+- **Per-question vector thresholds:** Override the global 0.85/0.30 thresholds on one question.
+- **Grading cost tracking:** Record per-question LLM usage and cost.
 
-### Completed
-
-- [x] **Cascade Grading System:** Three open-ended question types (`open-text`, `open-cli`, `open-code`) each use the fastest applicable grading method — vector similarity, regex, or Gemini — minimising LLM cost and latency. Results show an "Auto-graded" or "Graded by AI" badge. Retry button on timeout.
-- [x] **Spaced Repetition (Study Mode):** SM-2 algorithm with Easy/Normal/Hard (quality 5/4/3); Study Mode draws due reviews, unscheduled misses, then new cards, filling leftover slots.
-- [x] **Per-User Statistics:** Sessions, accuracy, daily streaks, average time per question, and recent session history — all tracked per logged-in user.
-- [x] **Authentication System:** Username + password registration and login using DRF token authentication. Anonymous users retain full quiz access.
-- [x] **Reporting Questions/Answers:** Allows the user to report an error in a question/answer or in the AI evaluation.
-- [x] **Asynchronous Grading (Celery & Redis):** Introduced background tasks for AI evaluation of open-ended questions, so the user does not have to wait for the result and can continue the test.
-- [x] **Admin Panel:** Expanded the admin panel to allow for convenient creation and editing of quizzes from the graphical interface.
-- [x] **Data Migration:** Migrated quiz content from JSON files to a relational database (PostgreSQL) to increase performance and scalability.
-- [x] **Timer Fix:** The timer now stops after the user confirms an answer and resumes on the next question.
-- [x] **Text Formatting for Questions and Explanations:** Implemented Markdown support for question and explanation content using the `react-markdown` library.
-- [x] **Improved Error Handling:** Introduced comprehensive error handling at all levels of the application.
+Shipped behavior that is easy to miss in the feature list: statistics charts on the Stats page, cascade grading with an Auto-graded or Graded by AI badge, SM-2 study mode, per-user stats, token authentication, issue reports, Celery grading, the Django admin, Markdown questions, and a timer that pauses after Confirm. A grading poll that runs out of time shows an error. There is no separate button to retry that one grade. The results screen can start the same quiz again.

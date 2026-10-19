@@ -392,7 +392,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 -   **Method:** `POST`
 -   **Endpoint:** `/sessions/<session_uuid>/complete/`
 -   **Authentication:** `Token <token>` header required.
--   **Description:** Marks a session as completed and records the final totals. The user must own the session.
+-   **Description:** Marks a session as completed and stores the totals from the request. The user must own the session. Overall accuracy on the stats page uses these numbers. Per-test bars use the attempt rows from `POST /attempts/`, which are scored as described below.
 -   **Request Body:**
     ```json
     {

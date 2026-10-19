@@ -74,7 +74,7 @@ Gdy wszystkie zależności są gotowe, możesz sklonować repozytorium i skonfig
 
 1.  **Sklonuj repozytorium z GitHub:**
     ```bash
-    git clone https://github.com/Zyrandool/Quiz-App
+    git clone https://github.com/R-Scibor/Quiz-App
     cd Quiz-App
     ```
 
@@ -109,6 +109,8 @@ Gdy konfiguracja jest gotowa, możesz zbudować obrazy Docker i uruchomić wszys
     ```
     Powinieneś zobaczyć status `running` lub `up` dla wszystkich usług.
 
+    `docker compose up --build` buduje własną kopię. Push na `main` idzie inną drogą: Actions testuje aplikację, buduje obrazy web, Celery i grader, skanuje obraz web Trivym i publikuje je na `ghcr.io/r-scibor/`. Checkout na homelabie robi fast-forward i `docker compose pull` zamiast budować od nowa. Certyfikaty powstają tylko wtedy, gdy brakuje `certs/server.key`.
+
 ---
 
 ### **Krok 6: Przygotowanie Danych Aplikacji**
@@ -134,7 +136,7 @@ Po uruchomieniu kontenerów migracje bazy danych zostaną wykonane automatycznie
 Ta metoda jest przeznaczona do dewelopmentu i testowania na maszynie lokalnej. Używa bazy danych SQLite i wymaga ręcznej instalacji niektórych zależności.
 
 **Wymagania wstępne:**
-- **Python** (wersja 3.8 lub nowsza)
+- **Python** 3.11 (ta sama wersja co w obrazie Docker; Django 5.2 wymaga 3.10 albo nowszego)
 - **Node.js** i **npm**
 - **Redis** (wymagany dla Celery) - [Instrukcje instalacji dla Windows](https://redis.io/docs/getting-started/installation/install-redis-on-windows/)
 
@@ -142,7 +144,7 @@ Ta metoda jest przeznaczona do dewelopmentu i testowania na maszynie lokalnej. U
 
 1.  **Sklonuj repozytorium:**
     ```bash
-    git clone https://github.com/Zyrandool/Quiz-App
+    git clone https://github.com/R-Scibor/Quiz-App
     cd Quiz-App
     ```
 

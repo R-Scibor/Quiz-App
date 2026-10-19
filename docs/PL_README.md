@@ -46,7 +46,9 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 - **Tryb Ciemny/Jasny:** Przełącznik motywu dla komfortu użytkowania.
 - **Responsywność:** Aplikacja jest w pełni responsywna i działa na urządzeniach mobilnych i desktopowych.
 - **Panel Administratora:** Rozbudowany panel do zarządzania quizami, pytaniami i kategoriami bezpośrednio w interfejsie Django admin.
-- **Konta użytkowników:** Rejestracja i logowanie za pomocą nazwy użytkownika i hasła. Niezalogowani użytkownicy zachowują pełną funkcjonalność quizu; statystyki i tryb nauki są dostępne dodatkowo dla zalogowanych.
+- **Konta użytkowników:** Rejestracja, logowanie i zmiana hasła. Niezalogowani użytkownicy zachowują pełną funkcjonalność quizu; statystyki i tryb nauki są dostępne dodatkowo dla zalogowanych.
+- **Ocena pytań zamkniętych:** Odpowiedzi jednokrotnego i wielokrotnego wyboru ocenia serwer na podstawie zaznaczonych tekstów opcji. Lista pytań nadal zawiera poprawne odpowiedzi, żeby ekran mógł je od razu pokazać. Punkty za pytanie otwarte pochodzą z zadania w tle.
+- **API redakcyjne dla personelu:** Użytkownik ze statusem staff może walidować, importować, eksportować i poprawiać quizy przez `/api/v1/authoring/` bez kasowania historii odpowiedzi.
 - **Statystyki użytkownika:** Śledzenie liczby odpowiedzi, ogólnej trafności, aktualnej i najdłuższej serii dziennej, średniego czasu na pytanie oraz historii ostatnich sesji.
 - **Powtarzanie z odstępami (Tryb Nauki):** Po każdej odpowiedzi oceń trudność jako Łatwe / Normalne / Trudne (opcjonalnie). Algorytm SM-2 planuje powtórki. Tryb Nauki priorytetyzuje zaległe i ostatnio błędnie odpowiedziane pytania, mieszając je z nowymi.
 
@@ -76,7 +78,8 @@ To zaawansowana aplikacja typu "full-stack" do przeprowadzania interaktywnych qu
 
 ### Infrastruktura i Narzędzia
 
-- **Docker & Docker Compose:** Do konteneryzacji i orkiestracji usług.
+- **Docker & Docker Compose:** Do konteneryzacji i orkiestracji usług. Własna kopia buduje się przez `docker compose up --build`.
+- **GitHub Actions:** Testy i budowanie obrazów lecą na runnerach GitHuba. Obraz web musi przejść skan Trivy. Gałąź `main` publikuje `ghcr.io/r-scibor/quiz-app`, `quiz-app-celery` i `quiz-app-grader`. Deploy na homelabie te obrazy ściąga.
 - **Nginx:** Serwer proxy do obsługi ruchu i serwowania plików statycznych.
 - **Gunicorn:** Serwer aplikacyjny WSGI dla Django.
 
@@ -115,6 +118,7 @@ Projekt jest podzielony na dwie główne części: `frontend` i resztę katalog�
 ├── ai_grader/        # Mikroserwis podobieństwa wektorowego (FastAPI + sentence-transformers)
 ├── api_v1/           # Aplikacja Django z logiką API, modelami i widokami
 ├── backend_project/  # Główny folder konfiguracyjny projektu Django
+├── .github/workflows # CI: testy, skan, publikacja obrazów, deploy
 ├── docs/             # Dokumentacja projektu
 ├── frontend/         # Kod źródłowy aplikacji React (Vite)
 ├── media/            # Lokalne pliki JSON quizów (gitignorowane poza przykładami)
@@ -153,25 +157,12 @@ Szczegółowy opis dostępnych endpointów API, ich parametrów oraz przykładow
 
 ## 📝 Plany rozwoju
 
-### Możliwe rozszerzenia (pomysły na przyszłość)
+Pomysły na później. To nie są braki obecnej wersji.
 
-- [ ] **OAuth / Logowanie Społecznościowe:** Logowanie przez Google lub GitHub jako alternatywa dla nazwy użytkownika i hasła.
-- [x] **Wykresy Statystyk:** Sparkline trafności, słupki per test i historia sesji — na stronie Statystyk.
-- [ ] **Rankingi:** Porównywanie wyników z innymi użytkownikami w różnych kategoriach.
-- [ ] **Sandboxowane wykonywanie kodu:** Uruchamianie zgłoszonego kodu względem przypadków testowych (`open-code`, v0.3).
-- [ ] **Progi wektorowe per pytanie:** Nadpisanie globalnych progów 0.85/0.30.
-- [ ] **Śledzenie kosztu oceniania:** Model Django logujący użycie LLM.
+- **OAuth:** Logowanie przez Google lub GitHub obok nazwy użytkownika i hasła.
+- **Rankingi:** Porównywanie wyników z innymi użytkownikami.
+- **Sandbox kodu:** Uruchamianie zgłoszonego kodu na przypadkach testowych dla `open-code`.
+- **Progi wektorowe per pytanie:** Nadpisanie globalnych progów 0.85/0.30.
+- **Koszt oceniania:** Zapis zużycia i kosztu LLM na pytanie.
 
-### Ukończone
-
-- [x] **Kaskadowe ocenianie:** Typy `open-text`, `open-cli`, `open-code` — wektory, regex albo LLM. Odznaka „Auto-graded” / „Graded by AI”. Ponowienie po timeoutcie.
-- [x] **Powtarzanie z Odstępami (Tryb Nauki):** Algorytm SM-2 z ocenami Łatwe/Normalne/Trudne po każdym pytaniu; Tryb Nauki wybiera zaległe i problematyczne pytania, uzupełniając pozostałe miejsca nowymi.
-- [x] **Statystyki użytkownika:** Sesje, trafność, serie dzienne, średni czas na pytanie i historia ostatnich sesji — wszystko śledzone dla zalogowanego użytkownika.
-- [x] **System uwierzytelniania:** Rejestracja i logowanie za pomocą nazwy użytkownika i hasła przy użyciu tokenów DRF. Niezalogowani użytkownicy zachowują pełny dostęp do quizów.
-- [x] **Zgłaszanie pytań/odpowiedzi** Umożliwienie użytkownikowi zgłoszenia błędu w pytaniu/odpowiedzi lub w ocenie AI
-- [x] **Asynchroniczne ocenianie (Celery & Redis):** Wprowadzenie zadań w tle do oceny otwartych pytań przez AI, aby użytkownik nie musiał czekać na wynik i mógł kontynuować test.
-- [x] **Panel administratora:** Rozbudowa panelu admina o możliwość wygodnego tworzenia i edycji quizów z poziomu interfejsu graficznego.
-- [x] **Migracja danych:** Przeniesiono treść quizów z plików JSON do relacyjnej bazy danych (PostgreSQL) w celu zwiększenia wydajności i skalowalności.
-- [x] **Naprawa licznika** - Licznik teraz zatrzymuje się po tym jak użytkownik zatwierdzi odpowiedź na pytanie i wznawia ponownie przy następnym pytaniu.
-- [x] **Formatowanie tekstu pytań i wyjaśnień:** Zaimplementowano obsługę formatowania Markdown dla treści pytań i wyjaśnień przy użyciu biblioteki `react-markdown`.
-- [x] **Lepsza obsługa błędów:** Wprowadzono kompleksową obsługę błędów na wszystkich poziomach aplikacji.
+Poza listą funkcjonalności jest już w aplikacji: wykresy na stronie statystyk, kaskada z odznaką Auto-graded albo Graded by AI, tryb nauki SM-2, statystyki użytkownika, tokeny DRF, zgłoszenia błędów, ocenianie w Celery, panel admina, Markdown i licznik zatrzymujący się po zatwierdzeniu odpowiedzi. Gdy odpytywanie oceny przekroczy czas, ekran pokazuje błąd. Nie ma osobnego przycisku ponowienia tej jednej oceny. Ekran wyników może uruchomić ten sam quiz od nowa.

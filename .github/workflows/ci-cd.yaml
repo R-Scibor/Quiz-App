@@ -1,5 +1,8 @@
 name: CI/CD
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -7,8 +10,11 @@ on:
       - 'api_v1/**'
       - 'backend_project/**'
       - 'frontend/**'
+      - 'ai_grader/**'
       - 'requirements.txt'
       - 'Dockerfile'
+      - 'Dockerfile.celery'
+      - 'entrypoint.sh'
       - 'docker-compose.yml'
       - 'nginx/**'
       - '.github/workflows/ci-cd.yaml'
@@ -17,8 +23,11 @@ on:
       - 'api_v1/**'
       - 'backend_project/**'
       - 'frontend/**'
+      - 'ai_grader/**'
       - 'requirements.txt'
       - 'Dockerfile'
+      - 'Dockerfile.celery'
+      - 'entrypoint.sh'
       - 'docker-compose.yml'
       - 'nginx/**'
       - '.github/workflows/ci-cd.yaml'
@@ -26,7 +35,7 @@ on:
 
 jobs:
   test-backend:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     services:
       postgres:
@@ -52,16 +61,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Cache virtualenv
-        uses: actions/cache@v5
+      - uses: actions/setup-python@v5
         with:
-          path: .venv
-          key: venv-${{ hashFiles('requirements.txt') }}
-
-      - name: Set up virtualenv
-        run: |
-          python3 -m venv .venv
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          python-version: "3.11"
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -73,16 +76,16 @@ jobs:
         run: python manage.py test api_v1 --verbosity=2
 
   test-frontend:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Cache node_modules
-        uses: actions/cache@v5
+      - uses: actions/setup-node@v4
         with:
-          path: frontend/node_modules
-          key: npm-${{ hashFiles('frontend/package-lock.json') }}
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -96,14 +99,112 @@ jobs:
         run: npm test -- --run
         working-directory: frontend
 
-  deploy:
-    runs-on: self-hosted
+  build-and-publish:
     needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            context: .
+            file: Dockerfile
+            suffix: ""
+            scan: true
+          - name: celery
+            context: .
+            file: Dockerfile.celery
+            suffix: "-celery"
+            scan: false
+          - name: grader
+            context: ./ai_grader
+            file: ai_grader/Dockerfile
+            suffix: "-grader"
+            scan: false
 
     steps:
-      - name: Pull and rebuild
+      - uses: actions/checkout@v6
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/zyrandool/quiz-app${{ matrix.suffix }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: false
+          load: true
+          tags: quiz-app-${{ matrix.name }}:local-scan
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+      - name: Scan web image
+        if: matrix.scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: quiz-app-${{ matrix.name }}:local-scan
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      - name: Push image to GHCR
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+  deploy:
+    name: Deploy to Homelab
+    needs: build-and-publish
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: self-hosted
+
+    steps:
+      - name: Update checkout, pull images, and restart
         run: |
           cd /home/endmin/homelab/Quiz-App
-          git pull
-          docker compose up --build -d
+          git fetch origin main
+          git checkout main
+          git merge --ff-only origin/main
+          docker compose pull
+          docker compose up -d --remove-orphans
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          if [ -x /home/endmin/homelab/ntfy/notify.sh ]; then
+            /home/endmin/homelab/ntfy/notify.sh --fail --title "CI fail Quiz-App" "Job 'deploy' failed on ${{ github.ref_name }}" --click "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true
+            python3 /home/endmin/homelab/ntfy/hooks/watch.py --mark-seen Zyrandool/Quiz-App "${{ github.run_id }}" || true
+          fi

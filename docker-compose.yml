@@ -25,6 +25,7 @@ services:
     restart: always
 
   web:
+    image: ghcr.io/zyrandool/quiz-app:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -59,6 +60,7 @@ services:
       start_period: 60s
 
   ai_grader:
+    image: ghcr.io/zyrandool/quiz-app-grader:latest
     build:
       context: ./ai_grader
       dockerfile: Dockerfile
@@ -77,6 +79,7 @@ services:
           memory: 512M
 
   celery:
+    image: ghcr.io/zyrandool/quiz-app-celery:latest
     build:
       context: .
       dockerfile: Dockerfile.celery

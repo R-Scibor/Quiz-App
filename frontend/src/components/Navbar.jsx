@@ -20,7 +20,7 @@ const MoonIcon = () => (
 const Navbar = () => {
     const {
         user, studyReviewCount, theme, view,
-        goToHome, goToStats, goToStudySetup, goToLogin, goToRegister, logout, toggleTheme,
+        goToHome, goToStats, goToStudySetup, goToLogin, goToRegister, goToChangePassword, logout, toggleTheme,
     } = useTestStore();
 
     const guardNav = (action) => {
@@ -76,6 +76,12 @@ const Navbar = () => {
                             <span className="hidden sm:inline-block text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium">
                                 {user.username}
                             </span>
+                            <button
+                                onClick={() => guardNav(goToChangePassword)}
+                                className="text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                Password
+                            </button>
 
                             {/* Sign out */}
                             <button

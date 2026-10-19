@@ -8,6 +8,7 @@ import ResultsPage from './pages/ResultsPage';
 import ReviewPage from './pages/ReviewPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import StatsPage from './pages/StatsPage';
 import StudySetupPage from './pages/StudySetupPage';
 import Navbar from './components/Navbar';
@@ -43,6 +44,7 @@ function App() {
             case 'review': return <ReviewPage />;
             case 'login': return <LoginPage />;
             case 'register': return <RegisterPage />;
+            case 'change-password': return <ChangePasswordPage />;
             case 'stats': return <StatsPage />;
             case 'study-setup': return <StudySetupPage />;
             case 'home':

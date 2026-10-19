@@ -11,6 +11,8 @@ from django.db.models import Avg, Case, Count, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -48,6 +50,60 @@ def shuffle_options(data):
             question['options'] = list(shuffled_options)
             question['correctAnswers'] = sorted([old_to_new[i] for i in correct])
     return data
+
+
+CLOSED_QUESTION_TYPES = {Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE}
+OPEN_PASS_RATIO = 0.66
+
+
+def score_attempt_payload(question, data):
+    """Set is_correct and points_awarded from the catalog, not the client flag.
+
+    Closed questions are an exact set match of selected option texts against
+    answers marked correct. One point if the sets match, otherwise zero.
+
+    Open grades still arrive as points_awarded. That number is produced by
+    Celery and is not stored on the question, so this view clamps it to
+    max_points and derives is_correct from the 0.66 pass ratio. The client's
+    is_correct flag is ignored in both cases.
+
+    Returns a 400 Response when a closed selection names an unknown option,
+    otherwise None. Removes user_answer_choices from data.
+    """
+    choices = data.pop('user_answer_choices', None)
+
+    if question.question_type in CLOSED_QUESTION_TYPES:
+        selected = list(choices or [])
+        answers = list(question.answers.all())
+        known = {answer.text for answer in answers}
+        if any(text not in known for text in selected):
+            return Response(
+                {
+                    "error": "INVALID_ANSWER_CHOICE",
+                    "message": "One or more selected options are not part of this question.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        correct = {answer.text for answer in answers if answer.is_correct}
+        is_correct = bool(correct) and set(selected) == correct
+        data['is_correct'] = is_correct
+        data['points_awarded'] = 1.0 if is_correct else 0.0
+        return None
+
+    max_points = question.max_points or 0
+    try:
+        points = float(data.get('points_awarded') or 0)
+    except (TypeError, ValueError):
+        points = 0.0
+    if points < 0:
+        points = 0.0
+    if max_points:
+        points = min(points, float(max_points))
+    else:
+        points = 0.0
+    data['points_awarded'] = points
+    data['is_correct'] = bool(max_points) and points >= max_points * OPEN_PASS_RATIO
+    return None
 
 
 def compute_next_sr(rating, is_correct, prev_ease, prev_interval, prev_reps):
@@ -361,6 +417,31 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        current = request.data.get('current_password') or ''
+        new = request.data.get('new_password') or ''
+        if not request.user.check_password(current):
+            return Response(
+                {"error": "INVALID_CURRENT_PASSWORD", "message": "Current password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            validate_password(new, user=request.user)
+        except DjangoValidationError as exc:
+            return Response(
+                {"error": "INVALID_NEW_PASSWORD", "message": " ".join(exc.messages)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        request.user.set_password(new)
+        request.user.save(update_fields=['password'])
+        return Response({"message": "Password updated."})
+
+
 class SessionStartView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -396,7 +477,22 @@ class AttemptCreateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        for data in serializer.validated_data:
+        question_ids = [item['question'].id for item in serializer.validated_data]
+        questions = {
+            question.id: question
+            for question in Question.objects.filter(id__in=question_ids).prefetch_related('answers')
+        }
+        prepared = []
+        for raw in serializer.validated_data:
+            data = dict(raw)
+            question = questions[data['question'].id]
+            data['question'] = question
+            error = score_attempt_payload(question, data)
+            if error is not None:
+                return error
+            prepared.append(data)
+
+        for data in prepared:
             attempt = QuestionAttempt(user=request.user, **data)
             prev = (
                 QuestionAttempt.objects

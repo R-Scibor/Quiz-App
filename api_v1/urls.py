@@ -11,7 +11,7 @@ from .authoring_views import (
 )
 from .views import (
     TestListView, QuestionListView, CheckOpenAnswerView, GetTaskResultView,
-    ReportIssueView, RegisterView, LoginView, LogoutView,
+    ReportIssueView, RegisterView, LoginView, LogoutView, ChangePasswordView,
     SessionStartView, SessionCompleteView, AttemptCreateView, UserStatsView,
     StudyQueueView, StudyStatsView, StatsTestBreakdownView,
 )
@@ -27,6 +27,7 @@ urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
+    path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('sessions/start/', SessionStartView.as_view(), name='session-start'),
     path('sessions/<uuid:pk>/complete/', SessionCompleteView.as_view(), name='session-complete'),
     path('attempts/', AttemptCreateView.as_view(), name='attempt-create'),

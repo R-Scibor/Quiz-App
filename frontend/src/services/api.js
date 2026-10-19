@@ -175,6 +175,10 @@ export const getTestStats = () => {
     return apiClient.get('/stats/tests/');
 };
 
+export const changePassword = (payload) => {
+    return apiClient.post('/auth/change-password/', payload);
+};
+
 export const registerUser = (payload) => {
     return apiClient.post('/auth/register/', payload);
 };

@@ -15,6 +15,7 @@ Most quiz endpoints (`/tests/`, `/questions/`, `/check_answer/`, `/task_result/`
 These endpoints require the header `Authorization: Token <token>`:
 
 - `/auth/logout/`
+- `/auth/change-password/`
 - `/sessions/start/`
 - `/sessions/<session_uuid>/complete/`
 - `/attempts/`
@@ -119,6 +120,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
             "message": "No questions found for the selected categories in mode 'mixed'."
         }
         ```
+    `correctAnswers`, `explanation`, and `gradingCriteria` are included on purpose. The quiz screen uses them to mark a closed answer and show the explanation as soon as the learner confirms, without another request. Withholding them would only stop someone who will not look the answer up elsewhere. Open-answer grading still ignores any rubric sent to `check_answer` and reads the question row.
 
 ---
 
@@ -332,6 +334,26 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 
 ---
 
+### Change Password
+
+-   **Method:** `POST`
+-   **Endpoint:** `/auth/change-password/`
+-   **Authentication:** `Token <token>` header required. The token stays valid after a successful change.
+-   **Request Body:**
+    ```json
+    {
+        "current_password": "securepassword123",
+        "new_password": "Quiz-horse-99"
+    }
+    ```
+-   **Success Response (200 OK):**
+    ```json
+    { "message": "Password updated." }
+    ```
+-   **Error Response (400 Bad Request):** `INVALID_CURRENT_PASSWORD` when the current password is wrong, or `INVALID_NEW_PASSWORD` when the new password fails Django's password validators (minimum length 8, not a common password, not entirely numeric, not too similar to the username).
+
+---
+
 ### 8. Log Out
 
 -   **Method:** `POST`
@@ -390,7 +412,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
 -   **Method:** `POST`
 -   **Endpoint:** `/attempts/`
 -   **Authentication:** `Token <token>` header required.
--   **Description:** Bulk-creates `QuestionAttempt` records for a completed session. If a `difficulty_rating` is provided, the SM-2 algorithm computes the next review schedule for the question.
+-   **Description:** Bulk-creates `QuestionAttempt` records for a completed session. If a `difficulty_rating` is provided, the SM-2 algorithm computes the next review schedule from the **server** score, not from the client's `is_correct` flag.
 -   **Request Body (array):**
     ```json
     [
@@ -400,11 +422,16 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
             "session": "550e8400-e29b-41d4-a716-446655440000",
             "is_correct": true,
             "points_awarded": 1,
+            "user_answer_choices": ["Paris"],
             "time_spent_secs": 32,
             "difficulty_rating": "normal"
         }
     ]
     ```
+    *Closed questions (`single-choice`, `multiple-choice`): send `user_answer_choices` as the selected option texts. The server compares that set to the correct answers and stores `is_correct` plus `points_awarded` of 1 or 0. Client `is_correct` and `points_awarded` are ignored. An unknown option text returns `400` `INVALID_ANSWER_CHOICE` and saves nothing. An empty selection is stored as incorrect. This keeps a bad client flag from writing the score. It is not a cheat-proofing measure: the question payload already includes the correct options, and a learner can look the answer up outside the app.*
+
+    *Open questions (`open-text`, `open-cli`, `open-code`): `points_awarded` is still the grade the client received from the Celery task (the server does not keep that result). It is clamped to `0..max_points`. `is_correct` is set when the clamped score is at least 66% of `max_points`. The client's `is_correct` flag is ignored.*
+
     *(`difficulty_rating` is optional; valid values: `"easy"`, `"normal"`, `"hard"`. Mapped to SM-2 quality 5 / 4 / 3. Incorrect answers cap quality at 1 and reset the card. An omitted rating copies the previous SM-2 schedule instead of wiping it.)*
 -   **Success Response (201 Created):** empty body.
 

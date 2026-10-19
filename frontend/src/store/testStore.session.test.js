@@ -249,6 +249,7 @@ describe('_finalizeSession — closed question scoring', () => {
 
         const attempts = mockSubmitAttempts.mock.calls[0][0];
         expect(attempts[0].is_correct).toBe(true);
+        expect(attempts[0].user_answer_choices).toEqual(['C', 'A']);
     });
 
     test('is_correct=false for wrong answer', async () => {
@@ -268,6 +269,7 @@ describe('_finalizeSession — closed question scoring', () => {
 
         const attempts = mockSubmitAttempts.mock.calls[0][0];
         expect(attempts[0].is_correct).toBe(false);
+        expect(attempts[0].user_answer_choices).toEqual(['B']);
     });
 });
 

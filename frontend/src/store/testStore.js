@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, startSession, completeSession, submitAttempts, getUserStats, getTestStats, getStudyQueue, getStudyStats } from '../services/api';
+import { getAvailableTests, getQuestions, checkOpenAnswer as checkOpenAnswerApi, getTaskResult as getTaskResultApi, registerUser, loginUser, logoutUser, changePassword as changePasswordApi, startSession, completeSession, submitAttempts, getUserStats, getTestStats, getStudyQueue, getStudyStats } from '../services/api';
 
 const initialTheme = localStorage.getItem('theme') || 'dark';
 
@@ -40,6 +40,7 @@ const useTestStore = create((set, get) => ({
     authToken: null,
     isAuthLoading: false,
     authError: null,
+    passwordNotice: null,
 
     // Session / stats state
     currentSessionId: null,
@@ -346,24 +347,29 @@ const useTestStore = create((set, get) => ({
 
         const attempts = currentQuestions.map(q => {
             let is_correct, points_awarded;
+            const payload = {
+                question: q.id,
+                test: q.test_id,
+                session: currentSessionId,
+                time_spent_secs: questionTimes[q.id] || 0,
+                difficulty_rating: difficultyRatings[q.id] || null,
+            };
             if (q.type.startsWith('open-')) {
                 const result = openQuestionResults[q.id];
                 points_awarded = result?.points_awarded ?? 0;
                 is_correct = points_awarded >= q.maxPoints * 0.66;
             } else {
                 const userSel = userAnswers[q.id] || [];
-                is_correct = JSON.stringify([...userSel].sort()) === JSON.stringify([...q.correctAnswers].sort());
+                const options = q.options || [];
+                payload.user_answer_choices = userSel
+                    .map((index) => options[index])
+                    .filter((text) => typeof text === 'string');
+                is_correct = JSON.stringify([...userSel].sort()) === JSON.stringify([...(q.correctAnswers || [])].sort());
                 points_awarded = is_correct ? 1 : 0;
             }
-            return {
-                question: q.id,
-                test: q.test_id,
-                session: currentSessionId,
-                is_correct,
-                points_awarded,
-                time_spent_secs: questionTimes[q.id] || 0,
-                difficulty_rating: difficultyRatings[q.id] || null,
-            };
+            payload.is_correct = is_correct;
+            payload.points_awarded = points_awarded;
+            return payload;
         });
 
         const totalMaxPoints = currentQuestions.reduce((sum, q) => sum + (q.maxPoints || 1), 0);
@@ -523,6 +529,16 @@ const useTestStore = create((set, get) => ({
         }
     },
 
+    changePassword: async ({ current_password, new_password }) => {
+        set({ isAuthLoading: true, authError: null, passwordNotice: null });
+        try {
+            await changePasswordApi({ current_password, new_password });
+            set({ isAuthLoading: false, passwordNotice: 'Password updated.' });
+        } catch (error) {
+            set({ authError: error, isAuthLoading: false });
+        }
+    },
+
     logout: async () => {
         try {
             await logoutUser();
@@ -556,8 +572,9 @@ const useTestStore = create((set, get) => ({
         });
     },
 
-    goToLogin: () => set({ authError: null, view: 'login' }),
-    goToRegister: () => set({ authError: null, view: 'register' }),
+    goToLogin: () => set({ authError: null, passwordNotice: null, view: 'login' }),
+    goToRegister: () => set({ authError: null, passwordNotice: null, view: 'register' }),
+    goToChangePassword: () => set({ authError: null, passwordNotice: null, view: 'change-password' }),
 }));
 
 export default useTestStore;

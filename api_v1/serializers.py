@@ -140,10 +140,17 @@ class QuizSessionSerializer(serializers.ModelSerializer):
 
 
 class QuestionAttemptSerializer(serializers.ModelSerializer):
+    # Option texts for closed questions. Not stored; the view scores from them.
+    user_answer_choices = serializers.ListField(
+        child=serializers.CharField(allow_blank=False),
+        required=False,
+        allow_empty=True,
+    )
+
     class Meta:
         model = QuestionAttempt
         fields = ['question', 'test', 'session', 'is_correct', 'points_awarded',
-                  'time_spent_secs', 'difficulty_rating']
+                  'time_spent_secs', 'difficulty_rating', 'user_answer_choices']
 
 
 class RegisterSerializer(serializers.Serializer):

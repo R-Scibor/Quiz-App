@@ -216,13 +216,18 @@ class AttemptCreateViewTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
 
     def _attempt_payload(self, question=None, extra=None):
+        question = question or self.question
+        correct = list(
+            question.answers.filter(is_correct=True).values_list('text', flat=True)
+        )
         payload = {
-            'question': str((question or self.question).id),
+            'question': str(question.id),
             'test': str(self.test_obj.id),
             'session': str(self.session.id),
             'is_correct': True,
             'points_awarded': 1,
             'time_spent_secs': 10,
+            'user_answer_choices': correct,
         }
         if extra:
             payload.update(extra)
@@ -358,3 +363,230 @@ class AttemptCreateViewTestCase(APITestCase):
         self.client.credentials()
         response = self.client.post(self.ATTEMPTS_URL, self._attempt_payload(), format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # -------------------------------------------------------------------------
+    # Server-side score — closed questions ignore client is_correct / points
+    # -------------------------------------------------------------------------
+
+    def test_closed_wrong_choice_is_stored_incorrect_despite_claimed_score(self):
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={
+                'is_correct': True,
+                'points_awarded': 99,
+                'user_answer_choices': ['5'],
+            }),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attempt = QuestionAttempt.objects.get(user=self.user, question=self.question)
+        self.assertFalse(attempt.is_correct)
+        self.assertEqual(attempt.points_awarded, 0)
+
+    def test_closed_right_choice_is_stored_correct_despite_claimed_miss(self):
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={'is_correct': False, 'points_awarded': 0}),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attempt = QuestionAttempt.objects.get(user=self.user, question=self.question)
+        self.assertTrue(attempt.is_correct)
+        self.assertEqual(attempt.points_awarded, 1)
+
+    def test_closed_empty_selection_is_incorrect(self):
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={
+                'is_correct': True,
+                'points_awarded': 1,
+                'user_answer_choices': [],
+            }),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attempt = QuestionAttempt.objects.get(user=self.user, question=self.question)
+        self.assertFalse(attempt.is_correct)
+        self.assertEqual(attempt.points_awarded, 0)
+
+    def test_closed_unknown_option_returns_400_and_saves_nothing(self):
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={'user_answer_choices': ['not-an-option']}),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INVALID_ANSWER_CHOICE')
+        self.assertFalse(QuestionAttempt.objects.filter(user=self.user).exists())
+
+    def test_multiple_choice_requires_the_full_correct_set(self):
+        question = Question.objects.create(
+            test=self.test_obj,
+            text='Pick both primes',
+            question_type=Question.MULTIPLE_CHOICE,
+        )
+        Answer.objects.create(question=question, text='2', is_correct=True)
+        Answer.objects.create(question=question, text='3', is_correct=True)
+        Answer.objects.create(question=question, text='4', is_correct=False)
+
+        partial = self._attempt_payload(
+            question=question,
+            extra={'is_correct': True, 'points_awarded': 5, 'user_answer_choices': ['2']},
+        )
+        self.client.post(self.ATTEMPTS_URL, partial, format='json')
+        partial_row = QuestionAttempt.objects.get(user=self.user, question=question)
+        self.assertFalse(partial_row.is_correct)
+        self.assertEqual(partial_row.points_awarded, 0)
+
+        session2 = QuizSession.objects.create(user=self.user)
+        full = self._attempt_payload(
+            question=question,
+            extra={
+                'session': str(session2.id),
+                'is_correct': False,
+                'points_awarded': 0,
+                'user_answer_choices': ['3', '2'],
+            },
+        )
+        response = self.client.post(self.ATTEMPTS_URL, full, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        full_row = QuestionAttempt.objects.filter(
+            user=self.user, question=question
+        ).order_by('-answered_at').first()
+        self.assertTrue(full_row.is_correct)
+        self.assertEqual(full_row.points_awarded, 1)
+
+    def test_lying_closed_score_does_not_advance_sm2(self):
+        self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={'difficulty_rating': 'easy'}),
+            format='json',
+        )
+        session2 = QuizSession.objects.create(user=self.user)
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(extra={
+                'session': str(session2.id),
+                'is_correct': True,
+                'points_awarded': 1,
+                'difficulty_rating': 'easy',
+                'user_answer_choices': ['5'],
+            }),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        latest = QuestionAttempt.objects.filter(
+            user=self.user, question=self.question
+        ).order_by('-answered_at').first()
+        self.assertFalse(latest.is_correct)
+        self.assertEqual(latest.sr_repetitions, 0)
+        self.assertEqual(latest.sr_interval, 1)
+
+    # -------------------------------------------------------------------------
+    # Open questions — points still come from the client; is_correct does not
+    # -------------------------------------------------------------------------
+
+    def _open_question(self):
+        return Question.objects.create(
+            test=self.test_obj,
+            text='Explain DNS',
+            question_type=Question.OPEN_TEXT,
+            grading_criteria='Maps names to addresses',
+            max_points=3,
+        )
+
+    def test_open_is_correct_follows_points_not_the_client_flag(self):
+        question = self._open_question()
+        response = self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(question=question, extra={
+                'is_correct': False,
+                'points_awarded': 2,
+                'user_answer_choices': [],
+            }),
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attempt = QuestionAttempt.objects.get(user=self.user, question=question)
+        self.assertEqual(attempt.points_awarded, 2)
+        self.assertTrue(attempt.is_correct)
+
+    def test_open_zero_points_cannot_be_marked_correct(self):
+        question = self._open_question()
+        self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(question=question, extra={
+                'is_correct': True,
+                'points_awarded': 0,
+            }),
+            format='json',
+        )
+        attempt = QuestionAttempt.objects.get(user=self.user, question=question)
+        self.assertEqual(attempt.points_awarded, 0)
+        self.assertFalse(attempt.is_correct)
+
+    def test_open_points_are_clamped_to_max_points(self):
+        question = self._open_question()
+        self.client.post(
+            self.ATTEMPTS_URL,
+            self._attempt_payload(question=question, extra={
+                'is_correct': True,
+                'points_awarded': 100,
+            }),
+            format='json',
+        )
+        attempt = QuestionAttempt.objects.get(user=self.user, question=question)
+        self.assertEqual(attempt.points_awarded, 3)
+        self.assertTrue(attempt.is_correct)
+
+
+class ChangePasswordViewTestCase(APITestCase):
+    URL = '/api/v1/auth/change-password/'
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='pwuser', password='old-password')
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+
+    def test_requires_auth(self):
+        self.client.credentials()
+        response = self.client.post(
+            self.URL,
+            {'current_password': 'old-password', 'new_password': 'Quiz-horse-99'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_wrong_current_password_is_rejected(self):
+        response = self.client.post(
+            self.URL,
+            {'current_password': 'nope', 'new_password': 'Quiz-horse-99'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INVALID_CURRENT_PASSWORD')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('old-password'))
+
+    def test_short_new_password_is_rejected(self):
+        response = self.client.post(
+            self.URL,
+            {'current_password': 'old-password', 'new_password': 'short'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'INVALID_NEW_PASSWORD')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('old-password'))
+
+    def test_updates_password_and_keeps_the_token(self):
+        response = self.client.post(
+            self.URL,
+            {'current_password': 'old-password', 'new_password': 'Quiz-horse-99'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('Quiz-horse-99'))
+        self.assertFalse(self.user.check_password('old-password'))
+        self.assertTrue(Token.objects.filter(user=self.user, key=self.token.key).exists())

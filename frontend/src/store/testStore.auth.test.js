@@ -18,9 +18,10 @@ vi.mock('../services/api', () => ({
     registerUser: vi.fn(),
     loginUser: vi.fn(),
     logoutUser: vi.fn(),
+    changePassword: vi.fn(),
 }));
 
-import { loginUser as mockLoginUser, registerUser as mockRegisterUser, logoutUser as mockLogoutUser } from '../services/api';
+import { loginUser as mockLoginUser, registerUser as mockRegisterUser, logoutUser as mockLogoutUser, changePassword as mockChangePassword } from '../services/api';
 
 function resetAuthState() {
     act(() => {
@@ -188,6 +189,55 @@ describe('useTestStore - register', () => {
 
         expect(useTestStore.getState().authError).toEqual(err);
         expect(useTestStore.getState().user).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// changePassword
+// ---------------------------------------------------------------------------
+
+describe('useTestStore - changePassword', () => {
+    beforeEach(resetAuthState);
+
+    test('success: shows a notice and stays signed in', async () => {
+        mockChangePassword.mockResolvedValueOnce({ data: { message: 'Password updated.' } });
+        act(() => {
+            useTestStore.setState({ user: { username: 'alice' }, authToken: 'tok', view: 'change-password' });
+        });
+
+        await act(async () => {
+            await useTestStore.getState().changePassword({
+                current_password: 'old-password',
+                new_password: 'Quiz-horse-99',
+            });
+        });
+
+        const state = useTestStore.getState();
+        expect(mockChangePassword).toHaveBeenCalledWith({
+            current_password: 'old-password',
+            new_password: 'Quiz-horse-99',
+        });
+        expect(state.passwordNotice).toBe('Password updated.');
+        expect(state.authError).toBeNull();
+        expect(state.user?.username).toBe('alice');
+        expect(state.authToken).toBe('tok');
+        expect(state.isAuthLoading).toBe(false);
+    });
+
+    test('failure: surfaces the server message', async () => {
+        const err = { message: 'Current password is incorrect.', code: 'INVALID_CURRENT_PASSWORD' };
+        mockChangePassword.mockRejectedValueOnce(err);
+
+        await act(async () => {
+            await useTestStore.getState().changePassword({
+                current_password: 'nope',
+                new_password: 'Quiz-horse-99',
+            });
+        });
+
+        expect(useTestStore.getState().authError).toEqual(err);
+        expect(useTestStore.getState().passwordNotice).toBeNull();
+        expect(useTestStore.getState().isAuthLoading).toBe(false);
     });
 });
 

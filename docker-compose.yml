@@ -132,8 +132,8 @@ services:
     volumes:
       - ./certs:/certs
     command: >
-      sh -c "apk add --no-cache openssl &&
-             if [ ! -f /certs/server.key ]; then
+      sh -c "if [ ! -f /certs/server.key ]; then
+               apk add --no-cache openssl &&
                openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
                  -subj '/C=PL/ST=Warsaw/L=Warsaw/O=QuizApp/CN=localhost' \
                  -keyout /certs/server.key -out /certs/server.crt &&

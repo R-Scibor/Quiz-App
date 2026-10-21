@@ -177,6 +177,11 @@ class ReportedIssue(models.Model):
         default='NEW',
         help_text="Current status of the report."
     )
+    resolution_note = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Staff note recorded when the report is triaged.",
+    )
     created_at = models.DateTimeField(auto_now_add=True, help_text="Date and time the report was created.")
 
     class Meta:

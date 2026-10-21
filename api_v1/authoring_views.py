@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .authoring_schema import AUTHORING_SCHEMA
-from .models import Category, Question, Tag, Test
+from .models import Category, Question, ReportedIssue, Tag, Test
 from .quiz_export import question_to_interchange, test_to_interchange
 from .quiz_import import (
     DeleteBlockedError,
@@ -108,6 +108,118 @@ class AuthoringImportView(AuthoringAPIView):
                 status=status.HTTP_409_CONFLICT,
             )
         return Response(result, status=status.HTTP_200_OK)
+
+
+_REPORT_STATUSES = {"NEW", "IN_PROGRESS", "RESOLVED", "REJECTED"}
+_REPORT_PATCH_STATUSES = {"IN_PROGRESS", "RESOLVED", "REJECTED"}
+
+
+def _report_summary(report: ReportedIssue) -> dict:
+    description = report.description or ""
+    return {
+        "id": str(report.id),
+        "status": report.status,
+        "issue_type": report.issue_type,
+        "created_at": report.created_at.isoformat(),
+        "test_id": str(report.test_id),
+        "question_id": str(report.question_id),
+        "description": description[:240],
+    }
+
+
+def _report_detail(report: ReportedIssue) -> dict:
+    question = report.question
+    payload = _report_summary(report)
+    payload.update({
+        "description": report.description or "",
+        "ai_feedback_snapshot": report.ai_feedback_snapshot or "",
+        "user_answer_open": report.user_answer_open or "",
+        "user_answer_choices": report.user_answer_choices,
+        "resolution_note": report.resolution_note or "",
+        "question": question_to_interchange(question),
+    })
+    return payload
+
+
+def _bounded_limit(request, default=20, maximum=50) -> int:
+    try:
+        limit = int(request.query_params.get("limit") or default)
+    except (TypeError, ValueError):
+        return default
+    return min(max(limit, 1), maximum)
+
+
+class AuthoringReportListView(AuthoringAPIView):
+    def get(self, request):
+        status_name = request.query_params.get("status") or "NEW"
+        if status_name not in _REPORT_STATUSES:
+            return Response(
+                {
+                    "error": "VALIDATION_FAILED",
+                    "errors": [{
+                        "path": "status",
+                        "code": "INVALID_TYPE",
+                        "message": "Unknown report status.",
+                    }],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reports = ReportedIssue.objects.filter(status=status_name).order_by("-created_at")[
+            : _bounded_limit(request)
+        ]
+        return Response([_report_summary(report) for report in reports])
+
+
+class AuthoringReportDetailView(AuthoringAPIView):
+    def _get(self, report_id):
+        try:
+            return ReportedIssue.objects.select_related("question", "test").prefetch_related(
+                "question__answers", "question__tags"
+            ).get(pk=report_id)
+        except (ReportedIssue.DoesNotExist, ValidationError):
+            return None
+
+    def get(self, request, report_id):
+        report = self._get(report_id)
+        if report is None:
+            return Response({"error": "REPORT_NOT_FOUND", "message": "Report not found."}, status=404)
+        return Response(_report_detail(report))
+
+    def patch(self, request, report_id):
+        report = self._get(report_id)
+        if report is None:
+            return Response({"error": "REPORT_NOT_FOUND", "message": "Report not found."}, status=404)
+        body = request.data if isinstance(request.data, dict) else {}
+        new_status = body.get("status")
+        if new_status not in _REPORT_PATCH_STATUSES:
+            return Response(
+                {
+                    "error": "VALIDATION_FAILED",
+                    "errors": [{
+                        "path": "status",
+                        "code": "INVALID_TYPE",
+                        "message": "status must be IN_PROGRESS, RESOLVED, or REJECTED.",
+                    }],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if "resolution_note" in body and body["resolution_note"] is not None and not isinstance(body["resolution_note"], str):
+            return Response(
+                {
+                    "error": "VALIDATION_FAILED",
+                    "errors": [{
+                        "path": "resolution_note",
+                        "code": "INVALID_TYPE",
+                        "message": "'resolution_note' must be a string.",
+                    }],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        report.status = new_status
+        if "resolution_note" in body:
+            report.resolution_note = body["resolution_note"] or ""
+        report.save(update_fields=["status", "resolution_note"])
+        return Response(_report_detail(report))
 
 
 class AuthoringTagListView(AuthoringAPIView):

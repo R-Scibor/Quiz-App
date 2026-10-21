@@ -688,6 +688,70 @@ class AuthoringTagTests(APITestCase):
         self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
 
 
+class AuthoringReportTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=self.staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        from api_v1.models import Question, ReportedIssue, Test
+        self.test = Test.objects.create(title="Medieval Poland")
+        self.question = Question.objects.create(
+            test=self.test,
+            text="Who was crowned?",
+            question_type="open-text",
+            grading_criteria="Bolesław",
+            max_points=2,
+            source_id=1,
+        )
+        self.new_report = ReportedIssue.objects.create(
+            question=self.question,
+            test=self.test,
+            issue_type="QUESTION_ERROR",
+            description="The expected name is incomplete.",
+            user_answer_open="Boleslaw",
+            status="NEW",
+        )
+        ReportedIssue.objects.create(
+            question=self.question,
+            test=self.test,
+            issue_type="QUESTION_ERROR",
+            description="Already handled.",
+            user_answer_open="x",
+            status="RESOLVED",
+        )
+
+    def test_list_defaults_to_new(self):
+        r = self.client.get("/api/v1/authoring/reports/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 1)
+        self.assertEqual(r.data[0]["id"], str(self.new_report.id))
+        self.assertEqual(r.data[0]["status"], "NEW")
+
+    def test_patch_status_stores_note_and_leaves_question(self):
+        from api_v1.models import Question
+        r = self.client.patch(
+            f"/api/v1/authoring/reports/{self.new_report.id}/",
+            {"status": "RESOLVED", "resolution_note": "Criteria now names Bolesław."},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["status"], "RESOLVED")
+        self.assertEqual(r.data["resolution_note"], "Criteria now names Bolesław.")
+        self.assertEqual(r.data["question"]["questionText"], "Who was crowned?")
+        self.assertEqual(Question.objects.get(pk=self.question.id).text, "Who was crowned?")
+
+    def test_unknown_report_404(self):
+        r = self.client.get("/api/v1/authoring/reports/00000000-0000-4000-8000-000000000000/")
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "REPORT_NOT_FOUND")
+
+    def test_reports_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.get("/api/v1/authoring/reports/")
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+
 class AuthoringBatchTests(APITestCase):
     def setUp(self):
         staff = User.objects.create_user("author", password="p", is_staff=True)

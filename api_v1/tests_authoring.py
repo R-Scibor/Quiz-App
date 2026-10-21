@@ -467,3 +467,145 @@ class AuthoringQuestionWriteTests(APITestCase):
         self.assertFalse(r.data["applied"])
         self.assertFalse(r.data["deleted"])
         self.assertTrue(Question.objects.filter(pk=self.question_id).exists())
+
+
+class AuthoringRetireTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=self.staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "questions": [
+                {
+                    "id": 1,
+                    "questionText": "Coronation year?",
+                    "type": "single-choice",
+                    "options": ["966", "1025"],
+                    "correctAnswers": [1],
+                },
+                {
+                    "id": 2,
+                    "questionText": "Who was crowned?",
+                    "type": "open-text",
+                    "gradingCriteria": "Bolesław",
+                    "maxPoints": 2,
+                },
+            ],
+        })
+        self.test_id = result["test"]["test_id"]
+        questions = {q["id"]: q for q in result["quiz"]["questions"]}
+        self.kept_id = questions[1]["question_id"]
+        self.other_id = questions[2]["question_id"]
+
+    def test_retire_hides_from_draw_and_study_then_restore(self):
+        from api_v1.models import Question, QuestionAttempt, QuizSession, Test
+
+        session = QuizSession.objects.create(user=self.staff, total_questions=1)
+        QuestionAttempt.objects.create(
+            user=self.staff,
+            question=Question.objects.get(pk=self.kept_id),
+            test=Test.objects.get(pk=self.test_id),
+            session=session,
+            is_correct=True,
+        )
+        before = self.client.get("/api/v1/study/stats/")
+        self.assertEqual(before.data["new_count"], 1)
+
+        retired = self.client.patch(
+            f"/api/v1/authoring/questions/{self.other_id}/",
+            {"retired": True},
+            format="json",
+        )
+        self.assertEqual(retired.status_code, 200)
+        self.assertTrue(retired.data["question"]["retired"])
+
+        drawn = self.client.get(
+            f"/api/v1/questions/?categories={self.test_id}&num_questions=10&mode=mixed"
+        )
+        self.assertEqual(drawn.status_code, 200)
+        drawn_ids = {row["id"] for row in drawn.data}
+        self.assertNotIn(self.other_id, drawn_ids)
+        self.assertIn(self.kept_id, drawn_ids)
+
+        after = self.client.get("/api/v1/study/stats/")
+        self.assertEqual(after.data["new_count"], 0)
+
+        listed = self.client.get("/api/v1/authoring/tests/")
+        row = next(item for item in listed.data if item["test_id"] == self.test_id)
+        self.assertEqual(row["question_counts"]["retired"], 1)
+        self.assertEqual(row["question_counts"]["total"], 2)
+
+        restored = self.client.patch(
+            f"/api/v1/authoring/questions/{self.other_id}/",
+            {"retired": False},
+            format="json",
+        )
+        self.assertFalse(restored.data["question"]["retired"])
+        self.assertEqual(self.client.get("/api/v1/study/stats/").data["new_count"], 1)
+
+    def test_import_keeps_omitted_retired_question_without_attempts(self):
+        from api_v1.models import Question
+
+        Question.objects.filter(pk=self.other_id).update(retired=True)
+        payload = {
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "test_id": self.test_id,
+            "questions": [{
+                "id": 1,
+                "question_id": self.kept_id,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        }
+        result = import_quiz(payload)
+        self.assertTrue(Question.objects.filter(pk=self.other_id, retired=True).exists())
+        reasons = {item["reason"] for item in result["questions"]["blocked_deletes"]}
+        self.assertIn("retired", reasons)
+
+    def test_import_without_retired_key_keeps_flag(self):
+        from api_v1.models import Question
+
+        Question.objects.filter(pk=self.other_id).update(retired=True)
+        payload = {
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "test_id": self.test_id,
+            "questions": [
+                {
+                    "id": 1,
+                    "question_id": self.kept_id,
+                    "questionText": "Coronation year?",
+                    "type": "single-choice",
+                    "options": ["966", "1025"],
+                    "correctAnswers": [1],
+                },
+                {
+                    "id": 2,
+                    "question_id": self.other_id,
+                    "questionText": "Who was crowned?",
+                    "type": "open-text",
+                    "gradingCriteria": "Bolesław",
+                    "maxPoints": 2,
+                },
+            ],
+        }
+        import_quiz(payload)
+        self.assertTrue(Question.objects.get(pk=self.other_id).retired)
+
+    def test_retire_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.patch(
+            f"/api/v1/authoring/questions/{self.other_id}/",
+            {"retired": True},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")

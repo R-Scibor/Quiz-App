@@ -18,6 +18,7 @@ def question_to_interchange(question: Question) -> dict:
         "type": question.question_type,
         "tags": [t.name for t in question.tags.all()],
         "explanation": question.explanation or "",
+        "retired": bool(question.retired),
     }
     if question.question_type in CLOSED:
         payload["options"] = [a.text for a in answers]

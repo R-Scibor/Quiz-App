@@ -121,6 +121,7 @@ class AuthoringTestListView(AuthoringAPIView):
                 "questions",
                 filter=Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]),
             ),
+            retired_questions_count=Count("questions", filter=Q(questions__retired=True)),
         ).prefetch_related("categories")
         payload = []
         for t in tests:
@@ -135,6 +136,7 @@ class AuthoringTestListView(AuthoringAPIView):
                     "open": t.open_questions_count,
                     "closed": t.closed_questions_count,
                     "total": t.total_questions_count,
+                    "retired": t.retired_questions_count,
                 },
                 "updated_at": t.updated_at.isoformat(),
             })

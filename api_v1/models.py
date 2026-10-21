@@ -91,6 +91,10 @@ class Question(models.Model):
         null=True,
         help_text="File-local integer id from quiz JSON.",
     )
+    retired = models.BooleanField(
+        default=False,
+        help_text="Hidden from new quiz sessions and the study queue. Attempt history is kept.",
+    )
 
     class Meta:
         verbose_name = "Question"

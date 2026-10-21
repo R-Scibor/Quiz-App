@@ -178,6 +178,8 @@ def _validate_question(question: Any, index: int, add) -> None:
         add(f"{prefix}.image", "INVALID_TYPE", "'image' must be a string.")
     if "tags" in question and not isinstance(question["tags"], list):
         add(f"{prefix}.tags", "INVALID_TYPE", "'tags' must be a list.")
+    if "retired" in question and not isinstance(question["retired"], bool):
+        add(f"{prefix}.retired", "INVALID_TYPE", "'retired' must be a boolean.")
 
 
 def _validate_regex(pattern: str) -> str | None:

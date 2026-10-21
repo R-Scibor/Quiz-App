@@ -178,6 +178,15 @@ def _filter_study_buckets(latest_map, due_ids, struggling_ids, studied_test_ids,
     return latest_map, due_ids, struggling_ids, list(test_id_filter)
 
 
+def _drop_retired(ids):
+    if not ids:
+        return list(ids)
+    retired = set(
+        Question.objects.filter(id__in=list(ids), retired=True).values_list("id", flat=True)
+    )
+    return [qid for qid in ids if qid not in retired]
+
+
 def _compose_study_ids(due_ids, struggling_ids, new_ids, limit):
     """Due first, mix struggling with new, then fill any leftover from either pool."""
     due = list(due_ids)
@@ -221,10 +230,11 @@ class TestListView(APIView):
     """Returns a list of all available tests with question counts."""
     def get(self, request, *args, **kwargs):
         try:
+            active = Q(questions__retired=False)
             tests_with_counts = Test.objects.annotate(
-                total_questions_count=Count('questions'),
-                open_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE])),
-                closed_questions_count=Count('questions', filter=Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]))
+                total_questions_count=Count('questions', filter=active),
+                open_questions_count=Count('questions', filter=active & Q(questions__question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE])),
+                closed_questions_count=Count('questions', filter=active & Q(questions__question_type__in=[Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE]))
             ).prefetch_related('categories')
             serializer = TestMetadataSerializer(tests_with_counts, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -258,7 +268,7 @@ class QuestionListView(APIView):
         if not 1 <= num_questions <= 200:
             return Response({"error": "INVALID_PARAMETER_FORMAT", "message": "num_questions must be between 1 and 200."}, status=status.HTTP_400_BAD_REQUEST)
 
-        questions_queryset = Question.objects.filter(test__id__in=test_ids)
+        questions_queryset = Question.objects.filter(test__id__in=test_ids, retired=False)
         if mode == 'open':
             questions_queryset = questions_queryset.filter(
                 question_type__in=[Question.OPEN_TEXT, Question.OPEN_CLI, Question.OPEN_CODE]
@@ -537,12 +547,14 @@ class StudyQueueView(APIView):
         latest_map, due_ids, struggling_ids, studied_test_ids = _filter_study_buckets(
             *_build_study_buckets(user), test_id_filter
         )
+        due_ids = _drop_retired(due_ids)
+        struggling_ids = _drop_retired(struggling_ids)
 
         attempted_ids = set(latest_map.keys())
         new_ids = []
         if studied_test_ids:
             new_ids = list(
-                Question.objects.filter(test__in=studied_test_ids)
+                Question.objects.filter(test__in=studied_test_ids, retired=False)
                 .exclude(id__in=attempted_ids)
                 .order_by('?')
                 .values_list('id', flat=True)[:limit]
@@ -569,12 +581,14 @@ class StudyStatsView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         latest_map, due_ids, struggling_ids, studied_test_ids = _build_study_buckets(user)
+        due_ids = _drop_retired(due_ids)
+        struggling_ids = _drop_retired(struggling_ids)
         attempted_ids = set(latest_map.keys())
 
         new_count = 0
         if studied_test_ids:
             new_count = Question.objects.filter(
-                test__in=studied_test_ids
+                test__in=studied_test_ids, retired=False
             ).exclude(id__in=attempted_ids).count()
 
         mastered_count = sum(

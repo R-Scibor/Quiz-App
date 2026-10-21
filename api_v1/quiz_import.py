@@ -45,6 +45,7 @@ _QUESTION_FIELDS = {
     "explanation",
     "gradingCriteria",
     "maxPoints",
+    "retired",
 }
 
 
@@ -85,6 +86,7 @@ def _preview_question(qdata: dict) -> dict:
         "type": ntype,
         "tags": [name for name in (qdata.get("tags") or []) if isinstance(name, str)],
         "explanation": qdata.get("explanation") or "",
+        "retired": qdata["retired"] if isinstance(qdata.get("retired"), bool) else False,
     }
     if ntype in CLOSED:
         payload["options"] = list(qdata.get("options") or [])
@@ -211,6 +213,8 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
             }
             if q.attempt_count:
                 blocked.append({**entry, "reason": "has_attempts", "attempt_count": q.attempt_count})
+            elif q.retired:
+                blocked.append({**entry, "reason": "retired"})
             else:
                 would_delete.append(entry)
 
@@ -226,10 +230,12 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
         else:
             unchanged += 1
 
-    warnings = [
-        f"Question {b['question_id']} not deleted: has_attempts"
-        for b in blocked
-    ]
+    warnings = []
+    for item in blocked:
+        if item.get("reason") == "retired":
+            warnings.append(f"Question {item['question_id']} not deleted: retired")
+        else:
+            warnings.append(f"Question {item['question_id']} not deleted: has_attempts")
 
     result = {
         "applied": False,
@@ -290,7 +296,7 @@ def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
             locked = test.questions.select_for_update()
             list(locked)
             unmatched = locked.exclude(pk__in=keep) if keep else locked
-            unmatched.filter(attempts__isnull=True).delete()
+            unmatched.filter(attempts__isnull=True, retired=False).delete()
 
             _release_unique_slots(pairs)
 
@@ -391,6 +397,8 @@ def _changed_fields(question: Question, qdata: dict) -> list[str]:
         existing_correct = [i for i, a in enumerate(answers) if a.is_correct]
         if existing_correct != list(qdata.get("correctAnswers") or []):
             fields.append("correctAnswers")
+    if "retired" in qdata and isinstance(qdata["retired"], bool) and question.retired != qdata["retired"]:
+        fields.append("retired")
     return fields
 
 
@@ -427,6 +435,10 @@ def _upsert_question(test: Test, match: Question | None, qdata: dict) -> Questio
         "source_id": qdata.get("id"),
         "test": test,
     }
+    if "retired" in qdata and isinstance(qdata["retired"], bool):
+        defaults["retired"] = qdata["retired"]
+    elif match is None:
+        defaults["retired"] = False
     if match is None:
         obj = Question.objects.create(**defaults)
     else:

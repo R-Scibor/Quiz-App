@@ -717,7 +717,7 @@ Import **upserts** questions in this order: `question_id` (UUID), then integer `
 -   **Method:** `PATCH`
 -   **Endpoint:** `/authoring/questions/<uuid>/`
 -   **Authentication:** Token + `is_staff`.
--   **Description:** Merges the given fields into the question and validates the result. Send only the fields that change (`questionText`, `type`, `options`, `correctAnswers`, `gradingCriteria`, `maxPoints`, `explanation`, `image`, `tags`, `id`). The UUID does not change. `?dry_run=true` returns the merged question without writing.
+-   **Description:** Merges the given fields into the question and validates the result. Send only the fields that change (`questionText`, `type`, `options`, `correctAnswers`, `gradingCriteria`, `maxPoints`, `explanation`, `image`, `tags`, `id`, `retired`). `retired: true` hides the question from quiz draws, the study queue, and public question counts, and keeps attempt history. The UUID does not change. `?dry_run=true` returns the merged question without writing.
 -   **Success Response (200 OK):** `{ "applied": true, "dry_run": false, "question": { ... } }`.
 -   **Error Responses:**
     -   **400** `VALIDATION_FAILED`.
@@ -814,6 +814,41 @@ Import **upserts** questions in this order: `question_id` (UUID), then integer `
 
 ---
 
+A full import that omits a retired question does not delete it. The row is listed in `questions.blocked_deletes` with `reason: "retired"`. A question object that leaves `retired` out keeps the stored flag. `"retired": false` puts the question back into study.
+
+### 27. Search tests and questions
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/search/?q=<text>`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Case-insensitive match on test title, category name, question text, and tag name. `q` must be at least 2 characters. Optional `test_id`, exact `tag`, and `limit` (default 20, max 50). Retired questions are included.
+-   **Success Response (200 OK):** `{ "tests": [ { "test_id", "category", "scope", "version" } ], "questions": [ { "test_id", "scope", "question_id", "id", "questionText", "type", "tags", "retired" } ] }`.
+-   **Error Response (400)** `VALIDATION_FAILED` when `q` is shorter than 2 characters.
+
+### 28. Append a batch of questions
+
+-   **Method:** `POST`
+-   **Endpoint:** `/authoring/tests/<uuid>/questions/batch/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Inserts up to 50 interchange questions in one transaction. The body is `{ "questions": [ ... ] }`. Omitted `id` values get the next `source_id` values in order. One invalid item or a duplicate text/`id` rejects the whole batch. `?dry_run=true` writes nothing.
+-   **Success Response (201 Created):** `{ "applied": true, "dry_run": false, "questions": [ ... ] }`.
+-   **Error Responses:** **400** `VALIDATION_FAILED` (paths like `questions[1].type`), **404** `TEST_NOT_FOUND`.
+
+### 29. List tags in use
+
+-   **Method:** `GET`
+-   **Endpoint:** `/authoring/tags/`
+-   **Authentication:** Token + `is_staff`.
+-   **Success Response (200 OK):** `[ { "name": "dns", "question_count": 12 } ]`, sorted by name. Tags with no questions are omitted. Counts include retired questions.
+
+### 30. Reported issues
+
+-   **Authentication:** Token + `is_staff`.
+-   **List:** `GET /authoring/reports/?status=NEW`. Default status is `NEW`. `limit` default 20, max 50. Each row has `id`, `status`, `issue_type`, `created_at`, `test_id`, `question_id`, and a short `description`.
+-   **Detail:** `GET /authoring/reports/<uuid>/`. Adds the full description, the learner's answer, `ai_feedback_snapshot`, `resolution_note`, and `question` in interchange shape.
+-   **Update:** `PATCH /authoring/reports/<uuid>/` with `status` of `IN_PROGRESS`, `RESOLVED`, or `REJECTED`, and an optional `resolution_note`. This does not change the question. Fix the question with the question patch, then set the status.
+-   **Error Responses:** **404** `REPORT_NOT_FOUND`. **400** `VALIDATION_FAILED` for an unknown status.
+
 ### Authoring error codes
 
 | Code | HTTP | When |
@@ -823,6 +858,8 @@ Import **upserts** questions in this order: `question_id` (UUID), then integer `
 | `VALIDATION_FAILED` | 400 | Import payload failed validation |
 | `TEST_NOT_FOUND` | 404 | Unknown test UUID |
 | `QUESTION_NOT_FOUND` | 404 | Unknown question UUID (or not on that test) |
+| `REPORT_NOT_FOUND` | 404 | Unknown reported-issue UUID |
+| `DELETE_BLOCKED` | 409 | Question has attempts and was not deleted |
 | `IMPORT_CONFLICT` | 409 | Import could not uniquely match a test or question |
 
 Error bodies are `{ "error": "<CODE>", "message": "..." }` except `VALIDATION_FAILED`, which returns `{ "error": "VALIDATION_FAILED", "errors": [ ... ] }`.

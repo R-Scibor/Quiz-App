@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .authoring_schema import AUTHORING_SCHEMA
-from .models import Category, Question, Test
+from .models import Category, Question, Tag, Test
 from .quiz_export import question_to_interchange, test_to_interchange
 from .quiz_import import (
     DeleteBlockedError,
@@ -108,6 +108,19 @@ class AuthoringImportView(AuthoringAPIView):
                 status=status.HTTP_409_CONFLICT,
             )
         return Response(result, status=status.HTTP_200_OK)
+
+
+class AuthoringTagListView(AuthoringAPIView):
+    def get(self, request):
+        tags = (
+            Tag.objects.annotate(question_count=Count("questions"))
+            .filter(question_count__gt=0)
+            .order_by("name")
+        )
+        return Response([
+            {"name": tag.name, "question_count": tag.question_count}
+            for tag in tags
+        ])
 
 
 class AuthoringSearchView(AuthoringAPIView):

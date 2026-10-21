@@ -654,6 +654,40 @@ class AuthoringSearchTests(APITestCase):
         self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
 
 
+class AuthoringTagTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "questions": [{
+                "id": 1,
+                "questionText": "Who was crowned?",
+                "type": "open-text",
+                "tags": ["coronation"],
+                "gradingCriteria": "Bolesław",
+                "maxPoints": 1,
+            }],
+        })
+
+    def test_lists_tags_in_use_only(self):
+        from api_v1.models import Tag
+        Tag.objects.create(name="unused")
+        r = self.client.get("/api/v1/authoring/tags/")
+        self.assertEqual(r.status_code, 200)
+        names = [row["name"] for row in r.data]
+        self.assertEqual(names, ["coronation"])
+        self.assertEqual(r.data[0]["question_count"], 1)
+
+    def test_tags_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.get("/api/v1/authoring/tags/")
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+
 class AuthoringBatchTests(APITestCase):
     def setUp(self):
         staff = User.objects.create_user("author", password="p", is_staff=True)

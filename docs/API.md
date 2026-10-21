@@ -684,7 +684,62 @@ Import **upserts** questions in this order: `question_id` (UUID), then integer `
 
 ---
 
-### 22. Patch Test Metadata
+### 22. Create a Question
+
+-   **Method:** `POST`
+-   **Endpoint:** `/authoring/tests/<uuid>/questions/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Creates one question on an existing test. The body is a single interchange question, not a full quiz. If `id` is omitted, the server assigns the next integer `source_id` on that test. `?dry_run=true` validates and returns the question that would be stored without writing.
+-   **Success Response (201 Created):**
+    ```json
+    {
+        "applied": true,
+        "dry_run": false,
+        "question": {
+            "id": 2,
+            "question_id": "c0a80100-0000-4000-8000-000000000102",
+            "questionText": "Who was crowned?",
+            "type": "open-text",
+            "gradingCriteria": "Bolesław",
+            "maxPoints": 2
+        }
+    }
+    ```
+-   **Dry run (200 OK):** same shape with `"applied": false` and `"dry_run": true`. `question_id` is null.
+-   **Error Responses:**
+    -   **400** `VALIDATION_FAILED` — invalid question, or `id` / `questionText` already used on this test. No write.
+    -   **404** `TEST_NOT_FOUND`.
+
+---
+
+### 23. Update a Question
+
+-   **Method:** `PATCH`
+-   **Endpoint:** `/authoring/questions/<uuid>/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Merges the given fields into the question and validates the result. Send only the fields that change (`questionText`, `type`, `options`, `correctAnswers`, `gradingCriteria`, `maxPoints`, `explanation`, `image`, `tags`, `id`). The UUID does not change. `?dry_run=true` returns the merged question without writing.
+-   **Success Response (200 OK):** `{ "applied": true, "dry_run": false, "question": { ... } }`.
+-   **Error Responses:**
+    -   **400** `VALIDATION_FAILED`.
+    -   **404** `QUESTION_NOT_FOUND`.
+
+---
+
+### 24. Delete a Question
+
+-   **Method:** `DELETE`
+-   **Endpoint:** `/authoring/questions/<uuid>/`
+-   **Authentication:** Token + `is_staff`.
+-   **Description:** Deletes one question. A question that already has attempts is kept.
+-   **Success Response (200 OK):** `{ "applied": true, "dry_run": false, "deleted": true, "question_id": "..." }`.
+-   **Dry run (200 OK):** `{ "applied": false, "dry_run": true, "deleted": false, "question_id": "..." }`. If attempts exist, the body includes `blocked` (`reason`: `has_attempts`, `attempt_count`) and the row stays.
+-   **Error Responses:**
+    -   **404** `QUESTION_NOT_FOUND`.
+    -   **409** `DELETE_BLOCKED` — the question has attempts (`reason`: `has_attempts`, `attempt_count`). The row stays.
+
+---
+
+### 25. Patch Test Metadata
 
 -   **Method:** `PATCH`
 -   **Endpoint:** `/authoring/tests/<uuid>/`
@@ -704,7 +759,7 @@ Import **upserts** questions in this order: `question_id` (UUID), then integer `
 
 ---
 
-### 23. Import a Quiz
+### 26. Import a Quiz
 
 -   **Method:** `POST`
 -   **Endpoint:** `/authoring/import/`

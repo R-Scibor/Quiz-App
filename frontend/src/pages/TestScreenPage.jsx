@@ -53,12 +53,12 @@ const OpenEndedQuestionUI = () => {
         setError,
         error: apiError
     } = useTestStore();
-    const [userAnswer, setUserAnswer] = useState('');
+    const question = currentQuestions[currentQuestionIndex];
+    const questionResult = openQuestionResults[question.id];
+    const [userAnswer, setUserAnswer] = useState(questionResult?.userAnswer || '');
     const [isSlowGrading, setIsSlowGrading] = useState(false);
     const slowWarningRef = useRef(null);
-    const question = currentQuestions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex >= currentQuestions.length - 1;
-    const questionResult = openQuestionResults[question.id];
     const isCurrentlyChecking = checkingQuestionId === question.id;
     const isCli = question.type === 'open-cli';
     const isCode = question.type === 'open-code';
@@ -72,15 +72,22 @@ const OpenEndedQuestionUI = () => {
         };
     }, []);
 
+    const savedAnswer = questionResult?.userAnswer || '';
+    const answerToSend = userAnswer.trim() || savedAnswer;
+    const gradingTimedOut = Boolean(questionResult?.gradingTimedOut) && !questionResult?.feedback;
+    const otherError = apiError && !(apiError.message || '').toLowerCase().includes('timed out')
+        ? apiError.message
+        : null;
+
     const handleSubmit = async () => {
-        if (!userAnswer.trim() || isCurrentlyChecking || questionResult?.feedback) return;
+        if (!answerToSend.trim() || isCurrentlyChecking || questionResult?.feedback) return;
         setError(null);
         setIsSlowGrading(false);
         if (slowWarningRef.current) clearTimeout(slowWarningRef.current);
         slowWarningRef.current = setTimeout(() => setIsSlowGrading(true), 15000);
 
         try {
-            const taskResponse = await useTestStore.getState().checkOpenAnswer(userAnswer);
+            const taskResponse = await useTestStore.getState().checkOpenAnswer(answerToSend);
             const taskId = taskResponse.task_id;
             if (!taskId) throw new Error("No task ID received from server.");
             useTestStore.getState().startPolling(taskId, question.id);
@@ -199,21 +206,23 @@ const OpenEndedQuestionUI = () => {
             <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
                 {userAnswer.length} {userAnswer.length === 1 ? 'character' : 'characters'}
             </p>
-            {apiError && (
+            {(gradingTimedOut || otherError) && (
                 <div className="mt-2 text-center">
-                    <p className="text-red-500 text-sm">{apiError.message}</p>
+                    <p className="text-red-500 text-sm">
+                        {gradingTimedOut ? 'AI grading timed out. Please try again.' : otherError}
+                    </p>
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleSubmit}
-                        disabled={!userAnswer.trim()}
+                        disabled={!answerToSend.trim()}
                         className="btn-primary mt-2 py-1.5 px-6 text-sm"
                     >
-                        Try again
+                        {gradingTimedOut ? 'Retry' : 'Try again'}
                     </motion.button>
                 </div>
             )}
-            {!apiError && (
+            {!gradingTimedOut && !otherError && (
                 <div className="mt-8 text-center min-h-[52px]">
                     <motion.button
                         whileHover={{ scale: 1.05 }}

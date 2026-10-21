@@ -48,6 +48,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
             "scope": "Medieval Poland",
             "version": "2.0-db",
             "test_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            "created_at": "2026-01-01T00:00:00Z",
             "question_counts": {
                 "closed": 15,
                 "open": 5,
@@ -59,6 +60,7 @@ Question and answer primary keys are UUIDs, not integers. JSON import files stil
             "scope": "Cell Structure",
             "version": "2.0-db",
             "test_id": "f0e9d8c7-b6a5-4321-fedc-ba9876543210",
+            "created_at": "2025-06-01T00:00:00Z",
             "question_counts": {
                 "closed": 25,
                 "open": 10,

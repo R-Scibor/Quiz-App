@@ -89,6 +89,39 @@ const tapEffect = {
     scale: 0.98
 };
 
+const createdAtTime = (test) => {
+    const time = Date.parse(test.created_at || '');
+    return Number.isFinite(time) ? time : 0;
+};
+
+const compareByName = (left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' });
+
+const compareTests = (left, right, sort) => {
+    if (sort === 'newest') {
+        const diff = createdAtTime(right) - createdAtTime(left);
+        if (diff) return diff;
+    } else if (sort === 'count') {
+        const diff = (right.question_counts?.total || 0) - (left.question_counts?.total || 0);
+        if (diff) return diff;
+    }
+    return compareByName(left.scope || '', right.scope || '');
+};
+
+const compareCategories = (left, right, sort) => {
+    const [leftName, leftGroup] = left;
+    const [rightName, rightGroup] = right;
+    if (sort === 'newest') {
+        const leftNewest = Math.max(0, ...leftGroup.tests.map(createdAtTime));
+        const rightNewest = Math.max(0, ...rightGroup.tests.map(createdAtTime));
+        const diff = rightNewest - leftNewest;
+        if (diff) return diff;
+    } else if (sort === 'count') {
+        const diff = leftGroup.question_counts.total - rightGroup.question_counts.total;
+        if (diff) return -diff;
+    }
+    return compareByName(leftName, rightName);
+};
+
 const ChevronIcon = ({ expanded }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}>
         <polyline points="6 9 12 15 18 9"></polyline>
@@ -119,14 +152,23 @@ const TestSetupPage = () => {
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [isLlmWarningModalOpen, setIsLlmWarningModalOpen] = useState(false);
     const [pendingQuestionMode, setPendingQuestionMode] = useState(null);
+    const [testQuery, setTestQuery] = useState('');
+    const [testSort, setTestSort] = useState('alpha');
 
     useEffect(() => { 
         fetchAvailableTests(); 
     }, [fetchAvailableTests]);
 
     const testsByCategory = useMemo(() => {
-        return availableTests.reduce((acc, test) => {
-            const { category } = test;
+        const query = testQuery.trim().toLowerCase();
+        const visibleTests = availableTests.filter((test) => {
+            if (!query) return true;
+            const scope = (test.scope || '').toLowerCase();
+            const category = (test.category || '').toLowerCase();
+            return scope.includes(query) || category.includes(query);
+        });
+        const grouped = visibleTests.reduce((acc, test) => {
+            const category = test.category || 'Uncategorized';
             if (!acc[category]) {
                 acc[category] = { tests: [], question_counts: { total: 0, closed: 0, open: 0 } };
             }
@@ -136,7 +178,10 @@ const TestSetupPage = () => {
             acc[category].question_counts.open += test.question_counts.open;
             return acc;
         }, {});
-    }, [availableTests]);
+        return Object.entries(grouped)
+            .map(([category, group]) => [category, { ...group, tests: [...group.tests].sort((a, b) => compareTests(a, b, testSort)) }])
+            .sort((a, b) => compareCategories(a, b, testSort));
+    }, [availableTests, testQuery, testSort]);
 
     const totalAvailableQuestions = useMemo(() => {
         if (selectedCategories.length === 0) return 0;
@@ -270,7 +315,36 @@ const TestSetupPage = () => {
                 )}
                 
                 <div className="mb-8 text-left">
+                    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                        <div className="flex-1">
+                            <label htmlFor="test-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search tests</label>
+                            <input
+                                id="test-search"
+                                type="search"
+                                value={testQuery}
+                                onChange={(e) => setTestQuery(e.target.value)}
+                                placeholder="Category or test name"
+                                className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary"
+                            />
+                        </div>
+                        <div className="sm:w-48">
+                            <label htmlFor="test-sort" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort tests</label>
+                            <select
+                                id="test-sort"
+                                value={testSort}
+                                onChange={(e) => setTestSort(e.target.value)}
+                                className="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white focus:ring-brand-primary focus:border-brand-primary"
+                            >
+                                <option value="alpha">Alphabetical</option>
+                                <option value="newest">Newest</option>
+                                <option value="count">Most questions</option>
+                            </select>
+                        </div>
+                    </div>
                     {isLoading && availableTests.length === 0 && <p className="text-center text-gray-600 dark:text-gray-400">Loading tests...</p>}
+                    {!isLoading && availableTests.length > 0 && testsByCategory.length === 0 && (
+                        <p className="text-center text-gray-600 dark:text-gray-400">No tests match that search.</p>
+                    )}
                     <motion.div 
                         className="space-y-4"
                         variants={{
@@ -279,7 +353,7 @@ const TestSetupPage = () => {
                         initial="hidden"
                         animate="visible"
                     >
-                        {Object.entries(testsByCategory).map(([category, { tests, question_counts }]) => {
+                        {testsByCategory.map(([category, { tests, question_counts }]) => {
                             const allTestIds = tests.map(t => t.test_id);
                             const areAllSelected = allTestIds.every(id => selectedCategories.includes(id));
                             return (

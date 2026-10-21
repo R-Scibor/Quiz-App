@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+from django.utils.dateparse import parse_datetime
 from rest_framework.test import APITestCase
 from rest_framework import status
 
@@ -89,6 +90,13 @@ class QuizAPITests(APITestCase):
         response = self.client.get("/api/v1/tests/")
         by_scope = {item["scope"]: item for item in response.json()}
         self.assertEqual(by_scope["Historia"]["version"], "9.9-test")
+
+    def test_list_tests_includes_created_at(self):
+        response = self.client.get("/api/v1/tests/")
+        by_scope = {item["scope"]: item for item in response.json()}
+        parsed = parse_datetime(by_scope["Historia"]["created_at"])
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed, self.test_historia.created_at)
 
     # --- QuestionListView ---
 

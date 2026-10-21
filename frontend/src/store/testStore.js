@@ -8,6 +8,13 @@ const loadStudyNumQuestions = () => {
     return Number.isFinite(n) && n > 0 ? n : 20;
 };
 
+const QUESTION_MODES = ['closed', 'open', 'mixed'];
+
+const loadQuestionMode = () => {
+    const saved = localStorage.getItem('question_mode');
+    return QUESTION_MODES.includes(saved) ? saved : 'closed';
+};
+
 const useTestStore = create((set, get) => ({
     // State properties
     view: 'home',
@@ -15,7 +22,7 @@ const useTestStore = create((set, get) => ({
     selectedCategories: [],
     numQuestionsConfig: 10,
     timerEnabled: false,
-    questionMode: 'closed',
+    questionMode: loadQuestionMode(),
 
     currentQuestions: [],
     currentQuestionIndex: 0,
@@ -78,7 +85,12 @@ const useTestStore = create((set, get) => ({
         return { selectedCategories: Array.from(selected) };
     }),
 
-    setQuestionMode: (mode) => set({ questionMode: mode }),
+    setQuestionMode: (mode) => {
+        if (QUESTION_MODES.includes(mode)) {
+            localStorage.setItem('question_mode', mode);
+        }
+        set({ questionMode: mode });
+    },
 
     setConfig: (num, timer) => set({ numQuestionsConfig: num, timerEnabled: timer }),
     
@@ -144,12 +156,13 @@ const useTestStore = create((set, get) => ({
 
         if (checkingQuestionId === question.id) return { task_id: null };
 
-        // Only record time on the first (non-forced) submission
-        if (!forceAI && questionStartTime) {
+        // Only record time on the first submission. A retry must not add it again.
+        if (!forceAI && questionStartTime && !get().questionTimes[question.id]) {
             const timeElapsed = Math.floor((new Date() - new Date(questionStartTime)) / 1000);
             set(state => ({
                 totalTimeSpent: state.totalTimeSpent + timeElapsed,
                 isTimerRunning: false,
+                questionStartTime: null,
                 questionTimes: { ...state.questionTimes, [question.id]: timeElapsed },
             }));
         }
@@ -164,6 +177,7 @@ const useTestStore = create((set, get) => ({
                 [question.id]: {
                     ...(state.openQuestionResults[question.id] || {}),
                     userAnswer: userAnswer,
+                    gradingTimedOut: false,
                 }
             }
         }));
@@ -197,7 +211,17 @@ const useTestStore = create((set, get) => ({
             };
             if (retries >= MAX_RETRIES) {
                 clearPoll();
-                get().setError({ message: 'AI grading timed out. Please try again.' });
+                set(state => ({
+                    error: { message: 'AI grading timed out. Please try again.' },
+                    checkingQuestionId: state.checkingQuestionId === questionId ? null : state.checkingQuestionId,
+                    openQuestionResults: {
+                        ...state.openQuestionResults,
+                        [questionId]: {
+                            ...(state.openQuestionResults[questionId] || {}),
+                            gradingTimedOut: true,
+                        },
+                    },
+                }));
                 return;
             }
             retries++;
@@ -254,6 +278,7 @@ const useTestStore = create((set, get) => ({
                     feedback: feedback,
                     maxPoints: question.maxPoints,
                     grading_method: grading_method ?? null,
+                    gradingTimedOut: false,
                 }
             },
             // Clear the checking state only if it matches the question that just finished

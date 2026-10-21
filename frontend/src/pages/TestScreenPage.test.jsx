@@ -210,4 +210,57 @@ describe('TestScreenPage - quiz solving scenarios', () => {
         expect(pre.style.whiteSpace).toBe('pre-wrap');
         expect(pre.style.overflowWrap).toBe('anywhere');
     });
+
+    test('retries a timed-out open grade with the saved answer', async () => {
+        const checkOpenAnswer = vi.fn().mockResolvedValue({ task_id: 'task-retry' });
+        const startPolling = vi.fn();
+        act(() => {
+            useTestStore.setState({
+                currentQuestions: [{
+                    id: 'q-open',
+                    questionText: 'Explain DNS',
+                    type: 'open-text',
+                    gradingCriteria: 'Domain Name System',
+                    maxPoints: 3,
+                }],
+                currentQuestionIndex: 0,
+                openQuestionResults: {
+                    'q-open': { userAnswer: 'Domain Name System', gradingTimedOut: true },
+                },
+                error: { message: 'AI grading timed out. Please try again.' },
+                checkOpenAnswer,
+                startPolling,
+            });
+        });
+
+        render(<TestScreenPage />);
+
+        expect(screen.getByLabelText(/answer field/i)).toHaveValue('Domain Name System');
+        await user.click(screen.getByRole('button', { name: /^retry$/i }));
+
+        expect(checkOpenAnswer).toHaveBeenCalledWith('Domain Name System');
+        expect(startPolling).toHaveBeenCalledWith('task-retry', 'q-open');
+    });
+
+    test('does not offer retry on a later question after another grade times out', () => {
+        act(() => {
+            useTestStore.setState({
+                currentQuestions: [
+                    { id: 'q-open', questionText: 'Explain DNS', type: 'open-text', gradingCriteria: 'dns', maxPoints: 3 },
+                    { id: 'q-next', questionText: 'Explain TCP', type: 'open-text', gradingCriteria: 'tcp', maxPoints: 2 },
+                ],
+                currentQuestionIndex: 1,
+                openQuestionResults: {
+                    'q-open': { userAnswer: 'Domain Name System', gradingTimedOut: true },
+                },
+                error: { message: 'AI grading timed out. Please try again.' },
+            });
+        });
+
+        render(<TestScreenPage />);
+
+        expect(screen.getByText('Explain TCP')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /retry|try again/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /check answer/i })).toBeInTheDocument();
+    });
 });

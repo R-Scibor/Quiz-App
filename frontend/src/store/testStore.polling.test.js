@@ -129,8 +129,21 @@ describe('useTestStore - startPolling', () => {
 
         const state = useTestStore.getState();
         expect(state.error?.message).toMatch(/timed out/i);
+        expect(state.openQuestionResults['q1'].gradingTimedOut).toBe(true);
+        expect(state.checkingQuestionId).toBeNull();
         expect(state.activePolls['task-timeout']).toBeUndefined();
         expect(mockGetTaskResult).toHaveBeenCalledTimes(60);
+    });
+
+    test('timeout does not clear grading for a different question', async () => {
+        mockGetTaskResult.mockResolvedValue({ data: { status: 'PENDING', data: null } });
+        act(() => { useTestStore.setState({ checkingQuestionId: 'q2' }); });
+
+        act(() => { useTestStore.getState().startPolling('task-timeout', 'q1'); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(61 * 2000 + 100); });
+
+        expect(useTestStore.getState().checkingQuestionId).toBe('q2');
+        expect(useTestStore.getState().openQuestionResults['q1'].gradingTimedOut).toBe(true);
     });
 });
 
@@ -161,6 +174,29 @@ describe('useTestStore - checkOpenAnswer guard (scoped to question)', () => {
 
     afterEach(() => {
         act(() => { useTestStore.getState().resetTest(); });
+    });
+
+    test('records time once when the same open answer is submitted again', async () => {
+        mockCheckOpenAnswer.mockResolvedValue({ data: { task_id: 'task-1' } });
+        const started = new Date(Date.now() - 5000);
+        act(() => {
+            useTestStore.setState({
+                questionStartTime: started,
+                isTimerRunning: true,
+                questionTimes: {},
+                totalTimeSpent: 0,
+                checkingQuestionId: null,
+            });
+        });
+
+        await act(async () => { await useTestStore.getState().checkOpenAnswer('DNS answer'); });
+        const once = useTestStore.getState().totalTimeSpent;
+        expect(once).toBeGreaterThan(0);
+
+        act(() => { useTestStore.setState({ checkingQuestionId: null }); });
+        await act(async () => { await useTestStore.getState().checkOpenAnswer('DNS answer'); });
+
+        expect(useTestStore.getState().totalTimeSpent).toBe(once);
     });
 
     test('blocks re-submission of the same question that is currently being graded', async () => {

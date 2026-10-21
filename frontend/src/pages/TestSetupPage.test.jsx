@@ -12,8 +12,10 @@ import { getQuestions } from '../services/api';
 vi.mock('../services/api', () => ({
   getAvailableTests: vi.fn(() => Promise.resolve({
     data: [
-      { category: 'History', scope: 'Poland', version: '1.0', test_id: 'history_poland', question_counts: { total: 10, closed: 8, open: 2 } },
-      { category: 'Biology', scope: 'Cell', version: '1.2', test_id: 'biology_cell', question_counts: { total: 5, closed: 5, open: 0 } },
+      { category: 'History', scope: 'Ancient', version: '1.0', test_id: 'history_ancient', created_at: '2020-02-01T00:00:00Z', question_counts: { total: 2, closed: 2, open: 0 } },
+      { category: 'History', scope: 'Poland', version: '1.0', test_id: 'history_poland', created_at: '2026-01-01T00:00:00Z', question_counts: { total: 10, closed: 8, open: 2 } },
+      { category: 'Biology', scope: 'Cell', version: '1.2', test_id: 'biology_cell', created_at: '2023-06-01T00:00:00Z', question_counts: { total: 5, closed: 5, open: 0 } },
+      { category: 'Art', scope: 'Cave', version: '1.0', test_id: 'art_cave', created_at: '2020-01-01T00:00:00Z', question_counts: { total: 20, closed: 20, open: 0 } },
     ]
   })),
   getQuestions: vi.fn(() => Promise.resolve({ data: [{id: 'q1', questionText: 'Test Question'}] })),
@@ -108,5 +110,44 @@ describe('TestSetupPage - user interaction scenarios', () => {
       num_questions: 5,
       mode: 'closed'
     });
+  });
+
+  test('filters the list by category or test name', async () => {
+    render(<TestSetupPage />);
+    await screen.findByText('History');
+
+    await user.type(screen.getByLabelText(/search tests/i), 'cell');
+
+    expect(screen.queryByText('History')).not.toBeInTheDocument();
+    expect(screen.getByText('Biology')).toBeInTheDocument();
+  });
+
+  test('sorts categories alphabetically, by newest test, or by question count', async () => {
+    render(<TestSetupPage />);
+    await screen.findByText('History');
+
+    const orderOf = () => ['Art', 'Biology', 'History']
+      .map((name) => screen.getByRole('button', { name: new RegExp(`^${name}`) }))
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+      .map((button) => button.textContent.match(/^(Art|Biology|History)/)[1]);
+
+    expect(orderOf()).toEqual(['Art', 'Biology', 'History']);
+
+    await user.click(screen.getByRole('button', { name: /^History/i }));
+    const historyTestOrder = () => {
+      const ancient = screen.getByLabelText(/Ancient \(1\.0\)/i);
+      const poland = screen.getByLabelText(/Poland \(1\.0\)/i);
+      return ancient.compareDocumentPosition(poland) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? ['Ancient', 'Poland']
+        : ['Poland', 'Ancient'];
+    };
+    expect(historyTestOrder()).toEqual(['Ancient', 'Poland']);
+
+    await user.selectOptions(screen.getByLabelText(/sort tests/i), 'newest');
+    expect(historyTestOrder()).toEqual(['Poland', 'Ancient']);
+    expect(orderOf()).toEqual(['History', 'Biology', 'Art']);
+
+    await user.selectOptions(screen.getByLabelText(/sort tests/i), 'count');
+    expect(orderOf()).toEqual(['Art', 'History', 'Biology']);
   });
 });

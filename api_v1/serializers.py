@@ -55,7 +55,7 @@ class TestMetadataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Test
-        fields = ['category', 'scope', 'version', 'test_id', 'question_counts']
+        fields = ['category', 'scope', 'version', 'test_id', 'question_counts', 'created_at']
 
     def get_version(self, obj):
         return obj.version

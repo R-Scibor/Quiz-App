@@ -609,3 +609,46 @@ class AuthoringRetireTests(APITestCase):
         )
         self.assertEqual(r.status_code, 401)
         self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+
+class AuthoringSearchTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "questions": [{
+                "id": 4,
+                "questionText": "Who was crowned in Gniezno?",
+                "type": "open-text",
+                "tags": ["coronation"],
+                "gradingCriteria": "Bolesław",
+                "maxPoints": 2,
+            }],
+        })
+        self.test_id = result["test"]["test_id"]
+        self.question_id = result["quiz"]["questions"][0]["question_id"]
+
+    def test_search_finds_scope_and_question_text(self):
+        by_scope = self.client.get("/api/v1/authoring/search/", {"q": "medieval"})
+        self.assertEqual(by_scope.status_code, 200)
+        self.assertEqual(by_scope.data["tests"][0]["test_id"], self.test_id)
+        self.assertEqual(by_scope.data["questions"][0]["question_id"], self.question_id)
+
+        by_text = self.client.get("/api/v1/authoring/search/", {"q": "Gniezno"})
+        self.assertEqual(by_text.data["questions"][0]["id"], 4)
+        self.assertEqual(by_text.data["questions"][0]["tags"], ["coronation"])
+        self.assertFalse(by_text.data["questions"][0]["retired"])
+
+    def test_search_short_query_400(self):
+        r = self.client.get("/api/v1/authoring/search/", {"q": "m"})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+
+    def test_search_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.get("/api/v1/authoring/search/", {"q": "medieval"})
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")

@@ -109,6 +109,82 @@ class AuthoringImportView(AuthoringAPIView):
         return Response(result, status=status.HTTP_200_OK)
 
 
+class AuthoringSearchView(AuthoringAPIView):
+    def get(self, request):
+        query = (request.query_params.get("q") or "").strip()
+        if len(query) < 2:
+            return Response(
+                {
+                    "error": "VALIDATION_FAILED",
+                    "errors": [{
+                        "path": "q",
+                        "code": "INVALID_TYPE",
+                        "message": "'q' must be at least 2 characters.",
+                    }],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            limit = int(request.query_params.get("limit") or 20)
+        except (TypeError, ValueError):
+            limit = 20
+        limit = min(max(limit, 1), 50)
+
+        test_match = (
+            Q(title__icontains=query)
+            | Q(categories__name__icontains=query)
+            | Q(questions__text__icontains=query)
+            | Q(questions__tags__name__icontains=query)
+        )
+        tests = (
+            Test.objects.filter(test_match)
+            .distinct()
+            .prefetch_related("categories")
+            .order_by("title")[:limit]
+        )
+        test_rows = []
+        for test in tests:
+            cat = test.categories.order_by("name").first()
+            test_rows.append({
+                "test_id": str(test.id),
+                "category": cat.name if cat else "",
+                "scope": test.title,
+                "version": test.version,
+            })
+
+        question_match = (
+            Q(text__icontains=query)
+            | Q(tags__name__icontains=query)
+            | Q(test__title__icontains=query)
+            | Q(test__categories__name__icontains=query)
+        )
+        questions = Question.objects.filter(question_match).distinct()
+        test_id = (request.query_params.get("test_id") or "").strip()
+        if test_id:
+            questions = questions.filter(test_id=test_id)
+        tag = (request.query_params.get("tag") or "").strip()
+        if tag:
+            questions = questions.filter(tags__name=tag)
+        questions = (
+            questions.select_related("test")
+            .prefetch_related("tags", "test__categories")
+            .order_by("test__title", "source_id")[:limit]
+        )
+        question_rows = []
+        for question in questions:
+            question_rows.append({
+                "test_id": str(question.test_id),
+                "scope": question.test.title,
+                "question_id": str(question.id),
+                "id": question.source_id,
+                "questionText": question.text,
+                "type": question.question_type,
+                "tags": [t.name for t in question.tags.all()],
+                "retired": question.retired,
+            })
+        return Response({"tests": test_rows, "questions": question_rows})
+
+
 class AuthoringTestListView(AuthoringAPIView):
     def get(self, request):
         tests = Test.objects.annotate(

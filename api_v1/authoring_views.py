@@ -17,6 +17,7 @@ from .quiz_import import (
     ImportValidationError,
     TestNotFoundError,
     create_question,
+    create_questions,
     delete_question,
     import_quiz,
     update_question,
@@ -250,6 +251,24 @@ class AuthoringQuestionCreateView(AuthoringAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         code = status.HTTP_200_OK if dry_run else status.HTTP_201_CREATED
+        return Response(result, status=code)
+
+
+class AuthoringQuestionBatchView(AuthoringAPIView):
+    def post(self, request, pk):
+        try:
+            test = Test.objects.get(pk=pk)
+        except (Test.DoesNotExist, ValidationError):
+            return Response({"error": "TEST_NOT_FOUND", "message": "Test not found."}, status=404)
+        body = request.data if isinstance(request.data, dict) else {}
+        try:
+            result = create_questions(test, body.get("questions"), dry_run=_parse_dry_run(request))
+        except ImportValidationError as exc:
+            return Response(
+                {"error": "VALIDATION_FAILED", "errors": exc.issues},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        code = status.HTTP_200_OK if _parse_dry_run(request) else status.HTTP_201_CREATED
         return Response(result, status=code)
 
 

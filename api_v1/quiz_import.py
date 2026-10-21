@@ -112,6 +112,72 @@ def create_question(test: Test, qdata: dict, *, dry_run: bool = False) -> dict:
     return {"applied": True, "dry_run": False, "question": question_to_interchange(obj)}
 
 
+def create_questions(test: Test, questions: Any, *, dry_run: bool = False) -> dict:
+    if not isinstance(questions, list) or len(questions) == 0:
+        raise ImportValidationError([{
+            "path": "questions",
+            "code": "EMPTY_QUESTIONS",
+            "message": "'questions' must be a non-empty list.",
+        }])
+    if len(questions) > 50:
+        raise ImportValidationError([{
+            "path": "questions",
+            "code": "INVALID_TYPE",
+            "message": "A batch can contain at most 50 questions.",
+        }])
+
+    next_id = _next_source_id(test)
+    seen_ids = set(test.questions.exclude(source_id=None).values_list("source_id", flat=True))
+    seen_text = set(test.questions.values_list("text", flat=True))
+    prepared = []
+    issues: list[dict] = []
+    for index, raw in enumerate(questions):
+        data = {k: v for k, v in raw.items() if k in _QUESTION_FIELDS} if isinstance(raw, dict) else raw
+        if isinstance(data, dict) and data.get("id") is None:
+            data = dict(data)
+            data["id"] = next_id
+            next_id += 1
+        for issue in validate_question(data):
+            path = issue["path"]
+            issue["path"] = f"questions[{index}].{path}" if path else f"questions[{index}]"
+            issues.append(issue)
+        if isinstance(data, dict):
+            sid = data.get("id")
+            if isinstance(sid, int):
+                if sid in seen_ids:
+                    issues.append({
+                        "path": f"questions[{index}].id",
+                        "code": "DUPLICATE_SOURCE_ID",
+                        "message": f"id {sid} is already used.",
+                    })
+                else:
+                    seen_ids.add(sid)
+            text = data.get("questionText")
+            if isinstance(text, str) and text.strip():
+                if text in seen_text:
+                    issues.append({
+                        "path": f"questions[{index}].questionText",
+                        "code": "DUPLICATE_QUESTION_TEXT",
+                        "message": "questionText is already used on this test.",
+                    })
+                else:
+                    seen_text.add(text)
+        prepared.append(data)
+    if issues:
+        raise ImportValidationError(issues)
+    if dry_run:
+        return {
+            "applied": False,
+            "dry_run": True,
+            "questions": [_preview_question(item) for item in prepared],
+        }
+    created = []
+    with transaction.atomic():
+        for item in prepared:
+            created.append(question_to_interchange(_upsert_question(test, None, item)))
+    return {"applied": True, "dry_run": False, "questions": created}
+
+
 def update_question(question: Question, patch: dict, *, dry_run: bool = False) -> dict:
     merged = question_to_interchange(question)
     for key, value in patch.items():

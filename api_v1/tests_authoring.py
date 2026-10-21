@@ -652,3 +652,72 @@ class AuthoringSearchTests(APITestCase):
         r = self.client.get("/api/v1/authoring/search/", {"q": "medieval"})
         self.assertEqual(r.status_code, 401)
         self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+
+class AuthoringBatchTests(APITestCase):
+    def setUp(self):
+        staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        })
+        self.test_id = result["test"]["test_id"]
+
+    def _open(self, text):
+        return {
+            "questionText": text,
+            "type": "open-text",
+            "gradingCriteria": "Bolesław",
+            "maxPoints": 1,
+        }
+
+    def test_batch_assigns_source_ids(self):
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/batch/",
+            {"questions": [self._open("Who was crowned?"), self._open("Where was he crowned?")]},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(r.data["applied"])
+        self.assertEqual([q["id"] for q in r.data["questions"]], [2, 3])
+
+    def test_batch_invalid_writes_nothing(self):
+        from api_v1.models import Question
+        before = Question.objects.count()
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/batch/",
+            {"questions": [self._open("Who was crowned?"), {"questionText": "Bad", "type": "true-false"}]},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertTrue(any(err["path"].startswith("questions[1]") for err in r.data["errors"]))
+        self.assertEqual(Question.objects.count(), before)
+
+    def test_batch_unknown_test_404(self):
+        r = self.client.post(
+            "/api/v1/authoring/tests/00000000-0000-4000-8000-000000000000/questions/batch/",
+            {"questions": [self._open("Who?")]},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "TEST_NOT_FOUND")
+
+    def test_batch_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/batch/",
+            {"questions": [self._open("Who?")]},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")

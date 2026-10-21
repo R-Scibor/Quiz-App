@@ -12,10 +12,14 @@ from .authoring_schema import AUTHORING_SCHEMA
 from .models import Category, Question, Test
 from .quiz_export import question_to_interchange, test_to_interchange
 from .quiz_import import (
+    DeleteBlockedError,
     ImportConflictError,
     ImportValidationError,
     TestNotFoundError,
+    create_question,
+    delete_question,
     import_quiz,
+    update_question,
 )
 from .quiz_validation import validate_quiz
 
@@ -144,6 +148,78 @@ class AuthoringExportView(AuthoringAPIView):
         except Test.DoesNotExist:
             return Response({"error": "TEST_NOT_FOUND", "message": "Test not found."}, status=404)
         return Response(test_to_interchange(test))
+
+
+def _question_payload(request) -> dict:
+    data = request.data
+    if not isinstance(data, dict):
+        return {}
+    return {k: v for k, v in data.items() if k != "dry_run"}
+
+
+class AuthoringQuestionCreateView(AuthoringAPIView):
+    def post(self, request, pk):
+        try:
+            test = Test.objects.get(pk=pk)
+        except (Test.DoesNotExist, ValidationError):
+            return Response({"error": "TEST_NOT_FOUND", "message": "Test not found."}, status=404)
+        dry_run = _parse_dry_run(request)
+        try:
+            result = create_question(test, _question_payload(request), dry_run=dry_run)
+        except ImportValidationError as exc:
+            return Response(
+                {"error": "VALIDATION_FAILED", "errors": exc.issues},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        code = status.HTTP_200_OK if dry_run else status.HTTP_201_CREATED
+        return Response(result, status=code)
+
+
+class AuthoringQuestionWriteView(AuthoringAPIView):
+    def _get_question(self, question_id):
+        try:
+            return Question.objects.prefetch_related("answers", "tags").get(pk=question_id)
+        except (Question.DoesNotExist, ValidationError):
+            return None
+
+    def patch(self, request, question_id):
+        question = self._get_question(question_id)
+        if question is None:
+            return Response(
+                {"error": "QUESTION_NOT_FOUND", "message": "Question not found."},
+                status=404,
+            )
+        dry_run = _parse_dry_run(request)
+        try:
+            result = update_question(question, _question_payload(request), dry_run=dry_run)
+        except ImportValidationError as exc:
+            return Response(
+                {"error": "VALIDATION_FAILED", "errors": exc.issues},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(result, status=status.HTTP_200_OK)
+
+    def delete(self, request, question_id):
+        question = self._get_question(question_id)
+        if question is None:
+            return Response(
+                {"error": "QUESTION_NOT_FOUND", "message": "Question not found."},
+                status=404,
+            )
+        dry_run = _parse_dry_run(request)
+        try:
+            result = delete_question(question, dry_run=dry_run)
+        except DeleteBlockedError as exc:
+            return Response(
+                {
+                    "error": "DELETE_BLOCKED",
+                    "message": "Question has attempts and was not deleted.",
+                    "reason": "has_attempts",
+                    "attempt_count": exc.attempt_count,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class AuthoringQuestionDetailView(AuthoringAPIView):

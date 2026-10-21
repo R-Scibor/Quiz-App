@@ -277,3 +277,193 @@ class AuthoringImportTests(APITestCase):
         r = self.client.post("/api/v1/authoring/import/", self.payload, format="json")
         self.assertEqual(r.status_code, 404)
         self.assertEqual(r.data["error"], "TEST_NOT_FOUND")
+
+
+class AuthoringQuestionWriteTests(APITestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user("author", password="p", is_staff=True)
+        token = Token.objects.create(user=self.staff)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        result = import_quiz({
+            "category": "History",
+            "scope": "Medieval Poland",
+            "version": "1.0",
+            "questions": [{
+                "id": 1,
+                "questionText": "Coronation year?",
+                "type": "single-choice",
+                "options": ["966", "1025"],
+                "correctAnswers": [1],
+            }],
+        })
+        self.test_id = result["test"]["test_id"]
+        self.question_id = result["quiz"]["questions"][0]["question_id"]
+
+    def test_create_question_assigns_next_source_id(self):
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/",
+            {
+                "questionText": "Who was crowned?",
+                "type": "open-text",
+                "gradingCriteria": "Bolesław",
+                "maxPoints": 2,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(r.data["applied"])
+        self.assertFalse(r.data["dry_run"])
+        question = r.data["question"]
+        self.assertEqual(question["id"], 2)
+        self.assertEqual(question["questionText"], "Who was crowned?")
+        self.assertEqual(question["maxPoints"], 2)
+        self.assertNotEqual(question["question_id"], self.question_id)
+
+    def test_create_invalid_does_not_write(self):
+        from api_v1.models import Question
+        before = Question.objects.count()
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/",
+            {"questionText": "Bad", "type": "true-false"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["error"], "VALIDATION_FAILED")
+        self.assertEqual(Question.objects.count(), before)
+
+    def test_create_duplicate_text_400(self):
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/",
+            {
+                "questionText": "Coronation year?",
+                "type": "open-text",
+                "gradingCriteria": "1025",
+                "maxPoints": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data["errors"][0]["code"], "DUPLICATE_QUESTION_TEXT")
+
+    def test_create_dry_run_does_not_write(self):
+        from api_v1.models import Question
+        before = Question.objects.count()
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/?dry_run=true",
+            {
+                "questionText": "Who was crowned?",
+                "type": "open-text",
+                "gradingCriteria": "Bolesław",
+                "maxPoints": 2,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.data["applied"])
+        self.assertTrue(r.data["dry_run"])
+        self.assertEqual(r.data["question"]["id"], 2)
+        self.assertEqual(Question.objects.count(), before)
+
+    def test_create_unknown_test_404(self):
+        r = self.client.post(
+            "/api/v1/authoring/tests/00000000-0000-4000-8000-000000000000/questions/",
+            {
+                "questionText": "Who?",
+                "type": "open-text",
+                "gradingCriteria": "x",
+                "maxPoints": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "TEST_NOT_FOUND")
+
+    def test_create_anonymous_401(self):
+        self.client.credentials()
+        r = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/",
+            {"questionText": "Who?", "type": "open-text", "gradingCriteria": "x", "maxPoints": 1},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(r.data["error"], "AUTHENTICATION_FAILED")
+
+    def test_patch_question_text_preserves_id(self):
+        r = self.client.patch(
+            f"/api/v1/authoring/questions/{self.question_id}/",
+            {"questionText": "Year of the coronation?"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data["applied"])
+        self.assertEqual(r.data["question"]["question_id"], self.question_id)
+        self.assertEqual(r.data["question"]["questionText"], "Year of the coronation?")
+        self.assertEqual(r.data["question"]["options"], ["966", "1025"])
+        self.assertEqual(r.data["question"]["correctAnswers"], [1])
+
+    def test_patch_grading_on_open_question(self):
+        created = self.client.post(
+            f"/api/v1/authoring/tests/{self.test_id}/questions/",
+            {
+                "questionText": "Who was crowned?",
+                "type": "open-text",
+                "gradingCriteria": "Bolesław",
+                "maxPoints": 2,
+            },
+            format="json",
+        )
+        qid = created.data["question"]["question_id"]
+        r = self.client.patch(
+            f"/api/v1/authoring/questions/{qid}/",
+            {"gradingCriteria": "Must mention Bolesław", "maxPoints": 3},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["question"]["gradingCriteria"], "Must mention Bolesław")
+        self.assertEqual(r.data["question"]["maxPoints"], 3)
+        self.assertEqual(r.data["question"]["questionText"], "Who was crowned?")
+
+    def test_patch_unknown_question_404(self):
+        r = self.client.patch(
+            "/api/v1/authoring/questions/00000000-0000-4000-8000-000000000000/",
+            {"questionText": "Nope"},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data["error"], "QUESTION_NOT_FOUND")
+
+    def test_delete_question(self):
+        from api_v1.models import Question
+        r = self.client.delete(f"/api/v1/authoring/questions/{self.question_id}/")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data["deleted"])
+        self.assertFalse(Question.objects.filter(pk=self.question_id).exists())
+
+    def test_delete_blocked_when_attempts_exist(self):
+        from api_v1.models import Question, QuestionAttempt, QuizSession, Test
+        question = Question.objects.get(pk=self.question_id)
+        session = QuizSession.objects.create(user=self.staff, total_questions=1)
+        QuestionAttempt.objects.create(
+            user=self.staff,
+            question=question,
+            test=Test.objects.get(pk=self.test_id),
+            session=session,
+            is_correct=False,
+        )
+        r = self.client.delete(f"/api/v1/authoring/questions/{self.question_id}/")
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.data["error"], "DELETE_BLOCKED")
+        self.assertEqual(r.data["reason"], "has_attempts")
+        self.assertEqual(r.data["attempt_count"], 1)
+        self.assertTrue(Question.objects.filter(pk=self.question_id).exists())
+
+    def test_delete_dry_run_keeps_row(self):
+        from api_v1.models import Question
+        r = self.client.delete(
+            f"/api/v1/authoring/questions/{self.question_id}/?dry_run=true"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data["dry_run"])
+        self.assertFalse(r.data["applied"])
+        self.assertFalse(r.data["deleted"])
+        self.assertTrue(Question.objects.filter(pk=self.question_id).exists())

@@ -16,6 +16,23 @@ CATASTROPHIC_REGEX = [
 ]
 
 
+def validate_question(question: Any) -> list[dict]:
+    """Validate one interchange question. Paths are relative to that object."""
+    issues: list[dict] = []
+
+    def add(path: str, code: str, message: str) -> None:
+        issues.append({"path": path, "code": code, "message": message})
+
+    _validate_question(question, 0, add)
+    for issue in issues:
+        path = issue["path"]
+        if path == "questions[0]":
+            issue["path"] = ""
+        elif path.startswith("questions[0]."):
+            issue["path"] = path[len("questions[0].") :]
+    return issues
+
+
 def validate_quiz(data: Any) -> list[dict]:
     issues: list[dict] = []
 

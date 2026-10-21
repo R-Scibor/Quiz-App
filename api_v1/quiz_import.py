@@ -4,11 +4,11 @@ import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Max
 
-from api_v1.models import Answer, Category, Question, Tag, Test
-from api_v1.quiz_export import test_to_interchange
-from api_v1.quiz_validation import normalize_question_type, validate_quiz
+from api_v1.models import Answer, Category, Question, QuestionAttempt, Tag, Test
+from api_v1.quiz_export import question_to_interchange, test_to_interchange
+from api_v1.quiz_validation import normalize_question_type, validate_question, validate_quiz
 
 CLOSED = {Question.SINGLE_CHOICE, Question.MULTIPLE_CHOICE}
 
@@ -26,6 +26,127 @@ class TestNotFoundError(Exception):
 class ImportConflictError(Exception):
     def __init__(self, message: str = "IMPORT_CONFLICT"):
         super().__init__(message)
+
+
+class DeleteBlockedError(Exception):
+    def __init__(self, attempt_count: int):
+        self.attempt_count = attempt_count
+        super().__init__("DELETE_BLOCKED")
+
+
+_QUESTION_FIELDS = {
+    "id",
+    "questionText",
+    "image",
+    "type",
+    "tags",
+    "options",
+    "correctAnswers",
+    "explanation",
+    "gradingCriteria",
+    "maxPoints",
+}
+
+
+def _next_source_id(test: Test) -> int:
+    current = test.questions.aggregate(m=Max("source_id"))["m"]
+    return (current or 0) + 1
+
+
+def _duplicate_issues(test: Test, qdata: dict, *, exclude: Question | None = None) -> list[dict]:
+    issues = []
+    qs = test.questions.all()
+    if exclude is not None:
+        qs = qs.exclude(pk=exclude.pk)
+    sid = qdata.get("id")
+    if isinstance(sid, int) and qs.filter(source_id=sid).exists():
+        issues.append({
+            "path": "id",
+            "code": "DUPLICATE_SOURCE_ID",
+            "message": f"id {sid} is already used on this test.",
+        })
+    text = qdata.get("questionText")
+    if isinstance(text, str) and qs.filter(text=text).exists():
+        issues.append({
+            "path": "questionText",
+            "code": "DUPLICATE_QUESTION_TEXT",
+            "message": "questionText is already used on this test.",
+        })
+    return issues
+
+
+def _preview_question(qdata: dict) -> dict:
+    ntype = normalize_question_type(qdata["type"])
+    payload = {
+        "id": qdata.get("id"),
+        "question_id": qdata.get("question_id"),
+        "questionText": qdata["questionText"],
+        "image": qdata.get("image") or "",
+        "type": ntype,
+        "tags": [name for name in (qdata.get("tags") or []) if isinstance(name, str)],
+        "explanation": qdata.get("explanation") or "",
+    }
+    if ntype in CLOSED:
+        payload["options"] = list(qdata.get("options") or [])
+        payload["correctAnswers"] = list(qdata.get("correctAnswers") or [])
+    else:
+        payload["gradingCriteria"] = qdata.get("gradingCriteria")
+        payload["maxPoints"] = qdata.get("maxPoints")
+    return payload
+
+
+def create_question(test: Test, qdata: dict, *, dry_run: bool = False) -> dict:
+    data = {k: v for k, v in qdata.items() if k in _QUESTION_FIELDS}
+    if data.get("id") is None:
+        data["id"] = _next_source_id(test)
+    issues = validate_question(data)
+    issues.extend(_duplicate_issues(test, data))
+    if issues:
+        raise ImportValidationError(issues)
+    if dry_run:
+        return {"applied": False, "dry_run": True, "question": _preview_question(data)}
+    with transaction.atomic():
+        obj = _upsert_question(test, None, data)
+    return {"applied": True, "dry_run": False, "question": question_to_interchange(obj)}
+
+
+def update_question(question: Question, patch: dict, *, dry_run: bool = False) -> dict:
+    merged = question_to_interchange(question)
+    for key, value in patch.items():
+        if key in _QUESTION_FIELDS:
+            merged[key] = value
+    issues = validate_question(merged)
+    issues.extend(_duplicate_issues(question.test, merged, exclude=question))
+    if issues:
+        raise ImportValidationError(issues)
+    if dry_run:
+        return {"applied": False, "dry_run": True, "question": _preview_question(merged)}
+    with transaction.atomic():
+        obj = _upsert_question(question.test, question, merged)
+    return {"applied": True, "dry_run": False, "question": question_to_interchange(obj)}
+
+
+def delete_question(question: Question, *, dry_run: bool = False) -> dict:
+    attempt_count = QuestionAttempt.objects.filter(question=question).count()
+    if attempt_count:
+        if dry_run:
+            return {
+                "applied": False,
+                "dry_run": True,
+                "deleted": False,
+                "blocked": {"reason": "has_attempts", "attempt_count": attempt_count},
+            }
+        raise DeleteBlockedError(attempt_count)
+    if dry_run:
+        return {
+            "applied": False,
+            "dry_run": True,
+            "deleted": False,
+            "question_id": str(question.id),
+        }
+    question_id = str(question.id)
+    question.delete()
+    return {"applied": True, "dry_run": False, "deleted": True, "question_id": question_id}
 
 
 def import_quiz(data: dict, *, test_id=None, dry_run: bool = False) -> dict:
